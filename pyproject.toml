@@ -7,7 +7,8 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "3.9.13"
-gsa-library = {git = "https://github.com/MarinaStrocchi/GSA_library.git"}
+requests = "^2.31.0"
+gsa-library = {git = "git@github.com:MarinaStrocchi/GSA_library.git"}
 
 
 [build-system]

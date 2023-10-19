@@ -246,7 +246,7 @@ torch = ">=1.7.1,<1.8.0"
 
 [package.source]
 type = "git"
-url = "https://github.com/MarinaStrocchi/GSA_library.git"
+url = "git@github.com:MarinaStrocchi/GSA_library.git"
 reference = "HEAD"
 resolved_reference = "5f4486d2ef4b690e6ef97aca1124d346af034ecb"
 
@@ -1027,4 +1027,4 @@ web = ["wslink (>=1.0.4)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.9.13"
-content-hash = "134f9a0778af465502155128799934f0db9f891414c7bf2d05c5c5b8b97b3350"
+content-hash = "197046321558f304cae3694d0b78b44a138df1b12db2b20a6eaac817970cf7ff"
