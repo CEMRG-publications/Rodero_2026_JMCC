@@ -6,7 +6,7 @@ authors = ["Cristobal Rodero <cristobal.rodero@imperial.ac.uk>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "3.8.10"
+python = "3.9.13"
 gsa-library = {git = "https://github.com/MarinaStrocchi/GSA_library.git"}
 
 
