@@ -1,10 +1,12 @@
 from GSA_library.mesh_utils import *
-from GSA_library.pyvista_utils import read_pvcc_paraview_file, read_mesh
+from GSA_library.pyvista_utils import read_pvcc_paraview_file, read_mesh, carp_to_pyvista, read_IGB_file
 from common.file_utils import file_exists
 
 import argparse
 import tqdm
 import json
+import pyvista as pv
+import os
 
 def print_screenshot(plt_msh,
                      screenshot_name,
@@ -191,10 +193,12 @@ if __name__ == '__main__':
                         help="Full path to the folder where the screenshots will be saved. The camera settings are expected to be here.")
     parser.add_argument('--original',   
                         type=bool, 
+                        nargs='?',
                         default=False, 
                         help="If True, it prints the beating heart in its volumetric form, meaning not clipped. You must specify --original or --clipped or both.")
     parser.add_argument('--clipped',   
                         type=bool, 
+                        nargs='?',
                         default=False, help="If True, it prints the beating heart in its clipped form. You must provide the directory to the clipping settings file. You must specify --original, --clipped or both.")
     parser.add_argument('--clipping_settings_path',
                         type=str,
