@@ -193,12 +193,12 @@ if __name__ == '__main__':
                         help="Full path to the folder where the screenshots will be saved. The camera settings are expected to be here.")
     parser.add_argument('--original',   
                         type=bool, 
-                        nargs='?',
+                        action='store_true',
                         default=False, 
                         help="If True, it prints the beating heart in its volumetric form, meaning not clipped. You must specify --original or --clipped or both.")
     parser.add_argument('--clipped',   
-                        type=bool, 
-                        nargs='?',
+                        type=bool,
+                        action='store_true',
                         default=False, help="If True, it prints the beating heart in its clipped form. You must provide the directory to the clipping settings file. You must specify --original, --clipped or both.")
     parser.add_argument('--clipping_settings_path',
                         type=str,
