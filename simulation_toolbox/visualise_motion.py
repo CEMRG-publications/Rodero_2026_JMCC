@@ -63,6 +63,9 @@ def visualise_motion(screenshot_basename,
 
     # initialise mesh
     pv_msh = carp_to_pyvista(pts,elem)
+
+    if clipped:
+            screenshot_basename += "_clipped"
     
 
 
@@ -81,8 +84,6 @@ def visualise_motion(screenshot_basename,
                                  camera_settings = camera_settings,
                                  meshcolor       = meshcolor)
         if clipped:
-
-            screenshot_basename += "_clipped"
 
             if not os.path.exists(f"{screenshot_basename}{t}.png"):
                 print_screenshot(plt_msh         = pv_msh,
