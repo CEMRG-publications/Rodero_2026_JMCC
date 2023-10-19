@@ -17,6 +17,10 @@ The recommended installation is as follows:
  ```
  poetry add requests
  ```
+ - If running it in ARCHER2 or any other computer without a graphic interface, pyvista won't work. To fix it run:
+ ```
+ pip install vtk --extra-index-url https://wheels.vtk.org trame vtk-osmesa
+ ```
 
 ## plot_crashed_cycles
 
