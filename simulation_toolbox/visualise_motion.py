@@ -136,8 +136,8 @@ def main(args):
         clipping_settings = json.load(f)
         f.close()
 
-        clipping_plane_origin           = clipping_settings["origin"]
-        clipping_plane_normal_anterior  = clipping_settings["normal"]
+        clipping_plane_origin           = tuple(clipping_settings["origin"])
+        clipping_plane_normal_anterior  = tuple(clipping_settings["normal"])
         clipping_plane_normal_posterior = tuple(-x for x in clipping_plane_normal_anterior)
     else:
         clipping_plane_origin           = None
