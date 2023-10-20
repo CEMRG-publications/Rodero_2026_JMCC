@@ -119,6 +119,8 @@ def main(args):
         parser.error("You need to specify if you want a clipped or a original geometry.")
     if clipped and clipping_settings_path is None:
         parser.error("To create the clipped screenshot you must specify the clipping settings file path.")
+    
+    os.makedirs(path2figure, exist_ok=True)
 
     files_to_check = [f"{unloaded_mesh}.belem",
                       f"{unloaded_mesh}.bpts",
@@ -129,7 +131,6 @@ def main(args):
 
     file_exists(files_to_check=files_to_check)
 
-    os.makedirs(path2figure, exist_ok=True)
         
     ## We read the displacement and the mesh only once
 
