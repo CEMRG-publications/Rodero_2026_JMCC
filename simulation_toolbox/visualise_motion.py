@@ -23,10 +23,16 @@ def print_screenshot(plt_msh,
     plotter.background_color = "white"
                 
     if clipped:
-          plt_msh = plt_msh.clip(origin = clipping_plane_origin, normal = clipping_plane_normal)
+        clip_filter = plt_msh.clip(origin = clipping_plane_origin, normal = clipping_plane_normal)
 
-    _ = plotter.add_mesh(mesh  = plt_msh,
-                         color = meshcolor)
+        _ = plotter.add_mesh(mesh  = clip_filter,
+                            color = meshcolor)
+    
+    else:
+
+        _ = plotter.add_mesh(mesh  = plt_msh,
+                            color = meshcolor)
+    
 
     plotter.camera.position    = camera_settings["position"]
     plotter.camera.focal_point = camera_settings["focal_point"]
@@ -117,17 +123,20 @@ def main(args):
     files_to_check = [f"{unloaded_mesh}.belem",
                       f"{unloaded_mesh}.bpts",
                       f"{simfolder}/x.dynpt",
-                      f"{path2figure}/camera_settings_anterior.pvcc",
+                      f"{path2figure}/../camera_settings_anterior.pvcc",
+                      f"{path2figure}/../camera_settings_posterior.pvcc",
                       clipping_settings_path]
 
     file_exists(files_to_check=files_to_check)
+
+    os.makedirs(path2figure, exist_ok=True)
         
     ## We read the displacement and the mesh only once
 
     pts,elem = read_mesh(unloaded_mesh)
     _,u      = read_IGB_file(f"{simfolder}/x.dynpt")
     
-    camera_settings_path_anterior = f"{path2figure}/camera_settings_anterior.pvcc"
+    camera_settings_path_anterior = f"{path2figure}/../camera_settings_anterior.pvcc"
 
     f = open(camera_settings_path_anterior)
     camera_settings_anterior = read_pvcc_paraview_file(camera_settings_path_anterior)
@@ -140,6 +149,9 @@ def main(args):
         clipping_plane_origin           = tuple(clipping_settings["origin"])
         clipping_plane_normal_anterior  = tuple(clipping_settings["normal"])
         clipping_plane_normal_posterior = tuple(-x for x in clipping_plane_normal_anterior)
+
+        print(clipping_plane_origin)
+        print(clipping_plane_normal_anterior)
     else:
         clipping_plane_origin           = None
         clipping_plane_normal_anterior  = None
@@ -156,7 +168,7 @@ def main(args):
                     clipping_plane_origin = clipping_plane_origin,
                     clipping_plane_normal = clipping_plane_normal_anterior)
     
-    camera_settings_path_posterior = f"{path2figure}/camera_settings_posterior.pvcc"
+    camera_settings_path_posterior = f"{path2figure}/../camera_settings_posterior.pvcc"
 
     f = open(camera_settings_path_posterior)
     camera_settings_posterior = read_pvcc_paraview_file(camera_settings_path_posterior)
@@ -191,7 +203,7 @@ if __name__ == '__main__':
     parser.add_argument('--path2figure',   
                         type=str, 
                         required=True, 
-                        help="Full path to the folder where the screenshots will be saved. The camera settings are expected to be here.")
+                        help="Full path to the folder where the screenshots will be saved. The camera settings are expected to be in the parent folder. If it does not exist it will be created.")
     parser.add_argument('--original',   
                         action='store_true',
                         default=False, 
