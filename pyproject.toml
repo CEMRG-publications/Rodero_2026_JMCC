@@ -6,10 +6,10 @@ authors = ["Cristobal Rodero <cristobal.rodero@imperial.ac.uk>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "3.9.13"
+python = "~=3.9.13"
+simulation-library = {git = "https://github.com/MarinaStrocchi/SIMULATION_library.git", rev = "developer"}
 requests = "^2.31.0"
-gsa-library = {git = "git@github.com:MarinaStrocchi/GSA_library.git"}
-tqdm = "^4.66.1"
+scipy = "1.7.3"
 
 
 [build-system]
