@@ -95,6 +95,7 @@ def main(args):
             print("Copying files...")
             os.system(f"cp {simulation_folder}/cur_reference.bpts {unloaded_meshname}.bpts")
             os.system(f"cp {initial_mesh}.belem {unloaded_meshname}.belem")
+            os.system(f"cp {initial_mesh}.blon {unloaded_meshname}.blon")
             print("Copied")
       
 
