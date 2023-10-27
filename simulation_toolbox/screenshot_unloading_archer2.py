@@ -243,11 +243,8 @@ def main(args):
                 plotter.close()
             
     print("Cleaning...")
-    for i in tqdm.tqdm(range(first_simulation, last_simulation+1)):
 
-        if np.sum(unloaded_volumes[i,:])!=0:
-            unloaded_meshname = f"{basefolder}/unloaded/myocardium_AV_FEC_BB_lvrv_unloaded_{i}"
-            os.system(f"cp -r {basefolder}/unloaded {initial_mesh_path}/.")
+    os.system(f"cp -r {basefolder}/unloaded {initial_mesh_path}/.")
 
     os.system(f"rm {initial_mesh}.pts")
     os.system(f"rm {initial_mesh}.elem")
