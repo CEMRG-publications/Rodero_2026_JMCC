@@ -15,10 +15,13 @@ def main(args):
 
     basefolder       = args.basefolder
     path2figure      = args.path2figure
-    initial_mesh     = args.initial_mesh
+    initial_mesh_path     = args.initial_mesh_path
+    initial_mesh_name     = args.initial_mesh_name
     first_simulation = args.first_simulation
     last_simulation  = args.last_simulation
     only_setup = args.only_setup
+
+    initial_mesh = f"{initial_mesh_path}/{initial_mesh_name}"
 
     clipping_plane_origin           = (67234.6, 53056.1, 62056.3)
     clipping_plane_normal_anterior  = (0.25083,-0.230159,0.940279)
@@ -244,9 +247,7 @@ def main(args):
 
         if np.sum(unloaded_volumes[i,:])!=0:
             unloaded_meshname = f"{basefolder}/unloaded/myocardium_AV_FEC_BB_lvrv_unloaded_{i}"
-            os.system(f"rm {unloaded_meshname}.pts")
-            os.system(f"rm {unloaded_meshname}.elem")
-            os.system(f"rm {unloaded_meshname}.lon")
+            os.system(f"cp -r {basefolder}/unloaded {initial_mesh_path}/.")
 
     os.system(f"rm {initial_mesh}.pts")
     os.system(f"rm {initial_mesh}.elem")
@@ -263,7 +264,8 @@ if __name__ == '__main__':
     parser.add_argument('--path2figure', type=str, required=False)
     parser.add_argument('--first_simulation', type=int, required=False, default=-1)
     parser.add_argument('--last_simulation', type=int, required=False, default=-1)
-    parser.add_argument('--initial_mesh',type=str,required=True,default="/media/croderog/SeagateExpansionDrive/h01/sims_folder/myocardium_AV_FEC_BB_lvrv")
+    parser.add_argument('--initial_mesh_path',type=str,required=True)
+    parser.add_argument('--initial_mesh_name',type=str,required=True)
     parser.add_argument('--only_setup', action='store_true', help="Use this command if you just want to set up the folder architecture ready but not taking the screenshots.")
 
     args = parser.parse_args()
