@@ -46,37 +46,36 @@ def main(args):
         camera_settings_posterior = read_pvcc_paraview_file(camera_settings_path_posterior)
   
     ### Read original elem, it's the same for both configurations
-
-    if not os.path.exists(f"{initial_mesh}.elem"):
-
-        cmd = ["meshtool convert",
-              f"-imsh={initial_mesh}",
-              f"-omsh={initial_mesh}",
-               "-ifmt=carp_bin",
-               "-ofmt=carp_txt"]
-        
-        cmd_str = ' '.join(cmd)
-        os.system(cmd_str)  
-    
     if not only_setup:
+
+        if not os.path.exists(f"{initial_mesh}.elem"):
+
+            cmd = ["meshtool convert",
+                f"-imsh={initial_mesh}",
+                f"-omsh={initial_mesh}",
+                "-ifmt=carp_bin",
+                "-ofmt=carp_txt"]
+            
+            cmd_str = ' '.join(cmd)
+            os.system(cmd_str)  
+    
         elem_file = read_elem(f"{initial_mesh}.elem")
         print("Read.")
 
 
-    ### Read original pts
+        ### Read original pts
 
-    if not os.path.exists(f"{initial_mesh}.pts"):
+        if not os.path.exists(f"{initial_mesh}.pts"):
 
-        cmd = ["meshtool convert",
-              f"-imsh={initial_mesh}",
-              f"-omsh={initial_mesh}",
-               "-ifmt=carp_bin",
-               "-ofmt=carp_txt"]
-        
-        cmd_str = ' '.join(cmd)
-        os.system(cmd_str)  
+            cmd = ["meshtool convert",
+                f"-imsh={initial_mesh}",
+                f"-omsh={initial_mesh}",
+                "-ifmt=carp_bin",
+                "-ofmt=carp_txt"]
+            
+            cmd_str = ' '.join(cmd)
+            os.system(cmd_str)  
     
-    if not only_setup:
         initial_pts = read_pts(f"{initial_mesh}.pts")
         print("Read.")
         pv_msh_init = carp_to_pyvista(initial_pts,elem_file)
@@ -97,21 +96,21 @@ def main(args):
             os.system(f"cp {initial_mesh}.blon {unloaded_meshname}.blon")
             print("Copied")
       
-
-            ### Read unloaded pts
-
-            if not os.path.exists(f"{unloaded_meshname}.pts"):
-
-                cmd = ["meshtool convert",
-                      f"-imsh={unloaded_meshname}",
-                      f"-omsh={unloaded_meshname}",
-                       "-ifmt=carp_bin",
-                       "-ofmt=carp_txt"]
-                
-                cmd_str = ' '.join(cmd)
-                os.system(cmd_str)  
-            
             if not only_setup:
+                ### Read unloaded pts
+
+                if not os.path.exists(f"{unloaded_meshname}.pts"):
+
+                    cmd = ["meshtool convert",
+                        f"-imsh={unloaded_meshname}",
+                        f"-omsh={unloaded_meshname}",
+                        "-ifmt=carp_bin",
+                        "-ofmt=carp_txt"]
+                    
+                    cmd_str = ' '.join(cmd)
+                    os.system(cmd_str)  
+            
+            
                 unloaded_pts = read_pts(f"{unloaded_meshname}.pts")
                 print("Read.")
                 
@@ -244,10 +243,10 @@ def main(args):
             
     print("Cleaning...")
 
-    os.syste(f"rm {basefolder}/unloaded/*.elem")
-    os.syste(f"rm {basefolder}/unloaded/*.pts")
-    os.syste(f"rm {basefolder}/unloaded/*.lon")
-    os.system(f"cp -r {basefolder}/unloaded {initial_mesh_path}/.")
+    os.makedirs(f"{initial_mesh_path}/unloaded", exist_ok=True)
+    os.system(f"cp {basefolder}/unloaded/*.belem {initial_mesh_path}/unloaded/.")
+    os.system(f"cp {basefolder}/unloaded/*.bpts {initial_mesh_path}/unloaded/.")
+    os.system(f"cp {basefolder}/unloaded/*.blon {initial_mesh_path}/unloaded/.")
 
     os.system(f"rm {initial_mesh}.pts")
     os.system(f"rm {initial_mesh}.elem")
