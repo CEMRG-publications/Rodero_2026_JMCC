@@ -244,6 +244,9 @@ def main(args):
             
     print("Cleaning...")
 
+    os.syste(f"rm {basefolder}/unloaded/*.elem")
+    os.syste(f"rm {basefolder}/unloaded/*.pts")
+    os.syste(f"rm {basefolder}/unloaded/*.lon")
     os.system(f"cp -r {basefolder}/unloaded {initial_mesh_path}/.")
 
     os.system(f"rm {initial_mesh}.pts")
