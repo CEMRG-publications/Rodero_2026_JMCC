@@ -64,14 +64,19 @@ def main(args):
     data_folder        = f"{args.basefolder}/data"
     output_folder      = f"{args.basefolder}/output"
     figures_path       = f"{args.basefolder}/figures"
+    BCL = args.BCL
 
     os.makedirs(output_folder, exist_ok=True)
 
-    X       = np.loadtxt(f"{data_folder}/X_mechanics.txt")
-    xlabels = np.loadtxt(f"{data_folder}/xlabels.txt", dtype=str)
+    if not os.path.isfile(f"{data_folder}/X_mechanics.txt"):
+        X       = np.loadtxt(f"{data_folder}/X.txt")
+    else:
+        X       = np.loadtxt(f"{data_folder}/X_mechanics.txt")
 
-    BCL = 1000
-
+    if os.path.isfile(f"{data_folder}/xlabels.txt"):
+        xlabels = np.loadtxt(f"{data_folder}/xlabels.txt", dtype=str)
+    else:
+        xlabels = np.loadtxt(f"{data_folder}/xlabels_mechanics.txt", dtype=str)
 
     fourchamber_output.cycle_simulation_summary(output_folder    = simulations_folder,
                                                 BCL              = BCL,
@@ -113,13 +118,14 @@ def main(args):
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Script to generate a pdf and a txt file showing the simulations that worked. It also plots the simulations that crashed and the ones who didn't in the parameter space and plots all the pv loops for the ones that worked.")
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument('--basefolder', type=str, required=True,
                         default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations")
     parser.add_argument('--first_simulation', type=int, required=True, default=0)
     parser.add_argument('--last_simulation', type=int, required=True, default=99)
+    parser.add_argument('--BCL', type=int, required=True, default=1000)
 
     args = parser.parse_args()
 
