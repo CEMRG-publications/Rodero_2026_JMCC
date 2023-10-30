@@ -65,6 +65,8 @@ def main(args):
     output_folder      = f"{args.basefolder}/output"
     figures_path       = f"{args.basefolder}/figures"
     BCL = args.BCL
+    first_simulation = args.first_simulation
+    last_simulation = args.last_simulation
 
     os.makedirs(output_folder, exist_ok=True)
 
