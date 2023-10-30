@@ -22,6 +22,16 @@ The recommended installation is as follows:
  pip install vtk --extra-index-url https://wheels.vtk.org trame vtk-osmesa
  ```
 
-## plot_crashed_cycles
+ # Steps
+
+ 1. Sample the parameter space following the notebook `0_sampling.ipynb`
+ 2. Generate the unloading scripts following the notebook `1_generate_unloading_script.ipynb`
+ 3. In ARCHER2: Take a `.slrm` file and run `check_directories_and_files.sh` to make sure you are not missing any file.
+ 4. In ARCHER2: Check which unloadings work using `check_unloading_convergence_archer2.py`
+ 5. In ARCHER2: Take screenshots of the unloading configurations using `screenshot_unloading_archer2.py`. This script is necessary to prepare the folder structure for the cycle simulations. You can run it to prepare the folders without taking the screenshots.
+ 6. Run cell simulations and generate the cycle simulations following the notebook `2_run_cell_generate_cycle.ipynb`
+ 7. Repeat step 3. with the cycle simulation slrms.
+
+### plot_crashed_cycles
 
 The set of scripts in this file plots different ways of analysing crashed simulations with the aim of gaining insight into the reasons.
