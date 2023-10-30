@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 from SIMULATION_library import fourchamber_output
 
-def plot_crashed_simulations(X, xlabels, output_mask, figure_savepath):
+def plot_crashed_simulations(X, xlabels, output_mask, figure_savepath, first_simulation, last_simulation):
 
     num_points, num_variables = X.shape
 
@@ -20,8 +20,8 @@ def plot_crashed_simulations(X, xlabels, output_mask, figure_savepath):
     # Iterate through each pair of variables and create scatter plots
     for i, ax_row in enumerate(axes):
         for j, ax in enumerate(ax_row):
-            x_var = X[:, j]
-            y_var = X[:, i]
+            x_var = X[first_simulation:(last_simulation+1), j]
+            y_var = X[first_simulation:(last_simulation+1), i]
 
             # Plot the data points with different colors based on the output_mask values
             ax.scatter(
@@ -106,7 +106,9 @@ def main(args):
     plot_crashed_simulations(X               = X,
                              xlabels         = xlabels,
                              output_mask     = output_mask,
-                             figure_savepath = figures_path) 
+                             figure_savepath = figures_path,
+                             first_simulation =  first_simulation,
+                             last_simulation = last_simulation) 
     
     fourchamber_output.plot_pvloops_all(datafolder    = output_folder,
                                         output_folder = simulations_folder,
