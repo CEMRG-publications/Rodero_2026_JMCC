@@ -29,7 +29,6 @@ def main(args):
 
     unloaded_volumes = np.loadtxt(os.path.join(basefolder,"unloaded_volumes.txt"),dtype=float)
 
-
     file_exists(f"{initial_mesh}.belem")
     file_exists(f"{initial_mesh}.blon")
 
@@ -91,9 +90,21 @@ def main(args):
             unloaded_meshname = os.path.join(basefolder,"unloaded/myocardium_AV_FEC_BB_lvrv_unloaded_"+str(i))
             
             print("Copying files...")
-            os.system(f"cp {simulation_folder}/cur_reference.bpts {unloaded_meshname}.bpts")
-            os.system(f"cp {initial_mesh}.belem {unloaded_meshname}.belem")
-            os.system(f"cp {initial_mesh}.blon {unloaded_meshname}.blon")
+            if os.path.isfile(f"{simulation_folder}/cur_reference.bpts"):
+                os.system(f"cp {simulation_folder}/cur_reference.bpts {unloaded_meshname}.bpts")
+                os.system(f"cp {initial_mesh}.belem {unloaded_meshname}.belem")
+                os.system(f"cp {initial_mesh}.blon {unloaded_meshname}.blon")
+            elif os.path.isfile(f"{simulation_folder}/cur_reference.pts"):
+                os.system(f"cp {simulation_folder}/cur_reference.pts {unloaded_meshname}.pts")
+                os.system(f"cp {initial_mesh}.elem {unloaded_meshname}.elem")
+                os.system(f"cp {initial_mesh}.lon {unloaded_meshname}.lon")
+                cmd = ["meshtool convert",
+                        f"-imsh={unloaded_meshname}",
+                        f"-omsh={unloaded_meshname}",
+                        "-ifmt=carp_txt",
+                        "-ofmt=carp_bin"]
+                os.system(f"rm {unloaded_meshname}.lon {unloaded_meshname}.pts {unloaded_meshname}.elem")
+            
             print("Copied")
       
             if not only_setup:
