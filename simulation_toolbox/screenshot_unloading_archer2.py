@@ -103,6 +103,8 @@ def main(args):
                         f"-omsh={unloaded_meshname}",
                         "-ifmt=carp_txt",
                         "-ofmt=carp_bin"]
+                cmd_str = ' '.join(cmd)
+                os.system(cmd_str) 
                 os.system(f"rm {unloaded_meshname}.lon {unloaded_meshname}.pts {unloaded_meshname}.elem")
             
             print("Copied")
