@@ -69,11 +69,21 @@ def plot_statistics_file(basefolder):
     mean_values = np.mean(data, axis=0)
     std_values = np.std(data, axis=0)
 
-    # Calculate ejection fractions
-    LVEF = 100 * (mean_values[labels.index('LVedv')] - mean_values[labels.index('LVesv')]) / mean_values[labels.index('LVedv')]
-    RVEF = 100 * (mean_values[labels.index('RVedv')] - mean_values[labels.index('RVesv')]) / mean_values[labels.index('RVedv')]
-    LAEF = 100 * (mean_values[labels.index('LAedv')] - mean_values[labels.index('LAesv')]) / mean_values[labels.index('LAedv')]
-    RAEF = 100 * (mean_values[labels.index('RAedv')] - mean_values[labels.index('RAesv')]) / mean_values[labels.index('RAedv')]
+    # Calculate ejection fractions for all cases
+    LVEF_all = 100 * (data[:, labels.index('LVedv')] - data[:, labels.index('LVesv')]) / data[:, labels.index('LVedv')]
+    RVEF_all = 100 * (data[:, labels.index('RVedv')] - data[:, labels.index('RVesv')]) / data[:, labels.index('RVedv')]
+    LAEF_all = 100 * (data[:, labels.index('LAedv')] - data[:, labels.index('LAesv')]) / data[:, labels.index('LAedv')]
+    RAEF_all = 100 * (data[:, labels.index('RAedv')] - data[:, labels.index('RAesv')]) / data[:, labels.index('RAedv')]
+
+    # Calculate mean and standard deviation of ejection fractions
+    mean_LVEF = np.mean(LVEF_all)
+    std_LVEF = np.std(LVEF_all)
+    mean_RVEF = np.mean(RVEF_all)
+    std_RVEF = np.std(RVEF_all)
+    mean_LAEF = np.mean(LAEF_all)
+    std_LAEF = np.std(LAEF_all)
+    mean_RAEF = np.mean(RAEF_all)
+    std_RAEF = np.std(RAEF_all)
 
     # Save results to a file
     with open(f'{basefolder}/data/output_statistics.txt', 'w') as file:
@@ -83,10 +93,10 @@ def plot_statistics_file(basefolder):
 
         # Add ejection fractions to the file
         file.write("\nEjection Fractions\n")
-        file.write(f"LVEF\t{LVEF:.2f}\n")
-        file.write(f"RVEF\t{RVEF:.2f}\n")
-        file.write(f"LAEF\t{LAEF:.2f}\n")
-        file.write(f"RAEF\t{RAEF:.2f}\n")
+        file.write(f"LVEF\t{mean_LVEF:.2f}\t{std_LVEF:.2f}\n")
+        file.write(f"RVEF\t{mean_RVEF:.2f}\t{std_RVEF:.2f}\n")
+        file.write(f"LAEF\t{mean_LAEF:.2f}\t{std_LAEF:.2f}\n")
+        file.write(f"RAEF\t{mean_RAEF:.2f}\t{std_RAEF:.2f}\n")
 
 def main(args):
 
