@@ -150,6 +150,8 @@ def main(args):
                                         mask_file     = f"{output_folder}/output_mask.txt",
                                         NBEATS        = 5,
                                         figname       = f"{figures_path}/all_pv_loops.png")
+    
+    plot_statistics_file(basefolder=args.basefolder)
 
 if __name__ == '__main__':
 
