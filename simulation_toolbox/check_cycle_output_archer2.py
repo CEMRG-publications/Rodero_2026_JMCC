@@ -158,7 +158,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--basefolder', type=str, required=True,
                         default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations",
-                        desc='Path to the folder where the simulations, data, and figure folders are.')
+                        help='Path to the folder where the simulations, data, and figure folders are.')
     parser.add_argument('--first_simulation', type=int, required=True, default=0)
     parser.add_argument('--last_simulation', type=int, required=True, default=99)
     parser.add_argument('--BCL', type=int, required=False, default=1000)
