@@ -57,6 +57,37 @@ def plot_crashed_simulations(X, xlabels, output_mask, figure_savepath, first_sim
 
     plt.savefig(os.path.join(figure_savepath,"success_crashed.png"), dpi=300)
 
+def plot_statistics_file(basefolder):
+    # Load data from Y.txt
+    data = np.loadtxt(f'{basefolder}/data/Y.txt')
+
+    # Load labels from ylabels.txt
+    with open(f'{basefolder}/data/ylabels.txt', 'r') as file:
+        labels = file.read().splitlines()
+
+    # Calculate mean and standard deviation for each variable
+    mean_values = np.mean(data, axis=0)
+    std_values = np.std(data, axis=0)
+
+    # Calculate ejection fractions
+    LVEF = 100 * (mean_values[labels.index('LVedv')] - mean_values[labels.index('LVesv')]) / mean_values[labels.index('LVedv')]
+    RVEF = 100 * (mean_values[labels.index('RVedv')] - mean_values[labels.index('RVesv')]) / mean_values[labels.index('RVedv')]
+    LAEF = 100 * (mean_values[labels.index('LAedv')] - mean_values[labels.index('LAesv')]) / mean_values[labels.index('LAedv')]
+    RAEF = 100 * (mean_values[labels.index('RAedv')] - mean_values[labels.index('RAesv')]) / mean_values[labels.index('RAedv')]
+
+    # Save results to a file
+    with open(f'{basefolder}/data/output_statistics.txt', 'w') as file:
+        file.write("Variable\tMean\tStd\n")
+        for label, mean, std in zip(labels, mean_values, std_values):
+            file.write(f"{label}\t{mean:.2f}\t{std:.2f}\n")
+
+        # Add ejection fractions to the file
+        file.write("\nEjection Fractions\n")
+        file.write(f"LVEF\t{LVEF:.2f}\n")
+        file.write(f"RVEF\t{RVEF:.2f}\n")
+        file.write(f"LAEF\t{LAEF:.2f}\n")
+        file.write(f"RAEF\t{RAEF:.2f}\n")
+
 def main(args):
 
     simulations_folder = f"{args.basefolder}/simulations"
@@ -126,7 +157,8 @@ if __name__ == '__main__':
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument('--basefolder', type=str, required=True,
-                        default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations")
+                        default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations",
+                        desc='Path to the folder where the simulations, data, and figure folders are.')
     parser.add_argument('--first_simulation', type=int, required=True, default=0)
     parser.add_argument('--last_simulation', type=int, required=True, default=99)
     parser.add_argument('--BCL', type=int, required=False, default=1000)
