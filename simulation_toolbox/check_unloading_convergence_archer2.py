@@ -18,7 +18,7 @@ def main(args):
     N = args.n_simulations
 
     file_exists(os.path.join(basefolder,"../data/X_mechanics.txt"))
-    file_exists(os.path.join(basefolder,"../data/xlabels.txt"))
+    file_exists(os.path.join(basefolder,"../data/xlabels_mechanics.txt"))
 
     os.system("mkdir -p "+ os.path.join(basefolder,"unloaded/"))
     os.system("mkdir -p "+ os.path.join(basefolder,"../figures/"))
