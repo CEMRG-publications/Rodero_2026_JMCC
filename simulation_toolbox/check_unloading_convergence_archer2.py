@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 
 from Historia.shared.design_utils import read_labels
 from SIMULATION_library.fourchamber_output import check_fourchamber_unloading
-from GSA_library.pyvista_utils import visualise_unloaded_configuration
 
 def file_exists(full_file_path):
     if not os.path.isfile(full_file_path):
