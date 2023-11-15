@@ -31,10 +31,10 @@ def main(args):
     
     unloaded_volumes = np.loadtxt(os.path.join(basefolder,"unloaded_volumes.txt"),dtype=float)
 
-    X = np.loadtxt(os.path.join(basefolder,"../data/X.txt"),dtype=float)
+    X = np.loadtxt(os.path.join(basefolder,"../data/X_mechanics.txt"),dtype=float)
     mask = np.sum(unloaded_volumes,axis=1)
 
-    xlabels = read_labels(os.path.join(basefolder,"../data/xlabels.txt"))
+    xlabels = read_labels(os.path.join(basefolder,"../data/xlabels_mechanics.txt"))
 
     idx_ok = np.where(mask!=0)[0]
     idx_notok = np.where(mask==0)[0]
