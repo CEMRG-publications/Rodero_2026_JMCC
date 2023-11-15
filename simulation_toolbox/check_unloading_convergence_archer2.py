@@ -14,8 +14,8 @@ def file_exists(full_file_path):
 
 def main(args):
 
-    basefolder = args.basefolder
-    path2figure = args.path2figure
+    basefolder = args.path2simulations
+    path2figure = args.path2figures
     N = args.n_simulations
 
     file_exists(os.path.join(basefolder,"../data/X_mechanics.txt"))
@@ -71,9 +71,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Script to check which unloading simulations worked.")
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
 
-    parser.add_argument('--basefolder', type=str, required=True,
+    parser.add_argument('--path2simulations', type=str, required=True,
                         default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations")
-    parser.add_argument('--path2figure', type=str, required=True)
+    parser.add_argument('--path2figures', type=str, required=True)
     parser.add_argument('--n_simulations', type=int, required=False, default=10)
 
     args = parser.parse_args()
