@@ -2,6 +2,7 @@ import argparse
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from pandas import read_csv
 
 from SIMULATION_library import fourchamber_output
 
@@ -98,13 +99,48 @@ def plot_statistics_file(basefolder):
         file.write(f"LAEF\t{mean_LAEF:.2f}\t{std_LAEF:.2f}\n")
         file.write(f"RAEF\t{mean_RAEF:.2f}\t{std_RAEF:.2f}\n")
 
+def print_PV_loops_all_cycles(path_to_simulation, BCL, case_number):
+    
+    chambers = ['LV', 'RV', 'LA', 'RA']
+    colours = ['red', 'blue', '#F6BE00', 'green']
+    
+    ax = plt.figure(figsize=(10,10), constrained_layout=True).subplots(2, 2)
+    ax = ax.flatten()
+    n_cycles = 5
+
+    for j, chamber_name in enumerate(chambers):
+        
+        for n in range(n_cycles):
+
+            chamber_structure = read_csv(os.path.join(path_to_simulation,'cav.'+chamber_name+'.csv'), delimiter=",",
+                          skipinitialspace=True, header=0, comment='#')
+            time = np.array(chamber_structure['Time'])
+
+    #         start = time[-1]-BCL
+            start = time[0] + n*BCL
+            end = start + BCL
+
+            plot_time = np.where((time>=start) & (time<end))[0]
+
+            volume = np.array(chamber_structure['Volume'][plot_time])
+            pressure = np.array(chamber_structure['Pressure'][plot_time])
+            ax[j].plot(volume,pressure,color=colours[j],linewidth=3.0, alpha = 0.1+n*((1-0.1)/n_cycles))
+            ax[j].set_xlabel(chamber_name+' volume [mL]')
+            ax[j].set_ylabel(chamber_name+' pressure [mmHg]')
+        EF = round(100*(np.max(volume)-np.min(volume))/np.max(volume),2)
+        ax[j].text(0.95, 0.95, 'EF: ' + str(EF) + "%", horizontalalignment='right', verticalalignment='top',
+				transform=ax[j].transAxes)
+    plt.suptitle(f"Simulation #{case_number}", fontsize=20, weight='bold')
+    plt.savefig(f"{path_to_simulation}/../../figures/{case_number}_pv_loops_all_cycles.png",dpi=300)
+
 def main(args):
 
-    simulations_folder = f"{args.basefolder}/simulations"
+    basefolder        = args.basefolder
+    simulations_folder = f"{basefolder}/simulations"
     unloaded_volumes   = f"{simulations_folder}/unloaded_volumes.txt"
-    data_folder        = f"{args.basefolder}/data"
-    output_folder      = f"{args.basefolder}/output"
-    figures_path       = f"{args.basefolder}/figures"
+    data_folder        = f"{basefolder}/data"
+    output_folder      = f"{basefolder}/output"
+    figures_path       = f"{basefolder}/figures"
     BCL = args.BCL
     first_simulation = args.first_simulation
     last_simulation = args.last_simulation
@@ -162,6 +198,14 @@ def main(args):
                                         figname       = f"{figures_path}/all_pv_loops.png")
     
     plot_statistics_file(basefolder=args.basefolder)
+
+    for index, value in enumerate(output_mask):
+        # If the value is 1, plot the pv loop
+        if value == 1:
+               print(f"Plotting PV loops of simulation #{index}...")
+               path2simulation = f"{simulations_folder}/cycle_{index}"
+               
+               print_PV_loops_all_cycles(path_to_simulation = path2simulation,BCL = BCL, case_number=index)
 
 if __name__ == '__main__':
 
