@@ -6,8 +6,10 @@ import pandas as pd
 
 def plot_total_crashed(X, xlabels, output_mask, figure_savepath):
 
-    _, num_variables = X.shape
+    num_samples, num_variables = X.shape
 
+    if num_samples > len(output_mask):
+        X = X[:len(output_mask),:]
     # Calculate the percentage of 0's in the output mask
     crashed_simulations = np.count_nonzero(output_mask!=1)
     percentage_zeros = 100*crashed_simulations/len(output_mask)
