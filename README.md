@@ -31,7 +31,5 @@ The recommended installation is as follows:
  5. In ARCHER2: Take screenshots of the unloading configurations using `screenshot_unloading_archer2.py`. This script is necessary to prepare the folder structure for the cycle simulations. You can run it to prepare the folders without taking the screenshots.
  6. Run cell simulations and generate the cycle simulations following the notebook `2_run_cell_generate_cycle.ipynb`
  7. Repeat step 3. with the cycle simulation slrms.
-
-### plot_crashed_cycles
-
-The set of scripts in this file plots different ways of analysing crashed simulations with the aim of gaining insight into the reasons.
+ 5. Run `check_cycle_output_archer2.py`.
+5. If you want to analyse the crashed simulation, run `plot_crashed_cycles`. The set of scripts in this file plots different ways of analysing crashed simulations with the aim of gaining insight into the reasons.
