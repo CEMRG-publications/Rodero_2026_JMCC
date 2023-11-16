@@ -60,7 +60,10 @@ def plot_total_crashed(X, xlabels, output_mask, figure_savepath):
 
 def plot_crashed_cycles(X, xlabels, output_mask, figure_savepath):
 
-    _, num_variables = X.shape
+    num_samples, num_variables = X.shape
+
+    if num_samples > len(output_mask):
+        X = X[:len(output_mask),:]
 
     # Calculate the percentage of 0's in the output mask
     crashed_simulations = np.count_nonzero(output_mask==0)
@@ -185,7 +188,10 @@ def plot_crashed_cycles_only_by_phase(X, xlabels, output_mask, figure_savepath, 
     array_phase = np.array(array_phase)
 
 
-    _, num_variables = X.shape
+    num_samples, num_variables = X.shape
+
+    if num_samples > len(output_mask):
+        X = X[:len(output_mask),:]
 
 
     # Create pair-plots
@@ -298,8 +304,10 @@ def plot_crashed_cycles_only_by_time(X, xlabels, output_mask, figure_savepath, s
     
     array_time = np.array(array_time)
 
-    _, num_variables = X.shape
+    num_samples, num_variables = X.shape
 
+    if num_samples > len(output_mask):
+        X = X[:len(output_mask),:]
 
     # Create pair-plots
     _, axes = plt.subplots(
