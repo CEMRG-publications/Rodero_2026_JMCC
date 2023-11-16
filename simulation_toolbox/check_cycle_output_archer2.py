@@ -86,7 +86,7 @@ def plot_statistics_file(basefolder):
     std_RAEF = np.std(RAEF_all)
 
     # Save results to a file
-    with open(f'{basefolder}/data/output_statistics.txt', 'w') as file:
+    with open(f'{basefolder}/output/output_statistics.txt', 'w') as file:
         file.write("Variable\tMean\tStd\n")
         for label, mean, std in zip(labels, mean_values, std_values):
             file.write(f"{label}\t{mean:.2f}\t{std:.2f}\n")
