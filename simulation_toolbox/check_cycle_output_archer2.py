@@ -205,6 +205,16 @@ def main(args):
                                         NBEATS        = 5,
                                         figname       = f"{figures_path}/all_pv_loops.png")
     
+    Y_array = []
+
+    for field in ['mechanics','EP']:
+        Y_ = np.loadtxt(f"{data_folder}/Y_{field}.txt", dtype=float)
+        Y_array.append(Y_)
+
+    Y = np.concatenate(Y_array, axis=1)
+
+    np.savetxt(f"{data_folder}/Y.txt",X,fmt="%g")
+    
     plot_statistics_file(basefolder=args.basefolder)
 
     for index, value in enumerate(output_mask):
