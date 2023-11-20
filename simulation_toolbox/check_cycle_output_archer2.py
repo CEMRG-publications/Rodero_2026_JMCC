@@ -3,6 +3,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from pandas import read_csv
+import json
 
 from SIMULATION_library import fourchamber_output
 
@@ -180,11 +181,13 @@ def main(args):
                                     visualise     = False)
     
     output_mask = np.loadtxt(f"{output_folder}/output_mask.txt")
+    with open(f"{basefolder}/json_files/tags.json","r") as f:
+        tags = json.load(f)
 
     fourchamber_output.electrophysiology_cycle_output(datafolder = output_folder,
 								   output_folder = simulations_folder,
 								   elem_file     = elem_file,
-								   tags          = f"{basefolder}/json_files/tags.json",
+								   tags          = tags,
 								   basename      = "cycle_",
 								   output_file   = "Y_EP.txt")
 
