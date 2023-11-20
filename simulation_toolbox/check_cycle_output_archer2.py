@@ -236,7 +236,7 @@ if __name__ == '__main__':
     parser.add_argument('--first_simulation', type=int, required=True, default=0)
     parser.add_argument('--last_simulation', type=int, required=True, default=99)
     parser.add_argument('--BCL', type=int, required=False, default=1000)
-    parser.add_argument('--elem_file', type=str, help="Path to the elem file of the mesh to compute the activation times.")
+    parser.add_argument('--elem_file', type=str, help="Path to the elem file of the mesh to compute the activation times.", required=True)
 
     args = parser.parse_args()
 
