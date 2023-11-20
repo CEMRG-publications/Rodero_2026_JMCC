@@ -189,7 +189,7 @@ def main(args):
 								   elem_file     = elem_file,
 								   tags          = tags,
 								   basename      = "cycle_",
-								   output_file   = "Y_EP.txt")
+								   output_file   = f"{data_folder}/Y_EP.txt")
 
     
         
