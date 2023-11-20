@@ -144,6 +144,7 @@ def main(args):
     BCL = args.BCL
     first_simulation = args.first_simulation
     last_simulation = args.last_simulation
+    elem_file = args.elem_file
 
     os.makedirs(output_folder, exist_ok=True)
 
@@ -175,10 +176,17 @@ def main(args):
                                     AVD           = 100*[100],
                                     NBEATS        = 5,
                                     basename      = "cycle_",
-                                    output_file   = f"{data_folder}/Y.txt",
+                                    output_file   = f"{data_folder}/Y_mechanics.txt",
                                     visualise     = False)
     
     output_mask = np.loadtxt(f"{output_folder}/output_mask.txt")
+
+    fourchamber_output.electrophysiology_cycle_output(datafolder = output_folder,
+								   output_folder = simulations_folder,
+								   elem_file     = elem_file,
+								   tags          = f"{basefolder}/json_files/tags.json",
+								   basename      = "cycle_",
+								   output_file   = "Y_EP.txt")
 
     
         
@@ -218,6 +226,7 @@ if __name__ == '__main__':
     parser.add_argument('--first_simulation', type=int, required=True, default=0)
     parser.add_argument('--last_simulation', type=int, required=True, default=99)
     parser.add_argument('--BCL', type=int, required=False, default=1000)
+    parser.add_argument('--elem_file', type=str, help="Path to the elem file of the mesh to compute the activation times.")
 
     args = parser.parse_args()
 
