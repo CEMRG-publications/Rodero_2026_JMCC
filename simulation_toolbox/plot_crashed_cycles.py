@@ -389,7 +389,7 @@ def main(args):
 
     os.makedirs(output_folder, exist_ok=True)
 
-    X       = np.loadtxt(f"{data_folder}/X_mechanics.txt")
+    X       = np.loadtxt(f"{data_folder}/X.txt")
     xlabels = np.loadtxt(f"{data_folder}/xlabels.txt", dtype=str)
     
     output_mask_cycle = np.loadtxt(f"{output_folder}/output_mask.txt")
