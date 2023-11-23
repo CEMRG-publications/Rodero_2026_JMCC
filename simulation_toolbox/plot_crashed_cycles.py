@@ -6,7 +6,9 @@ import pandas as pd
 
 def plot_total_crashed(X, xlabels, output_mask, figure_savepath, first_simulation, last_simulation):
 
-    output_mask = [i for i in output_mask if i >= 0]
+    output_mask_old = output_mask
+    output_mask = []
+    output_mask = [output_mask_old[i] for i in output_mask_old if output_mask_old[i] >= 0]
 
     num_samples, num_variables = X.shape
 
