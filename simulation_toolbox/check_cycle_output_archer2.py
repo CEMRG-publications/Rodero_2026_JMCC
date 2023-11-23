@@ -218,7 +218,7 @@ def main(args):
 
     Y = np.concatenate(Y_array, axis=1)
 
-    np.savetxt(f"{data_folder}/Y.txt",X,fmt="%g")
+    np.savetxt(f"{data_folder}/Y.txt",Y,fmt="%g")
     
     plot_statistics_file(basefolder=args.basefolder)
 
