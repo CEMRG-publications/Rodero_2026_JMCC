@@ -189,12 +189,12 @@ def main(args):
 
     
         
-    plot_crashed_simulations(X               = X,
-                             xlabels         = xlabels,
-                             output_mask     = output_mask,
-                             figure_savepath = figures_path,
-                             first_simulation =  first_simulation,
-                             last_simulation = last_simulation) 
+    # plot_crashed_simulations(X               = X,
+    #                          xlabels         = xlabels,
+    #                          output_mask     = output_mask,
+    #                          figure_savepath = figures_path,
+    #                          first_simulation =  first_simulation,
+    #                          last_simulation = last_simulation) 
     
     fourchamber_output.plot_pvloops_all(datafolder    = output_folder,
                                         output_folder = simulations_folder,
