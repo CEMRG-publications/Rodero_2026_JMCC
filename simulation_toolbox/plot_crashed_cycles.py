@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
-def plot_total_crashed(X, xlabels, output_mask, figure_savepath):
+def plot_total_crashed(X, xlabels, output_mask, figure_savepath, first_simulation, last_simulation):
 
     num_samples, num_variables = X.shape
 
@@ -23,8 +23,8 @@ def plot_total_crashed(X, xlabels, output_mask, figure_savepath):
     # Iterate through each pair of variables and create scatter plots
     for i, ax_row in enumerate(axes):
         for j, ax in enumerate(ax_row):
-            x_var = X[:, j]
-            y_var = X[:, i]
+            x_var = X[first_simulation:(last_simulation+1), j]
+            y_var = X[first_simulation:(last_simulation+1), i]
 
             # Plot the data points with different colors based on the output_mask values
             ax.scatter(
@@ -59,6 +59,7 @@ def plot_total_crashed(X, xlabels, output_mask, figure_savepath):
     axes[0, -1].legend(loc=[1,0])
 
     plt.savefig(os.path.join(figure_savepath,"success_crashed_total.png"), dpi=300, bbox_inches='tight')
+
 
 def plot_crashed_cycles(X, xlabels, output_mask, figure_savepath):
 
