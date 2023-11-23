@@ -57,6 +57,8 @@ def plot_crashed_simulations(X, xlabels, output_mask, figure_savepath, first_sim
     # Add a common legend for all the subplots
     axes[0, -1].legend(loc=[1,0])
 
+    os.makedirs(figure_savepath, exist_ok=True)
+
     plt.savefig(os.path.join(figure_savepath,"success_crashed.png"), dpi=300)
 
 def plot_statistics_file(basefolder):
