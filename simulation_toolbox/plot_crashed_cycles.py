@@ -387,6 +387,8 @@ def main(args):
     output_folder      = f"{args.basefolder}/output"
     figures_path       = f"{args.basefolder}/figures"
     sims_folder        = f"{args.basefolder}/simulations"
+    first_simulation   = args.first_simulation
+    last_simulation    = args.last_simulation
 
     os.makedirs(output_folder, exist_ok=True)
 
@@ -403,7 +405,9 @@ def main(args):
     plot_total_crashed(X               = X,
                        xlabels         = xlabels,
                        output_mask     = output_mask_cycle,
-                       figure_savepath = figures_path) 
+                       figure_savepath = figures_path,
+                       first_simulation= first_simulation,
+                       last_simulation = last_simulation) 
 
     plot_crashed_cycles_only_by_phase(X               = X, 
                                       xlabels         = xlabels, 
@@ -449,6 +453,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--basefolder', type=str, required=True,
                         default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations")
+    parser.add_argument('--first_simulation', type=int, required=True, default=0)
+    parser.add_argument('--last_simulation', type=int, required=True, default=99)
 
     args = parser.parse_args()
 
