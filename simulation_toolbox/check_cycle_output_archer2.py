@@ -151,15 +151,9 @@ def main(args):
 
     os.makedirs(output_folder, exist_ok=True)
 
-    if not os.path.isfile(f"{data_folder}/X_mechanics.txt"):
-        X       = np.loadtxt(f"{data_folder}/X.txt")
-    else:
-        X       = np.loadtxt(f"{data_folder}/X_mechanics.txt")
+    X       = np.loadtxt(f"{data_folder}/X.txt")
 
-    if os.path.isfile(f"{data_folder}/xlabels.txt"):
-        xlabels = np.loadtxt(f"{data_folder}/xlabels.txt", dtype=str)
-    else:
-        xlabels = np.loadtxt(f"{data_folder}/xlabels_mechanics.txt", dtype=str)
+    xlabels = np.loadtxt(f"{data_folder}/xlabels.txt", dtype=str)
 
     fourchamber_output.cycle_simulation_summary(output_folder    = simulations_folder,
                                                 BCL              = BCL,
