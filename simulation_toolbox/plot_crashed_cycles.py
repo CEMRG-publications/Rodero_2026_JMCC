@@ -145,21 +145,24 @@ def plot_crashed_cycles_only_by_phase(X, xlabels, output_mask, figure_savepath, 
         "IVC" : 0,
         "ejec": 1,
         "IVR" : 2,
-        "fill": 3
+        "fill": 3,
+        "load": 4
     }
 
     colors_by_phase = {
         "IVC" : '#d55e00',
         "ejec": '#cc79a7',
         "IVR" : '#0072b2',
-        "fill": '#f0e442'
+        "fill": '#f0e442',
+        "load": '#000000'
     }
 
     marker_by_phase = {
         "IVC" : '.',
         "ejec": 'p',
         "IVR" : 'x',
-        "fill": 'd'
+        "fill": 'd',
+        "load": 's'
     }
 
     color_array = []
@@ -175,7 +178,7 @@ def plot_crashed_cycles_only_by_phase(X, xlabels, output_mask, figure_savepath, 
             df = pd.read_csv(csv_file, skiprows=[1])
             header_without_spaces = [x.strip(' ') for x in df.columns.values.tolist()]
             df.columns = header_without_spaces
-            last_state = df['State'].iloc[-2].strip(' ')
+            last_state = df['State'].iloc[-1].strip(' ')
             last_time = df['Time'].iloc[-1]
 
             array_phase.append(phases_indices[last_state])
