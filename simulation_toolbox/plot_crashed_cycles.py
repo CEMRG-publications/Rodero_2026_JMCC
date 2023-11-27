@@ -175,7 +175,7 @@ def plot_crashed_cycles_only_by_phase(X, xlabels, output_mask, figure_savepath, 
             df = pd.read_csv(csv_file, skiprows=[1])
             header_without_spaces = [x.strip(' ') for x in df.columns.values.tolist()]
             df.columns = header_without_spaces
-            last_state = df['State'].iloc[-1].strip(' ')
+            last_state = df['State'].iloc[-2].strip(' ')
             last_time = df['Time'].iloc[-1]
 
             array_phase.append(phases_indices[last_state])
