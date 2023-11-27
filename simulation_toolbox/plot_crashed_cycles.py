@@ -122,17 +122,15 @@ def plot_crashed_cycles(X, xlabels, output_mask, figure_savepath):
 
     plt.savefig(os.path.join(figure_savepath,"success_crashed_cycle.png"), dpi=300, bbox_inches='tight')
 
-def plot_crashed_cycles_only_by_phase(X, xlabels, output_mask, figure_savepath, sims_folder, chamber):
+def plot_crashed_cycles_only_by_phase(X, xlabels, output_mask, figure_savepath, sims_folder, chamber, bcl):
 
     files_per_last_timestep = {
-        "First beat" : np.array([0, 0, 0, 0]),
-        "Second beat": np.array([0, 0, 0, 0]),
-        "Third beat" : np.array([0, 0, 0, 0]),
-        "Fourth beat": np.array([0, 0, 0, 0]),
-        "Fifth beat" : np.array([0, 0, 0, 0])
+        "First beat" : np.array([0, 0, 0, 0, 0]),
+        "Second beat": np.array([0, 0, 0, 0, 0]),
+        "Third beat" : np.array([0, 0, 0, 0, 0]),
+        "Fourth beat": np.array([0, 0, 0, 0, 0]),
+        "Fifth beat" : np.array([0, 0, 0, 0, 0])
     }
-
-    bcl = 1000.
 
     beats_indices = {
         0: "First beat",
@@ -396,6 +394,7 @@ def main(args):
     sims_folder        = f"{args.basefolder}/simulations"
     first_simulation   = args.first_simulation
     last_simulation    = args.last_simulation
+    BCL                = args.bcl
 
     os.makedirs(output_folder, exist_ok=True)
 
@@ -421,28 +420,32 @@ def main(args):
                                       output_mask     = output_mask_cycle, 
                                       figure_savepath = figures_path,
                                       sims_folder     = sims_folder,
-                                      chamber         = "LV")
+                                      chamber         = "LV",
+                                      bcl             = BCL)
     
     plot_crashed_cycles_only_by_phase(X               = X, 
                                       xlabels         = xlabels, 
                                       output_mask     = output_mask_cycle, 
                                       figure_savepath = figures_path,
                                       sims_folder     = sims_folder,
-                                      chamber         = "RV")
+                                      chamber         = "RV",
+                                      bcl             = BCL)
     
     plot_crashed_cycles_only_by_phase(X               = X, 
                                       xlabels         = xlabels, 
                                       output_mask     = output_mask_cycle, 
                                       figure_savepath = figures_path,
                                       sims_folder     = sims_folder,
-                                      chamber         = "LA")
+                                      chamber         = "LA",
+                                      bcl             = BCL)
     
     plot_crashed_cycles_only_by_phase(X               = X, 
                                       xlabels         = xlabels, 
                                       output_mask     = output_mask_cycle, 
                                       figure_savepath = figures_path,
                                       sims_folder     = sims_folder,
-                                      chamber         = "RA")
+                                      chamber         = "RA",
+                                      bcl             = BCL)
     
     plot_crashed_cycles_only_by_time(X               = X,
                                      xlabels         = xlabels, 
@@ -462,6 +465,7 @@ if __name__ == '__main__':
                         default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations")
     parser.add_argument('--first_simulation', type=int, required=True, default=0)
     parser.add_argument('--last_simulation', type=int, required=True, default=99)
+    parser.add_argument('--BCL', type=int, required=True)
 
     args = parser.parse_args()
 
