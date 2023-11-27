@@ -394,7 +394,7 @@ def main(args):
     sims_folder        = f"{args.basefolder}/simulations"
     first_simulation   = args.first_simulation
     last_simulation    = args.last_simulation
-    BCL                = args.bcl
+    BCL                = args.BCL
 
     os.makedirs(output_folder, exist_ok=True)
 
