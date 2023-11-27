@@ -247,6 +247,15 @@ def plot_crashed_cycles_only_by_phase(X, xlabels, output_mask, figure_savepath, 
                 s=20
             )
 
+            ax.scatter(
+                x_var[array_phase == 4],
+                y_var[array_phase == 4],
+                c=colors_by_phase["load"],
+                marker=marker_by_phase["load"],
+                label="load",
+                s=20
+            )
+
             if i == num_variables - 1:
                 ax.set_xlabel(xlabels[j])
             if j == 0:
