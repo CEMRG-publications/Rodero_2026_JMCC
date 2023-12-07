@@ -41,7 +41,7 @@ def main(args):
     else:
         setup_file = args.setup_file
     if not os.path.exists(setup_file):
-        raise Exception("You need to jave a file called "+setup_file)
+        raise Exception("You need to have a file called "+setup_file)
 
     sim_setup.load(setup_file)
 
@@ -56,22 +56,18 @@ def main(args):
     							  args.paramfolder,
     							  default_json=args.defaultfile)
 
-    # torord parameters do not change
-    sim_setup.torord_init_file = args.HPC_statefolder+"/ToRORd_dynCl_LandHumanStress.sv"
-    sim_setup.torord_rv_init_file = args.HPC_statefolder+"/ToRORd_dynCl_LandHumanStress.sv"
-
-    # courtemanche parameters do not change
-    sim_setup.courtemanche_init_file = args.HPC_statefolder+"/converted_COURTEMANCHE_LandHumanStress.sv"
-
+    
     where_to_save_param_string = args.paramfolder_cell
-    os.system("rm -rf "+where_to_save_param_string)
-
     for i in range(idx_1,idx_2+1):
 
         sim_setup.meshname = "/unloaded/"+original_meshname+"_unloaded_"+str(i)
         sim_setup.testname = "cycle_"+str(i)
         sim_setup.walltime = '24:00:00'
         sim_setup.cycle_peri_on = True
+
+        sim_setup.torord_init_file = f"{args.HPC_statefolder}/ToRORd_dynCl/{i}/{i}_ToRORd_dynCl_LandHumanStress.sv"
+        sim_setup.torord_rv_init_file = f"{args.HPC_statefolder}/ToRORd_dynCl/{i}/{i}_ToRORd_dynCl_LandHumanStress.sv"
+        sim_setup.courtemanche_init_file = f"{args.HPC_statefolder}/converted_COURTEMANCHE/{i}/{i}_converted_COURTEMANCHE_LandHumanStress.sv"
        
         simulator_utils.write_simulation_script(args.paramfolder+'/'+str(i)+'.json',
         										args.clinical_data,
@@ -80,60 +76,10 @@ def main(args):
         										sim_setup,
     											postprocessing=False,
                                                 save_param_string=where_to_save_param_string+str(i)+"_")
-
-    # --------------------------------------------------------------------------------------------------------
-    # cell_sims_basefolder = "./SS/"
-    # os.system("rm -r "+cell_sims_basefolder)    
-
-    # BCL = 854
-    # NBEATS = 500
-    # NPROC = 1 # max number of cores - 1    
-    # N = 1
-
-    # generate_bench_script(N,                                # how many simulations to run (one per param.json)
-    #                       BCL,                              # BCL
-    #                       NBEATS,                           # NBEATS
-    #                       cell_sims_basefolder,             # basefolder containing the param folder
-    #                       NPROC,                            # number of CPUs to use for parallel runs
-    #                       0.0,                              # strain
-    #                       "LV",                             # chamber = LV, RV or atria
-    #                       sim_setup.contraction_model,      # contraction model
-    #                       suffix="")
-    # os.system("bash "+cell_sims_basefolder+"run_ToRORd_dynCl.sh")   
-
-    # ionic_output.bin_to_dat_folder(cell_sims_basefolder+"ToRORd_dynCl/",
-    #                           0,
-    #                           N-1,
-    #                           BCL,
-    #                           NBEATS,
-    #                           ["ToRORd_dynCl.Vm.bin","ToRORd_dynCl.Ca_i.bin","ToRORd_dynCl.Tension.bin"],
-    #                           ["Vm.dat","Ca_i.dat","Tension.dat"],
-    #                           cleanup=True) 
-
-    # generate_bench_script(N,                                # how many simulations to run (one per param.json)
-    #                       BCL,                              # BCL
-    #                       NBEATS,                           # NBEATS
-    #                       cell_sims_basefolder,             # basefolder containing the param folder
-    #                       NPROC,                            # number of CPUs to use for parallel runs
-    #                       0.0,                              # strain
-    #                       "atria",                          # chamber = LV, RV or atria
-    #                       sim_setup.contraction_model,      # contraction model
-    #                       suffix="")
-    # os.system("bash "+cell_sims_basefolder+"run_converted_COURTEMANCHE.sh") 
-
-    # ionic_output.bin_to_dat_folder(cell_sims_basefolder+"converted_COURTEMANCHE/",
-    #                           0,
-    #                           N-1,
-    #                           BCL,
-    #                           NBEATS,
-    #                           ["converted_COURTEMANCHE.Vm.bin","converted_COURTEMANCHE.Ca_i.bin","converted_COURTEMANCHE.Tension.bin"],
-    #                           ["Vm.dat","Ca_i.dat","Tension.dat"],
-    #                           cleanup=True) 
         
-    # plot_Land_output(cell_sims_basefolder+"converted_COURTEMANCHE/",
-    #                  N,
-    #                  figname=cell_sims_basefolder+"/converted_COURTEMANCHE_output.png",
-    #                  isometric=True)
+        
+    # os.system(f"rm -rf {where_to_save_param_string}")
+
 
 if __name__ == '__main__':
 
