@@ -72,6 +72,8 @@ def plot_statistics_file(basefolder):
     # Calculate mean and standard deviation for each variable
     mean_values = np.mean(data, axis=0)
     std_values = np.std(data, axis=0)
+    min_values = np.min(data, axis=0)
+    max_values = np.max(data, axis=0)
 
     # Calculate ejection fractions for all cases
     LVEF_all = 100 * (data[:, labels.index('LVedv')] - data[:, labels.index('LVesv')]) / data[:, labels.index('LVedv')]
@@ -82,25 +84,32 @@ def plot_statistics_file(basefolder):
     # Calculate mean and standard deviation of ejection fractions
     mean_LVEF = np.mean(LVEF_all)
     std_LVEF = np.std(LVEF_all)
+    min_LVEF = np.min(LVEF_all)
+    max_LVEF = np.max(LVEF_all)
     mean_RVEF = np.mean(RVEF_all)
     std_RVEF = np.std(RVEF_all)
+    min_RVEF = np.min(RVEF_all)
+    max_RVEF = np.max(RVEF_all)
     mean_LAEF = np.mean(LAEF_all)
     std_LAEF = np.std(LAEF_all)
+    min_LAEF = np.min(LAEF_all)
+    max_LAEF = np.max(LAEF_all)
     mean_RAEF = np.mean(RAEF_all)
     std_RAEF = np.std(RAEF_all)
+    min_RAEF = np.min(RAEF_all)
+    max_RAEF = np.max(RAEF_all)
 
     # Save results to a file
-    with open(f'{basefolder}/output/output_statistics.txt', 'w') as file:
-        file.write("Variable\tMean\tStd\n")
-        for label, mean, std in zip(labels, mean_values, std_values):
-            file.write(f"{label}\t{mean:.2f}\t{std:.2f}\n")
+    with open(f'{basefolder}/output/output_statistics.csv', 'w') as file:
+        file.write("Variable\tMean\tStd\tMin\tMax\n")
+        for label, mean, std, min, max in zip(labels, mean_values, std_values, min_values, max_values):
+            file.write(f"{label}\t{mean:.2f}\t{std:.2f}\t{min:.2f}\t{max:.2f}\n")
 
         # Add ejection fractions to the file
-        file.write("\nEjection Fractions\n")
-        file.write(f"LVEF\t{mean_LVEF:.2f}\t{std_LVEF:.2f}\n")
-        file.write(f"RVEF\t{mean_RVEF:.2f}\t{std_RVEF:.2f}\n")
-        file.write(f"LAEF\t{mean_LAEF:.2f}\t{std_LAEF:.2f}\n")
-        file.write(f"RAEF\t{mean_RAEF:.2f}\t{std_RAEF:.2f}\n")
+        file.write(f"LVEF\t{mean_LVEF:.2f}\t{std_LVEF:.2f}\t{min_LVEF:.2f}\t{max_LVEF:.2f}\n")
+        file.write(f"RVEF\t{mean_RVEF:.2f}\t{std_RVEF:.2f}\t{min_RVEF:.2f}\t{max_RVEF:.2f}\n")
+        file.write(f"LAEF\t{mean_LAEF:.2f}\t{std_LAEF:.2f}\t{min_LAEF:.2f}\t{max_LAEF:.2f}\n")
+        file.write(f"RAEF\t{mean_RAEF:.2f}\t{std_RAEF:.2f}\t{min_RAEF:.2f}\t{max_RAEF:.2f}\n")
 
 def print_PV_loops_all_cycles(path_to_simulation, BCL, case_number):
     
