@@ -4,11 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 
-def print_PV_loops(path_to_simulation, figtitle):
+def print_PV_loops(path_to_simulation, figtitle, BCL):
     
     chambers = ['LV', 'RV', 'LA', 'RA']
     colours = ['red', 'blue', '#F6BE00', 'green']
-    BCL = 1000
     
     ax = plt.figure(figsize=(10,10), constrained_layout=True).subplots(2, 2)
     ax = ax.flatten()
