@@ -147,16 +147,15 @@ def print_PV_loops_all_cycles(path_to_simulation, BCL, case_number):
 
 def main(args):
 
-    basefolder        = args.basefolder
+    basefolder         = args.basefolder
     simulations_folder = f"{basefolder}/simulations"
     unloaded_volumes   = f"{simulations_folder}/unloaded_volumes.txt"
     data_folder        = f"{basefolder}/data"
     output_folder      = f"{basefolder}/output"
     figures_path       = f"{basefolder}/figures"
-    BCL = args.BCL
-    first_simulation = args.first_simulation
-    last_simulation = args.last_simulation
-    elem_file = args.elem_file
+    BCL                = args.BCL
+    elem_file          = args.elem_file
+    n_beat             = args.n_beat
 
     os.makedirs(output_folder, exist_ok=True)
 
@@ -167,25 +166,25 @@ def main(args):
     fourchamber_output.cycle_simulation_summary(output_folder    = simulations_folder,
                                                 BCL              = BCL,
                                                 AVD              = 200*[0],
-                                                NBEATS           = 5,
+                                                NBEATS           = n_beat,
                                                 unloaded_volumes = unloaded_volumes,
                                                 start_sample     = args.first_simulation,
                                                 last_sample      = args.last_simulation,
                                                 basename         = "cycle_",
-                                                maskoutput       = f"{output_folder}/output_mask.txt",
-                                                output_file      = f"{output_folder}/simulation_summary.pdf"
+                                                maskoutput       = f"{output_folder}/output_mask_beat_{n_beat}.txt",
+                                                output_file      = f"{output_folder}/simulation_summary_beat_{n_beat}.pdf"
                                             )
     
     fourchamber_output.cycle_output(datafolder    = output_folder,
                                     output_folder = simulations_folder,
                                     BCL           = BCL,
                                     AVD           = 100*[100],
-                                    NBEATS        = 5,
+                                    NBEATS        = n_beat,
                                     basename      = "cycle_",
-                                    output_file   = f"{data_folder}/Y_mechanics.txt",
+                                    output_file   = f"{data_folder}/Y_mechanics_beat_{n_beat}.txt",
                                     visualise     = False)
     
-    output_mask = np.loadtxt(f"{output_folder}/output_mask.txt")
+    output_mask = np.loadtxt(f"{output_folder}/output_mask_beat_{n_beat}.txt")
     with open(f"{basefolder}/json_files/tags.json","r") as f:
         tags = json.load(f)
 
@@ -196,22 +195,14 @@ def main(args):
 								   basename      = "cycle_",
 								   output_file   = f"{data_folder}/Y_EP.txt")
 
-    
-        
-    # plot_crashed_simulations(X               = X,
-    #                          xlabels         = xlabels,
-    #                          output_mask     = output_mask,
-    #                          figure_savepath = figures_path,
-    #                          first_simulation =  first_simulation,
-    #                          last_simulation = last_simulation) 
-    
+
     fourchamber_output.plot_pvloops_all(datafolder    = output_folder,
                                         output_folder = simulations_folder,
                                         BCL           = BCL,
                                         basename      = "cycle_",
-                                        mask_file     = f"{output_folder}/output_mask.txt",
-                                        NBEATS        = 5,
-                                        figname       = f"{figures_path}/all_pv_loops.png")
+                                        mask_file     = f"{output_folder}/output_mask_beat_{n_beat}.txt",
+                                        NBEATS        = n_beat,
+                                        figname       = f"{figures_path}/all_pv_loops_beat_{n_beat}.png")
     
     Y_array = []
 
@@ -241,10 +232,9 @@ if __name__ == '__main__':
     parser.add_argument('--basefolder', type=str, required=True,
                         default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations",
                         help='Path to the folder where the simulations, data, and figure folders are.')
-    parser.add_argument('--first_simulation', type=int, required=True, default=0)
-    parser.add_argument('--last_simulation', type=int, required=True, default=99)
     parser.add_argument('--BCL', type=int, required=False, default=1000)
     parser.add_argument('--elem_file', type=str, help="Path to the elem file of the mesh to compute the activation times.", required=True)
+    parser.add_argument('--n_beat', type=int, required=False, help="Heartbeat number to compute the output.", default=5)
 
     args = parser.parse_args()
 
