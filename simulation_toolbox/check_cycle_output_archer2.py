@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from pandas import read_csv
 import json
 
-from SIMULATION_library import fourchamber_output
+from SIMULATION_library import fourchamber_output, mesh_utils
 
 def plot_crashed_simulations(X, xlabels, output_mask, figure_savepath, first_simulation, last_simulation):
 
@@ -141,9 +141,163 @@ def print_PV_loops_all_cycles(path_to_simulation, BCL, case_number):
             ax[j].set_ylabel(chamber_name+' pressure [mmHg]')
         EF = round(100*(np.max(volume)-np.min(volume))/np.max(volume),2)
         ax[j].text(0.95, 0.95, 'EF: ' + str(EF) + "%", horizontalalignment='right', verticalalignment='top',
-				transform=ax[j].transAxes)
+                transform=ax[j].transAxes)
     plt.suptitle(f"Simulation #{case_number}", fontsize=20, weight='bold')
     plt.savefig(f"{path_to_simulation}/../../figures/{case_number}_pv_loops_all_cycles.png",dpi=300)
+    plt.close('all')
+    
+
+
+def cycle_output_free_output_mask_name(datafolder,
+                 output_folder,
+                 BCL,
+                 NBEATS,
+                 AVD,
+                 basename="cycle_",
+                 output_file="Y.txt",
+                 visualise=True,
+                 output_mask="output_mask.txt"):
+
+    print('WARNING: remember that the AVD is needed to compute the last cycle, as the simulation starts @ -AVD ms')
+
+    print('Computing only output for successful simulations...')
+
+    mask = np.loadtxt(f"{datafolder}/{output_mask}",dtype=int)
+    idx_ok = np.where(mask==1)[0]
+
+    output = np.zeros((idx_ok.shape[0],26))
+
+    for i in range(idx_ok.shape[0]):
+        print('Simulation '+basename+str(idx_ok[i])+'...')
+        folder = output_folder+'/'+basename+str(idx_ok[i])
+
+        lv = read_csv(folder+'/cav.LV.csv', delimiter=",", skipinitialspace=True,
+                           header=0, comment='#')
+        rv = read_csv(folder+'/cav.RV.csv', delimiter=",", skipinitialspace=True,
+                           header=0, comment='#')
+        la = read_csv(folder+'/cav.LA.csv', delimiter=",", skipinitialspace=True,
+                           header=0, comment='#')
+        ra = read_csv(folder+'/cav.RA.csv', delimiter=",", skipinitialspace=True,
+                           header=0, comment='#')
+
+        time = np.array(lv['Time'])
+        start = int((NBEATS-1)*BCL-AVD[i])
+        # start = time[-1]-BCL
+        end = start+BCL
+
+        last_beat = np.intersect1d(np.where(np.array(lv['Time'])>=start)[0],
+                                   np.where(np.array(lv['Time'])<=end)[0])
+        time = np.array(lv['Time'][last_beat])
+
+        volume_lv = np.array(lv['Volume'][last_beat])
+        pressure_lv = np.array(lv['Pressure'][last_beat])
+
+        volume_rv = np.array(rv['Volume'][last_beat])
+        pressure_rv = np.array(rv['Pressure'][last_beat])
+
+        volume_la = np.array(la['Volume'][last_beat])
+        pressure_la = np.array(la['Pressure'][last_beat])
+
+        volume_ra = np.array(ra['Volume'][last_beat])
+        pressure_ra = np.array(ra['Pressure'][last_beat])
+
+        lvoutput = fourchamber_output.VV_output(time,volume_lv,pressure_lv,BCL)
+        rvoutput = fourchamber_output.VV_output(time,volume_rv,pressure_rv,BCL)
+        laoutput = fourchamber_output.AA_output(time,volume_la,pressure_la)
+        raoutput = fourchamber_output.AA_output(time,volume_ra,pressure_ra)
+
+        laoutput_ej = fourchamber_output.AA_output_ej(time,volume_la)
+        raoutput_ej = fourchamber_output.AA_output_ej(time,volume_ra)
+
+        if visualise:
+            fourchamber_output.check_ventricle_output(time,volume_lv,pressure_lv,lvoutput)
+            fourchamber_output.check_ventricle_output(time,volume_rv,pressure_rv,rvoutput)
+            fourchamber_output.check_atria_output(time,volume_la,pressure_la,laoutput)
+            fourchamber_output.check_atria_output(time,volume_ra,pressure_rv,raoutput)
+
+        output[i,:] = np.concatenate((lvoutput,rvoutput,
+                                      laoutput,raoutput,
+                                      laoutput_ej,raoutput_ej),axis=0)
+
+    np.savetxt(output_file, output, fmt='%.2f')
+
+def electrophysiology_cycle_output_output_mask_free(datafolder,
+                                   output_folder,
+                                   elem_file,
+                                   tags,
+                                   basename="cycle_",
+                                   output_file="Y_EP.txt",
+                                   output_mask="output_mask.txt"):
+
+    print('Computing only output for successful simulations...')
+
+    mask = np.loadtxt(f"{datafolder}/{output_mask}",dtype=int)
+    idx_ok = np.where(mask==1)[0]
+
+    print('Reading mesh elem file...')
+    elem = mesh_utils.read_tets(elem_file)
+    print('Done.')
+
+    if "ventricles" in tags:
+        check =  any(t in tags for t in ["lv","rv"])
+        if check:
+            raise Exception('If you want to set up the "ventricles" label, you should not set the "lv" and the "rv".')
+        else:
+            ventricle_tags = tags["ventricles"]
+
+    elif (all(t in tags for t in ["lv","rv"])):
+        ventricle_tags = tags["lv"]+tags["rv"]
+
+    else:
+        raise Exception("You haven't set the tags for neither the ventricles nor the lv and the rv.")
+
+    if "fast_endo" in tags:
+        check =  any(t in tags for t in ["fast_endo_lv","fast_endo_rv","fast_endo_sv"])
+        if check:
+            raise Exception('If you want to set up the "fast_endo" label, you should not set the "fast_endo_lv", "fast_endo_rv" and the "fast_endo_sv".')
+        else:
+            fec_tags = tags["fast_endo"]
+
+    elif all(t in tags for t in ["fast_endo_lv","fast_endo_rv","fast_endo_sv"]):
+        fec_tags = tags["fast_endo_lv"]+tags["fast_endo_rv"]+tags["fast_endo_sv"]
+
+    else:
+        raise Exception("You haven't set the tags for neither the fec nor the lv,rv and sv fec.")
+
+    ventricle_tags += fec_tags
+    print('Ventricles tags: ')
+    for t in ventricle_tags:
+        print(str(t))
+
+    atria_tags = tags["atria"]+tags["bachmann_bundle"]
+    print('Atria tags: ')
+    for t in atria_tags:
+        print(str(t))
+
+    V_EIDX = np.where(np.isin(elem[:,-1],ventricle_tags)==1)[0]
+    A_EIDX = np.where(np.isin(elem[:,-1],atria_tags)==1)[0]
+
+    V_VTX = np.unique(elem[V_EIDX,0:4].flatten())
+    A_VTX = np.unique(elem[A_EIDX,0:4].flatten())
+
+    output = np.zeros((idx_ok.shape[0],2))
+
+    for i in range(idx_ok.shape[0]):
+        print('Simulation '+basename+str(idx_ok[i])+'...')
+
+        folder = output_folder+'/'+basename+str(idx_ok[i])
+
+        AT=np.loadtxt(folder+"/vm_act_seq.dat",dtype=float)
+        if (np.min(AT[V_VTX]<0)):
+            raise Exception("The ventricles contain a negative activation time.")
+        if (np.min(AT[A_VTX]<0)):
+            raise Exception("The atria contain a negative activation time.")
+            
+        output[i,0] = np.max(AT[A_VTX])-np.min(AT[A_VTX])
+        output[i,1] = np.max(AT[V_VTX])-np.min(AT[V_VTX])
+
+    np.savetxt(output_file,output,fmt="%g")
+
 
 def main(args):
 
@@ -156,6 +310,8 @@ def main(args):
     BCL                = args.BCL
     elem_file          = args.elem_file
     n_beat             = args.n_beat
+    first_simulation   = args.first_simulation
+    last_simulation    = args.last_simulation
 
     os.makedirs(output_folder, exist_ok=True)
 
@@ -168,32 +324,34 @@ def main(args):
                                                 AVD              = 200*[0],
                                                 NBEATS           = n_beat,
                                                 unloaded_volumes = unloaded_volumes,
-                                                start_sample     = args.first_simulation,
-                                                last_sample      = args.last_simulation,
+                                                start_sample     = first_simulation,
+                                                last_sample      = last_simulation,
                                                 basename         = "cycle_",
                                                 maskoutput       = f"{output_folder}/output_mask_beat_{n_beat}.txt",
                                                 output_file      = f"{output_folder}/simulation_summary_beat_{n_beat}.pdf"
                                             )
     
-    fourchamber_output.cycle_output(datafolder    = output_folder,
+    cycle_output_free_output_mask_name(datafolder    = output_folder,
                                     output_folder = simulations_folder,
                                     BCL           = BCL,
                                     AVD           = 100*[100],
                                     NBEATS        = n_beat,
                                     basename      = "cycle_",
                                     output_file   = f"{data_folder}/Y_mechanics_beat_{n_beat}.txt",
-                                    visualise     = False)
+                                    visualise     = False,
+                                    output_mask=f"output_mask_beat_{n_beat}.txt")
     
     output_mask = np.loadtxt(f"{output_folder}/output_mask_beat_{n_beat}.txt")
     with open(f"{basefolder}/json_files/tags.json","r") as f:
         tags = json.load(f)
 
-    fourchamber_output.electrophysiology_cycle_output(datafolder = output_folder,
-								   output_folder = simulations_folder,
-								   elem_file     = elem_file,
-								   tags          = tags,
-								   basename      = "cycle_",
-								   output_file   = f"{data_folder}/Y_EP.txt")
+    electrophysiology_cycle_output_output_mask_free(datafolder = output_folder,
+                                   output_folder = simulations_folder,
+                                   elem_file     = elem_file,
+                                   tags          = tags,
+                                   basename      = "cycle_",
+                                   output_file   = f"{data_folder}/Y_EP_beat_{n_beat}.txt",
+                                   output_mask=f"output_mask_beat_{n_beat}.txt")
 
 
     fourchamber_output.plot_pvloops_all(datafolder    = output_folder,
@@ -207,7 +365,7 @@ def main(args):
     Y_array = []
 
     for field in ['mechanics','EP']:
-        Y_ = np.loadtxt(f"{data_folder}/Y_{field}.txt", dtype=float)
+        Y_ = np.loadtxt(f"{data_folder}/Y_{field}_beat_{n_beat}.txt", dtype=float)
         Y_array.append(Y_)
 
     Y = np.concatenate(Y_array, axis=1)
@@ -235,6 +393,8 @@ if __name__ == '__main__':
     parser.add_argument('--BCL', type=int, required=False, default=1000)
     parser.add_argument('--elem_file', type=str, help="Path to the elem file of the mesh to compute the activation times.", required=True)
     parser.add_argument('--n_beat', type=int, required=False, help="Heartbeat number to compute the output.", default=5)
+    parser.add_argument('--first_simulation', type=int)
+    parser.add_argument('--last_simulation', type=int)
 
     args = parser.parse_args()
 
