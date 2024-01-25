@@ -404,13 +404,14 @@ def main(args):
     first_simulation   = args.first_simulation
     last_simulation    = args.last_simulation
     BCL                = args.BCL
+    n_beat             = args.n_beat
 
     os.makedirs(output_folder, exist_ok=True)
 
     X       = np.loadtxt(f"{data_folder}/X.txt")
     xlabels = np.loadtxt(f"{data_folder}/xlabels.txt", dtype=str)
     
-    output_mask_cycle = np.loadtxt(f"{output_folder}/output_mask.txt")
+    output_mask_cycle = np.loadtxt(f"{output_folder}/output_mask_beat_{n_beat}.txt")
 
     plot_crashed_cycles(X               = X,
                         xlabels         = xlabels,
@@ -475,6 +476,7 @@ if __name__ == '__main__':
     parser.add_argument('--first_simulation', type=int, required=True, default=0)
     parser.add_argument('--last_simulation', type=int, required=True, default=99)
     parser.add_argument('--BCL', type=int, required=True)
+    parser.add_argument('--n_beat', type=int, required=False, help="Heartbeat number to compute the output.", default=5)
 
     args = parser.parse_args()
 
