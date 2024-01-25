@@ -27,9 +27,14 @@ The recommended installation is as follows:
  1. Sample the parameter space following the notebook `0_sampling.ipynb`
  2. Generate the unloading scripts following the notebook `1_generate_unloading_script.ipynb`
  3. In ARCHER2: Take a `.slrm` file and run `check_directories_and_files.sh` to make sure you are not missing any file.
- 4. In ARCHER2: Check which unloadings work using `check_unloading_convergence_archer2.py`
+ 4. In ARCHER2: Check which unloadings work using `check_unloading_convergence_archer2.py`. It needs at least 2 simulations to work.
  5. In ARCHER2: Take screenshots of the unloading configurations using `screenshot_unloading_archer2.py`. This script is necessary to prepare the folder structure for the cycle simulations. You can run it to prepare the folders without taking the screenshots.
  6. Run cell simulations and generate the cycle simulations following the notebook `2_run_cell_generate_cycle.ipynb`
  7. Repeat step 3. with the cycle simulation slrms.
  5. Run `check_cycle_output_archer2.py`.
 5. If you want to analyse the crashed simulation, run `plot_crashed_cycles`. The set of scripts in this file plots different ways of analysing crashed simulations with the aim of gaining insight into the reasons.
+
+# Running simulations at Imperial HPC
+
+1. `scp_files_hpc.sh` will scp the needed slrm and sv files for the simulations. Paths might need rewriting. 
+2. `scp_unloading.sh` will scp the needed unloading configurations from ARCHER2 to Imperial HPC.
