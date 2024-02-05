@@ -5,11 +5,66 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from Historia.shared.design_utils import read_labels
-from SIMULATION_library.fourchamber_output import check_fourchamber_unloading
 
 def file_exists(full_file_path):
     if not os.path.isfile(full_file_path):
         raise Exception("You need to have the file " + full_file_path)
+
+
+def check_fourchamber_unloading_(simulation_folder,
+								 chambers):
+
+	converged_1 = False
+	with open(simulation_folder+"unloading.log", 'r') as file:
+		content = file.read()
+		if "--- CONVERGED ---" in content:
+			converged_1 = True
+
+	converged_2 = False
+	if not os.path.exists(simulation_folder+"temp/"):
+		converged_2 = True
+
+	converged = False
+	if converged_1 and converged_2:
+		converged = True
+
+	output = [converged]
+	volumes = []
+	for ch in chambers:
+		if converged and os.path.exists(simulation_folder+"final_data/"+ch+".vol.dat"):
+			vol = np.loadtxt(simulation_folder+"final_data/"+ch+".vol.dat",dtype=float,usecols=[1])
+			output.append(vol[0])
+		else:
+			output.append(-1)
+
+	return output
+
+def check_fourchamber_unloading(basefolder,
+								chambers,
+								start_sample=0,
+								last_sample=1,
+								output_file='unloaded_volumes.txt'):
+
+	vol_unloaded = np.zeros((last_sample-start_sample+1,len(chambers)),dtype=float)
+	count = 0
+
+	for i in range(start_sample,last_sample+1):	
+
+		output = check_fourchamber_unloading_(basefolder+'/unloading_'+str(i)+'/',
+											  chambers)
+
+		if output[0]:
+			print('unloading_'+str(i)+' successful...')
+
+			for j in range(len(chambers)):
+				vol_unloaded[count,j] = output[1+j]
+
+		else:
+			print('unloading_'+str(i)+' crashed...')
+
+		count += 1
+
+	np.savetxt(output_file,vol_unloaded,fmt="%g")
 
 def main(args):
 
