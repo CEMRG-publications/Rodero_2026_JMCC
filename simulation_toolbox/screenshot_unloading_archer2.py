@@ -90,12 +90,12 @@ def main(args):
             unloaded_meshname = os.path.join(basefolder,"unloaded/myocardium_AV_FEC_BB_lvrv_unloaded_"+str(i))
             
             print("Copying files...")
-            if os.path.isfile(f"{simulation_folder}/cur_reference.bpts"):
-                os.system(f"cp {simulation_folder}/cur_reference.bpts {unloaded_meshname}.bpts")
+            if os.path.isfile(f"{simulation_folder}/reference.bpts"):
+                os.system(f"cp {simulation_folder}/reference.bpts {unloaded_meshname}.bpts")
                 os.system(f"cp {initial_mesh}.belem {unloaded_meshname}.belem")
                 os.system(f"cp {initial_mesh}.blon {unloaded_meshname}.blon")
-            elif os.path.isfile(f"{simulation_folder}/cur_reference.pts"):
-                os.system(f"cp {simulation_folder}/cur_reference.pts {unloaded_meshname}.pts")
+            elif os.path.isfile(f"{simulation_folder}/reference.pts"):
+                os.system(f"cp {simulation_folder}/reference.pts {unloaded_meshname}.pts")
                 os.system(f"cp {initial_mesh}.elem {unloaded_meshname}.elem")
                 os.system(f"cp {initial_mesh}.lon {unloaded_meshname}.lon")
                 cmd = ["meshtool convert",
