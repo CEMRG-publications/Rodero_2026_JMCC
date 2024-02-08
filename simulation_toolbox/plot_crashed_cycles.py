@@ -181,7 +181,7 @@ def plot_crashed_cycles_only_by_phase(X, xlabels, output_mask, figure_savepath, 
 
             array_phase.append(phases_indices[last_state])
 
-            heartbeat_number = beats_indices[int(last_time/bcl)]
+            heartbeat_number = beats_indices[min(int(last_time/bcl),4)]
             cycle_phase_index = phases_indices[last_state]
 
             color_array.append(colors_by_phase[last_state])
