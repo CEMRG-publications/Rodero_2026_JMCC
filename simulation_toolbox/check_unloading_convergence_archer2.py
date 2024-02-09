@@ -61,6 +61,9 @@ def check_fourchamber_unloading(basefolder,
 
 		else:
 			print('unloading_'+str(i)+' crashed...')
+			
+			for j in range(len(chambers)):
+				vol_unloaded[count,j] = -1
 
 		count += 1
 
