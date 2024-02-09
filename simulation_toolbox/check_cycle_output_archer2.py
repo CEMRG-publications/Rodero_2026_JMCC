@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pandas import read_csv
 import json
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 
 from SIMULATION_library import fourchamber_output, mesh_utils
 
@@ -146,8 +147,6 @@ def print_PV_loops_all_cycles(path_to_simulation, BCL, case_number):
     plt.savefig(f"{path_to_simulation}/../../figures/{case_number}_pv_loops_all_cycles.png",dpi=300)
     plt.close('all')
     
-
-
 def cycle_output_free_output_mask_name(datafolder,
                  output_folder,
                  BCL,
@@ -299,6 +298,103 @@ def electrophysiology_cycle_output_output_mask_free(datafolder,
     np.savetxt(output_file,output,fmt="%g")
 
 
+def cycle_simulation_summary(output_folder,
+							 BCL,
+							 AVD,
+							 NBEATS,
+							 start_sample=0,
+							 last_sample=0,
+							 basename="cycle",
+							 maskoutput="output_mask.txt",
+							 output_file="simulation_summary.pdf",
+							 unloaded_volumes=None,
+							 include_last_AVD=False):
+	
+	output = np.zeros((last_sample-start_sample+1,),dtype=int)
+
+	if unloaded_volumes is not None:
+		unloaded = np.loadtxt(unloaded_volumes,dtype=float)
+		unloaded_failed = np.where(unloaded[:,0]==-1)[0]
+	else:
+		unloaded_failed = []
+
+	document = SimpleDocTemplate(output_file, pagesize=A4, title='Simulation Summary')
+	tab = []
+	items = []
+	header = ['sim','success']
+	tab.append(header)
+
+	count_PD = 0
+	count_OK = 0
+	count_notOK = 0
+	for i in range(start_sample,last_sample+1):
+		folder = output_folder+'/'+basename+str(i)
+
+		if os.path.exists(folder) and os.path.isfile(f"{folder}/cav.LV.csv"):
+
+			lv = read_csv(folder+'/cav.LV.csv', delimiter=",", skipinitialspace=True,
+							   header=0, comment='#')
+			volume = np.array(lv['Volume'])
+			time = np.array(lv['Time'])
+
+			if include_last_AVD:
+				check_tend = BCL*NBEATS
+			else:
+				check_tend = BCL*NBEATS - AVD[i]
+
+			init_last_beat = BCL*(NBEATS-1) - AVD[i]
+			end_last_beat = BCL*NBEATS - AVD[i]				
+
+			last_beat = np.intersect1d(np.where(time>=init_last_beat)[0],
+									   np.where(time<=end_last_beat)[0])
+
+			if last_beat.shape[0]>0:
+				volume_last_beat = volume[last_beat]
+				SV = np.max(volume_last_beat)-np.min(volume_last_beat)
+
+			if len(lv)>0 and max(time) == int(check_tend) and (SV>5.0):
+				output[i] = 1
+				tab.append(list([basename+str(i),'Y']))
+				count_OK += 1
+			else:
+				output[i] = 0
+				tab.append(list([basename+str(i),'N']))
+				count_notOK += 1
+		else:
+			if i in unloaded_failed:
+				output[i] = 0
+				tab.append(list([basename+str(i),'N']))
+				count_notOK += 1
+			else:
+				output[i] = -1
+				tab.append(list([basename+str(i),'PD']))
+				count_PD += 1
+
+	tab.append(list(['','OK = '+str(count_OK)]))
+	tab.append(list(['','CRASHED = '+str(count_notOK)]))
+	tab.append(list(['','PD = '+str(count_PD)]))
+	table = Table(tab)
+
+	table.setStyle(TableStyle([('INNERGRID', (0,0), (-1,-1), 0.25, colors.black),
+	('BOX', (0,0), (-1,-1), 0.25, colors.black)
+	]))
+
+	for ii in range(1,len(tab)):
+		for jj in range(1,len(tab[ii])):
+			if tab[ii][jj]=='Y':
+				table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.lightgreen)]))
+			elif tab[ii][jj]=='N':
+				table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.fidred)]))
+			elif tab[ii][jj]=='PD':
+				table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.lightyellow)]))
+
+	items.append(table)
+	document.build(items)
+
+	np.savetxt(maskoutput,output,fmt='%s')
+
+
+
 def main(args):
 
     basefolder         = args.basefolder
@@ -319,7 +415,7 @@ def main(args):
 
     xlabels = np.loadtxt(f"{data_folder}/xlabels.txt", dtype=str)
 
-    fourchamber_output.cycle_simulation_summary(output_folder    = simulations_folder,
+    cycle_simulation_summary(output_folder    = simulations_folder,
                                                 BCL              = BCL,
                                                 AVD              = 200*[0],
                                                 NBEATS           = n_beat,
