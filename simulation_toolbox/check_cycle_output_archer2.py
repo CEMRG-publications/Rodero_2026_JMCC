@@ -4,7 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pandas import read_csv
 import json
+
+from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib import colors
 
 from SIMULATION_library import fourchamber_output, mesh_utils
 
