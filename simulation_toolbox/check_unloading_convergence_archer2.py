@@ -97,7 +97,7 @@ def main(args):
     idx_ok = np.where(mask!=0)[0]
     idx_notok = np.where(mask==0)[0]
 
-    if len(X.shape > 1):
+    if len(X.shape) > 1:
         in_dim = X.shape[1]
     else:
         in_dim = X.shape[0]
