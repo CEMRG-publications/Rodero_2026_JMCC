@@ -356,7 +356,9 @@ def cycle_simulation_summary(output_folder,
 			if last_beat.shape[0]>0:
 				volume_last_beat = volume[last_beat]
 				SV = np.max(volume_last_beat)-np.min(volume_last_beat)
-
+			print(f"len(lv) is {len(lv)} and should be > 0 ")
+			print(f"max(time) is {max(time)} and should be equal to int(check_tend) which is {int(check_tend)}")
+			print(f"SV is {SV} and should be > 5")
 			if len(lv)>0 and max(time) == int(check_tend) and (SV>5.0):
 				output[i] = 1
 				tab.append(list([basename+str(i),'Y']))
