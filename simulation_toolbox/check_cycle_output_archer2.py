@@ -334,6 +334,8 @@ def cycle_simulation_summary(output_folder,
 		folder = output_folder+'/'+basename+str(i)
 
 		if os.path.exists(folder) and os.path.isfile(f"{folder}/cav.LV.csv"):
+               
+			print(f"Reading {folder}/cav.LV.csv...")
 
 			lv = read_csv(folder+'/cav.LV.csv', delimiter=",", skipinitialspace=True,
 							   header=0, comment='#')
@@ -413,10 +415,6 @@ def main(args):
     last_simulation    = args.last_simulation
 
     os.makedirs(output_folder, exist_ok=True)
-
-    X       = np.loadtxt(f"{data_folder}/X.txt")
-
-    xlabels = np.loadtxt(f"{data_folder}/xlabels.txt", dtype=str)
 
     cycle_simulation_summary(output_folder    = simulations_folder,
                                                 BCL              = BCL,
