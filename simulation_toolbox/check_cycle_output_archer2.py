@@ -400,7 +400,9 @@ def cycle_simulation_summary(output_folder,
 
 	np.savetxt(maskoutput,output,fmt='%s')
 
-
+def file_exists(full_file_path):
+    if not os.path.isfile(full_file_path):
+        raise Exception("You need to have the file " + full_file_path)
 
 def main(args):
 
@@ -415,6 +417,10 @@ def main(args):
     n_beat             = args.n_beat
     first_simulation   = args.first_simulation
     last_simulation    = args.last_simulation
+
+    file_exists(f'{basefolder}/data/ylabels.txt')
+
+    
 
     os.makedirs(output_folder, exist_ok=True)
 
