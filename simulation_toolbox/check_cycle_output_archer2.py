@@ -267,14 +267,14 @@ def electrophysiology_cycle_output_output_mask_free(datafolder,
         raise Exception("You haven't set the tags for neither the fec nor the lv,rv and sv fec.")
 
     ventricle_tags += fec_tags
-    print('Ventricles tags: ')
-    for t in ventricle_tags:
-        print(str(t))
+    # print('Ventricles tags: ')
+    # for t in ventricle_tags:
+    #     print(str(t))
 
     atria_tags = tags["atria"]+tags["bachmann_bundle"]
-    print('Atria tags: ')
-    for t in atria_tags:
-        print(str(t))
+    # print('Atria tags: ')
+    # for t in atria_tags:
+    #     print(str(t))
 
     V_EIDX = np.where(np.isin(elem[:,-1],ventricle_tags)==1)[0]
     A_EIDX = np.where(np.isin(elem[:,-1],atria_tags)==1)[0]
@@ -356,9 +356,9 @@ def cycle_simulation_summary(output_folder,
 			if last_beat.shape[0]>0:
 				volume_last_beat = volume[last_beat]
 				SV = np.max(volume_last_beat)-np.min(volume_last_beat)
-			print(f"len(lv) is {len(lv)} and should be > 0 ")
-			print(f"max(time) is {max(time)} and should be equal to int(check_tend) which is {int(check_tend)}")
-			print(f"SV is {SV} and should be > 5")
+			# print(f"len(lv) is {len(lv)} and should be > 0 ")
+			# print(f"max(time) is {max(time)} and should be equal to int(check_tend) which is {int(check_tend)}")
+			# print(f"SV is {SV} and should be > 5")
 			if len(lv)>0 and max(time) == int(check_tend) and (SV>5.0):
 				output[i] = 1
 				tab.append(list([basename+str(i),'Y']))
