@@ -13,6 +13,8 @@ from SIMULATION_library.cell_sims_utils import *
 from GSA_library import ionic_output
 from GSA_library.plotting import plot_Land_output
 
+from Historia.shared.design_utils import read_labels
+
 def check_files(datafolder,fields):
 
     for f in fields:
@@ -20,6 +22,79 @@ def check_files(datafolder,fields):
             print('Found files for field '+f+'.')
         else:
             raise Exception("Cannot find files for field "+f+".")
+        
+def X_to_json_modified(labels_fields,
+			  datafolder,
+			  outputfolder,
+			  default_json):
+
+	print('generating json file...')
+
+	os.system('mkdir '+outputfolder)
+
+	
+	N = None
+	while N is None:
+		for lab in labels_fields:
+			print(lab)
+			X_tmp = np.loadtxt(datafolder+'/X_'+lab+'.txt')
+			labels = read_labels(datafolder+'/xlabels_'+lab+'.txt')	
+			# print(lab)
+			# print(X_tmp.shape)
+			if len(X_tmp.shape)>1 or len(labels) == 1:
+				N = X_tmp.shape[0]
+			elif (len(X_tmp.shape) == 1) and len(labels)>1:
+				N = 1
+
+	# generate this dictionary to avoid reading X_*.txt at every iteration
+	dct_datasets = {}
+	for k,lab in enumerate(labels_fields):
+		print(lab)
+		dct_datasets[lab] = {}
+
+		labels = read_labels(datafolder+'/xlabels_'+lab+'.txt')	
+		dct_datasets[lab]["labels"] = labels
+
+		X = np.loadtxt(datafolder+'/X_'+lab+'.txt')
+		dct_datasets[lab]["X"] = X
+
+	for i in range(N):
+		# if you want to combine the new parameters
+		# with the default json file, then the dictionary
+		# is initialised to the default json you give.
+		# Otherwise it's empty
+
+		f_input = open(default_json,"r")
+		param_dictionary = json.load(f_input)
+		f_input.close()
+
+		for k,lab in enumerate(labels_fields):
+
+			labels = dct_datasets[lab]["labels"]
+			X = dct_datasets[lab]["X"]
+
+			if default_json is not None:
+				subdict = param_dictionary[lab]
+			else:
+				subdict = {}
+			
+			if (len(X.shape) == 1) and N==1:
+				X = X.reshape(1,X.shape[0])
+			elif (len(X.shape) == 1) and N>1:
+				X = X.reshape(N,1)
+
+			if (len(labels)!=X.shape[1]):
+				raise ValueError('xlabels_'+lab+'.txt'+' and X_'+lab+'.txt do not match')	
+			if (X.shape[0]!=N):
+				raise ValueError('X_'+lab+'.txt'+' and X_'+labels_fields[0]+'.txt do not match')		
+			for j in range(len(labels)):
+				subdict[labels[j]] = X[i,j]	
+
+
+			param_dictionary[lab] = subdict
+
+		with open(outputfolder+'/'+str(i)+'.json', 'w') as f:
+		    json.dump(param_dictionary, f, indent=4)
 
 def main(args):
 
@@ -51,7 +126,7 @@ def main(args):
     # create json files and simulation scripts
     # ------------------------------
 
-    simulator_utils.X_to_json(fields,
+    X_to_json_modified(fields,
     							  args.datafolder,	
     							  args.paramfolder,
     							  default_json=args.defaultfile)
