@@ -147,7 +147,8 @@ def visualise_motion(displacement_file: str,
                      camera_settings_filename: str, 
                      path_to_simulation: str, 
                      BCL: int, 
-                     dt: int = 10) -> None:
+                     dt: int = 10,
+                     only_LV: bool = False) -> None:
     """
     Visualizes the motion of a mesh over time by creating a series of screenshots and PV loop plots.
 
@@ -170,8 +171,13 @@ def visualise_motion(displacement_file: str,
     # Initialize mesh
     pv_msh, tags_temp = carp_to_pyvista(meshname)
     camera_settings = read_pvcc_paraview_file(camera_settings_filename)
-    chambers = ['LV', 'RV', 'LA', 'RA']
-    colours = ['red', 'blue', '#F6BE00', 'green']
+
+    if not only_LV:
+        chambers = ['LV', 'RV', 'LA', 'RA']
+        colours = ['red', 'blue', '#F6BE00', 'green']
+    else:
+        chambers = ['LV']
+        colours = ['red']
 
     pressure_dict = {}
     volume_dict = {}
@@ -230,9 +236,13 @@ def print_PV_loop(chambers: list,
     Returns:
     None. The function generates a PV loop plot and saves it as a screenshot.
     """
+    if len(chambers) > 1:
+        ax = plt.figure(figsize=(10,10), constrained_layout=True).subplots(2, 2)
+        ax = ax.flatten()
 
-    ax = plt.figure(figsize=(10,10), constrained_layout=True).subplots(2, 2)
-    ax = ax.flatten()
+    else:
+        ax = plt.figure(figsize=(10,10), constrained_layout=True)
+
 
     for j, chamber_name in enumerate(chambers):
 
@@ -242,23 +252,37 @@ def print_PV_loop(chambers: list,
         volume_to_plot = volume[:end_time]
         pressure_to_plot = pressure[:end_time]
 
-        ax[j].plot(volume_to_plot,pressure_to_plot,color=colours[j],linewidth=3.0)
-        ax[j].set_xlabel(chamber_name+' volume [mL]')
-        ax[j].set_ylabel(chamber_name+' pressure [mmHg]')
-        ax[j].set_xlim(xmin=min(volume)-0.1*(max(volume)-min(volume)),xmax=max(volume)+0.1*(max(volume)-min(volume)))
-        ax[j].set_ylim(ymin=min(pressure)-0.1*(max(pressure)-min(pressure)),ymax=max(pressure)+0.1*(max(pressure)-min(pressure)))
+        if len(chambers) > 1:
+
+            ax[j].plot(volume_to_plot,pressure_to_plot,color=colours[j],linewidth=3.0)
+            ax[j].set_xlabel(chamber_name+' volume [mL]')
+            ax[j].set_ylabel(chamber_name+' pressure [mmHg]')
+            ax[j].set_xlim(xmin=min(volume)-0.1*(max(volume)-min(volume)),xmax=max(volume)+0.1*(max(volume)-min(volume)))
+            ax[j].set_ylim(ymin=min(pressure)-0.1*(max(pressure)-min(pressure)),ymax=max(pressure)+0.1*(max(pressure)-min(pressure)))
+        
+        else:
+            plt.plot(volume_to_plot, pressure_to_plot, color=colours[j], linewidth=3.0)
+            plt.xlabel(chamber_name + ' volume (mL)', fontsize=24, fontweight='bold')
+            plt.ylabel(chamber_name + ' pressure (mmHg)', fontsize=24, fontweight='bold')
+            plt.xlim(xmin=50,xmax=150)
+            plt.ylim(ymin=0,ymax=150)
+            plt.xticks(fontsize=22)
+            plt.yticks(fontsize=22)
+
+
         
     plt.savefig(os.path.join(screenshot_name),dpi=300)
     plt.close('all')
 
 
 def main(args):
-    meshname = args.meshname
-    camera_file = args.camera_file
+    meshname          = args.meshname
+    camera_file       = args.camera_file
     displacement_file = args.disp
-    BCL = args.bcl
-    dt = args.dt
-    fps = args.fps
+    BCL               = args.bcl
+    dt                = args.dt
+    fps               = args.fps
+    only_LV           = args.only_LV
 
     # Extract the directory of the displacement file
     disp_directory = os.path.dirname(os.path.abspath(displacement_file))
@@ -282,10 +306,11 @@ def main(args):
                      camera_settings_filename=camera_file,
                      path_to_simulation=disp_directory,
                      BCL=BCL,
-                     dt=dt)
+                     dt=dt,
+                     only_LV=only_LV)
     subprocess.run(['ffmpeg', '-y', '-r', str(fps), '-i', f'{output_directory_motion}/cycle_%d.png', '-i', f'{output_directory_pvloop}/pvloop_%d.png', '-filter_complex', '[0:v]scale=-1:3000[0v];[1:v]scale=-1:3000[1v];[0v][1v]hstack=inputs=2', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', f'{disp_directory}/motion_pvloop.mp4'])
 
-    shutil.rmtree(os.path.join(disp_directory, "delete"), ignore_errors=True)
+    # shutil.rmtree(os.path.join(disp_directory, "delete"), ignore_errors=True)
 
     logging.info(f"Your video is in {disp_directory}/motion_pvloop.mp4")
 
@@ -298,6 +323,7 @@ if __name__ == '__main__':
     parser.add_argument('--bcl', default=833, type=int, help="Basic cycle length in ms.")
     parser.add_argument('--dt', default=10, type=int, help="spacedt used in the simulation (every how many timestep was displacement saved).")
     parser.add_argument('--fps', default=24, type=int, help="Frames per second for the final video.")
+    parser.add_argument('--only_LV', default=False, action='store_true', help="Flag to plot only the PV loop of the left ventricle.")
 
     args = parser.parse_args()
     
