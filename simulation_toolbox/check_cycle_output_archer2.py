@@ -419,6 +419,7 @@ def main(args):
     last_simulation    = args.last_simulation
 
     file_exists(f'{basefolder}/data/ylabels.txt')
+    file_exists(f'{elem_file}')
 
     
 
