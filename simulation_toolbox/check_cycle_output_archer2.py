@@ -424,6 +424,7 @@ def main(args):
     
 
     os.makedirs(output_folder, exist_ok=True)
+    os.makedirs(figures_path, exist_ok=True)
 
     cycle_simulation_summary(output_folder    = simulations_folder,
                                                 BCL              = BCL,
