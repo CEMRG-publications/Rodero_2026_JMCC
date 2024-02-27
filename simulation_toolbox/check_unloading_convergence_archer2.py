@@ -73,7 +73,8 @@ def main(args):
 
     basefolder = args.path2simulations
     path2figure = args.path2figures
-    N = args.n_simulations
+    first_simulation = args.first_simulation
+    last_simulation = args.last_simulation
 
     file_exists(os.path.join(basefolder,"../data/X_mechanics.txt"))
     file_exists(os.path.join(basefolder,"../data/xlabels_mechanics.txt"))
@@ -83,8 +84,8 @@ def main(args):
 
     check_fourchamber_unloading(basefolder,
 							['lv_endo','rv_endo','la_endo','ra_endo'],
-							start_sample=0,
-							last_sample=N-1,
+							start_sample=first_simulation,
+							last_sample=last_simulation,
 							output_file=os.path.join(basefolder,'unloaded_volumes.txt'))    
     
     unloaded_volumes = np.loadtxt(os.path.join(basefolder,"unloaded_volumes.txt"),dtype=float)
@@ -133,7 +134,8 @@ if __name__ == '__main__':
     parser.add_argument('--path2simulations', type=str, required=True,
                         default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations")
     parser.add_argument('--path2figures', type=str, required=True)
-    parser.add_argument('--n_simulations', type=int, required=False, default=10)
+    parser.add_argument('--first_simulation', type=int, required=False, default=0)
+    parser.add_argument('--last_simulation', type=int, required=False, default=99)
 
     args = parser.parse_args()
 
