@@ -81,9 +81,11 @@ def main(args):
 
 
 
-    for i in tqdm.tqdm(range(first_simulation, last_simulation+1)):
+    for unloading_row_num in tqdm.tqdm(range(last_simulation - first_simulation + 1)):
 
-        if np.sum(unloaded_volumes[i,:])!=0:
+        if np.sum(unloaded_volumes[unloading_row_num,:])!=0:
+
+            i = first_simulation + unloading_row_num
 
             simulation_folder = os.path.join(basefolder,"unloading_"+str(i))
 
