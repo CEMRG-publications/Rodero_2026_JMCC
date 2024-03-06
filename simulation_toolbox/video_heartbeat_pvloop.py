@@ -283,6 +283,8 @@ def main(args):
     dt                = args.dt
     fps               = args.fps
     only_LV           = args.only_LV
+    video_directory   = args.video_directory
+    video_name        = args.video_name
 
     # Extract the directory of the displacement file
     disp_directory = os.path.dirname(os.path.abspath(displacement_file))
@@ -308,11 +310,15 @@ def main(args):
                      BCL=BCL,
                      dt=dt,
                      only_LV=only_LV)
-    subprocess.run(['ffmpeg', '-y', '-r', str(fps), '-i', f'{output_directory_motion}/cycle_%d.png', '-i', f'{output_directory_pvloop}/pvloop_%d.png', '-filter_complex', '[0:v]scale=-1:3000[0v];[1:v]scale=-1:3000[1v];[0v][1v]hstack=inputs=2', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', f'{disp_directory}/motion_pvloop.mp4'])
+    
+    if video_directory is None:
+        video_directory = disp_directory
+
+    subprocess.run(['ffmpeg', '-y', '-r', str(fps), '-i', f'{output_directory_motion}/cycle_%d.png', '-i', f'{output_directory_pvloop}/pvloop_%d.png', '-filter_complex', '[0:v]scale=-1:3000[0v];[1:v]scale=-1:3000[1v];[0v][1v]hstack=inputs=2', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', f'{video_directory}/{video_name}.mp4'])
 
     # shutil.rmtree(os.path.join(disp_directory, "delete"), ignore_errors=True)
 
-    logging.info(f"Your video is in {disp_directory}/motion_pvloop.mp4")
+    logging.info(f"Your video is in {video_directory}/{video_name}.mp4")
 
 
 if __name__ == '__main__':
@@ -324,6 +330,8 @@ if __name__ == '__main__':
     parser.add_argument('--dt', default=10, type=int, help="spacedt used in the simulation (every how many timestep was displacement saved).")
     parser.add_argument('--fps', default=24, type=int, help="Frames per second for the final video.")
     parser.add_argument('--only_LV', default=False, action='store_true', help="Flag to plot only the PV loop of the left ventricle.")
+    parser.add_argument('--video_directory', default=None, type=str, help="Path where the video will be saved. If None, it will be saved in the same directory as the cycle file.")
+    parser.add_argument('--video_name', default="motion_pvloop", type=str, help="Name of the video file.")
 
     args = parser.parse_args()
     
