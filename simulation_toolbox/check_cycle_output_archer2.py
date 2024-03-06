@@ -441,7 +441,7 @@ def main(args):
     cycle_output_free_output_mask_name(datafolder    = output_folder,
                                     output_folder = simulations_folder,
                                     BCL           = BCL,
-                                    AVD           = 100*[100],
+                                    AVD           = 200*[100],
                                     NBEATS        = n_beat,
                                     basename      = "cycle_",
                                     output_file   = f"{data_folder}/Y_mechanics_beat_{n_beat}.txt",
