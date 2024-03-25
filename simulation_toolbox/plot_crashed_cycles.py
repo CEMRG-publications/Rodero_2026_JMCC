@@ -169,7 +169,7 @@ def plot_crashed_cycles_only_by_phase(X, xlabels, output_mask, figure_savepath, 
     array_phase = []
 
     for simnum in range(len(output_mask)):
-        if output_mask[simnum] == 0:
+        if output_mask[simnum] == 0 and os.path.isfile(f"{sims_folder}/cycle_{simnum}/cav.{chamber}.csv"):
             csv_file = f"{sims_folder}/cycle_{simnum}/cav.{chamber}.csv"
 
         # Read the CSV file and extract information
