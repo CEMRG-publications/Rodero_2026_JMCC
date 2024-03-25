@@ -271,11 +271,9 @@ def plot_crashed_cycles_only_by_phase(X, xlabels, output_mask, figure_savepath, 
 
     plt.savefig(os.path.join(figure_savepath,f"cardiac_phase_crashed_{chamber}.png"), dpi=300, bbox_inches='tight')
 
-def plot_crashed_cycles_only_by_time(X, xlabels, output_mask, figure_savepath, sims_folder):
+def plot_crashed_cycles_only_by_time(X, xlabels, output_mask, figure_savepath, sims_folder, bcl):
 
     a =3
-
-    bcl = 1000.
 
     colors_by_time = {
         0 : '#d55e00',
@@ -299,7 +297,7 @@ def plot_crashed_cycles_only_by_time(X, xlabels, output_mask, figure_savepath, s
     array_time = []
 
     for simnum in range(len(output_mask)):
-        if output_mask[simnum] == 0:
+        if output_mask[simnum] == 0 and os.path.isfile(f"{sims_folder}/cycle_{simnum}/cav.LV.csv"):
             csv_file = f"{sims_folder}/cycle_{simnum}/cav.LV.csv"
             
             df = pd.read_csv(csv_file, skiprows=[1])
@@ -461,7 +459,8 @@ def main(args):
                                      xlabels         = xlabels, 
                                      output_mask     = output_mask_cycle, 
                                      figure_savepath = figures_path,
-                                     sims_folder     = sims_folder)
+                                     sims_folder     = sims_folder,
+                                     bcl             = BCL)
     
 
 if __name__ == '__main__':
