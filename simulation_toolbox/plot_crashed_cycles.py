@@ -308,6 +308,9 @@ def plot_crashed_cycles_only_by_time(X, xlabels, output_mask, figure_savepath, s
 
             heartbeat_number = int(last_time/bcl)
 
+            if heartbeat_number == 5:
+                print(f"Simulation {simnum} reached beat 5 but crashed")
+
             array_time.append(heartbeat_number)
 
             color_array.append(colors_by_time[heartbeat_number])
