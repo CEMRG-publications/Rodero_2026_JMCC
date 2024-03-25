@@ -273,14 +273,13 @@ def plot_crashed_cycles_only_by_phase(X, xlabels, output_mask, figure_savepath, 
 
 def plot_crashed_cycles_only_by_time(X, xlabels, output_mask, figure_savepath, sims_folder, bcl):
 
-    a =3
-
     colors_by_time = {
         0 : '#d55e00',
         1: '#cc79a7',
         2 : '#0072b2',
         3: '#f0e442',
-        4: '#009e73'
+        4: '#009e73',
+        5: '#6a0dad'
     }
 
     marker_by_time = {
@@ -288,7 +287,8 @@ def plot_crashed_cycles_only_by_time(X, xlabels, output_mask, figure_savepath, s
         1: 'p',
         2: 'x',
         3: 'd',
-        4: '<'
+        4: '<',
+        5: '^' 
     }
 
     color_array = []
@@ -376,6 +376,15 @@ def plot_crashed_cycles_only_by_time(X, xlabels, output_mask, figure_savepath, s
                 c=colors_by_time[4],
                 marker=marker_by_time[4],
                 label="Beat 5",
+                s=20
+            )
+
+            ax.scatter(
+                x_var[array_time == 5],
+                y_var[array_time == 5],
+                c=colors_by_time[5],
+                marker=marker_by_time[5],
+                label="Beat 5 (no ejection)",
                 s=20
             )
 
