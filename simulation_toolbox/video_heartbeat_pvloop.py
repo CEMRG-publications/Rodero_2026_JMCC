@@ -148,7 +148,8 @@ def visualise_motion(displacement_file: str,
                      path_to_simulation: str, 
                      BCL: int, 
                      dt: int = 10,
-                     only_LV: bool = False) -> None:
+                     only_LV: bool = False,
+                     save_dt: int = 1) -> None:
     """
     Visualizes the motion of a mesh over time by creating a series of screenshots and PV loop plots.
 
@@ -161,6 +162,7 @@ def visualise_motion(displacement_file: str,
         path_to_simulation: The path to the simulation data.
         BCL: The Basic Cycle Length.
         dt: The time step (default is 10).
+        save_dt: Saving timestep (default is 1).
 
     Returns:
         None. The function generates a series of screenshots and PV loop plots.
@@ -191,7 +193,7 @@ def visualise_motion(displacement_file: str,
         volume_dict[chamber] = v
 
 
-    for t in tqdm.tqdm(range(nt)):
+    for t in tqdm.tqdm(range(0, nt, save_dt)):
         logging.info(f"Processing time step {t}/{nt-1}...")
 
         pv_msh.points = u[t, :, :]
@@ -264,7 +266,7 @@ def print_PV_loop(chambers: list,
             plt.plot(volume_to_plot, pressure_to_plot, color=colours[j], linewidth=3.0)
             plt.xlabel(chamber_name + ' volume (mL)', fontsize=24, fontweight='bold')
             plt.ylabel(chamber_name + ' pressure (mmHg)', fontsize=24, fontweight='bold')
-            plt.xlim(xmin=50,xmax=150)
+            plt.xlim(xmin=50,xmax=200)
             plt.ylim(ymin=0,ymax=150)
             plt.xticks(fontsize=22)
             plt.yticks(fontsize=22)
@@ -285,6 +287,7 @@ def main(args):
     only_LV           = args.only_LV
     video_directory   = args.video_directory
     video_name        = args.video_name
+    save_dt           = args.save_dt
 
     # Extract the directory of the displacement file
     disp_directory = os.path.dirname(os.path.abspath(displacement_file))
@@ -309,7 +312,8 @@ def main(args):
                      path_to_simulation=disp_directory,
                      BCL=BCL,
                      dt=dt,
-                     only_LV=only_LV)
+                     only_LV=only_LV,
+                     save_dt=save_dt)
     
     if video_directory is None:
         video_directory = disp_directory
@@ -332,6 +336,7 @@ if __name__ == '__main__':
     parser.add_argument('--only_LV', default=False, action='store_true', help="Flag to plot only the PV loop of the left ventricle.")
     parser.add_argument('--video_directory', default=None, type=str, help="Path where the video will be saved. If None, it will be saved in the same directory as the cycle file.")
     parser.add_argument('--video_name', default="motion_pvloop", type=str, help="Name of the video file.")
+    parser.add_argument('--save_dt', default=1, type=int, help="Interval to save the screenshots.")
 
     args = parser.parse_args()
     
