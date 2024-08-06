@@ -155,6 +155,7 @@ def cycle_output_free_output_mask_name(datafolder,
                  BCL,
                  NBEATS,
                  AVD,
+                 first_simulation=0,
                  basename="cycle_",
                  output_file="Y.txt",
                  visualise=True,
@@ -170,8 +171,9 @@ def cycle_output_free_output_mask_name(datafolder,
     output = np.zeros((idx_ok.shape[0],26))
 
     for i in range(idx_ok.shape[0]):
-        print('Simulation '+basename+str(idx_ok[i])+'...')
-        folder = output_folder+'/'+basename+str(idx_ok[i])
+        sim_number = first_simulation + idx_ok[i]
+        print('Simulation '+basename+str(sim_number)+'...')
+        folder = output_folder+'/'+basename+str(sim_number)
 
         lv = read_csv(folder+'/cav.LV.csv', delimiter=",", skipinitialspace=True,
                            header=0, comment='#')
@@ -227,6 +229,7 @@ def electrophysiology_cycle_output_output_mask_free(datafolder,
                                    output_folder,
                                    elem_file,
                                    tags,
+                                   first_simulation=0,
                                    basename="cycle_",
                                    output_file="Y_EP.txt",
                                    output_mask="output_mask.txt"):
@@ -285,9 +288,10 @@ def electrophysiology_cycle_output_output_mask_free(datafolder,
     output = np.zeros((idx_ok.shape[0],2))
 
     for i in range(idx_ok.shape[0]):
-        print('Simulation '+basename+str(idx_ok[i])+'...')
+        sim_num = first_simulation + idx_ok[i]
+        print('Simulation '+basename+str(sim_num)+'...')
 
-        folder = output_folder+'/'+basename+str(idx_ok[i])
+        folder = output_folder+'/'+basename+str(sim_num)
 
         AT=np.loadtxt(folder+"/vm_act_seq.dat",dtype=float)
         if (np.min(AT[V_VTX]<0)):
@@ -330,8 +334,9 @@ def     cycle_simulation_summary(output_folder,
 	count_PD = 0
 	count_OK = 0
 	count_notOK = 0
-	for i in range(start_sample,last_sample+1):
-		folder = output_folder+'/'+basename+str(i)
+	for sim_index in range(0,last_sample-start_sample+1):
+		sim_number = start_sample + sim_index
+		folder = output_folder+'/'+basename+str(sim_number)
 
 		if os.path.exists(folder) and os.path.isfile(f"{folder}/cav.LV.csv"):
                
@@ -345,10 +350,10 @@ def     cycle_simulation_summary(output_folder,
 			if include_last_AVD:
 				check_tend = BCL*NBEATS
 			else:
-				check_tend = BCL*NBEATS - AVD[i]
+				check_tend = BCL*NBEATS - AVD[sim_index]
 
-			init_last_beat = BCL*(NBEATS-1) - AVD[i]
-			end_last_beat = BCL*NBEATS - AVD[i]				
+			init_last_beat = BCL*(NBEATS-1) - AVD[sim_index]
+			end_last_beat = BCL*NBEATS - AVD[sim_index]				
 
 			last_beat = np.intersect1d(np.where(time>=init_last_beat)[0],
 									   np.where(time<=end_last_beat)[0])
@@ -360,21 +365,21 @@ def     cycle_simulation_summary(output_folder,
 			# print(f"max(time) is {max(time)} and should be equal to int(check_tend) which is {int(check_tend)}")
 			# print(f"SV is {SV} and should be > 5")
 			if len(lv)>0 and max(time) == int(check_tend) and (SV>5.0):
-				output[i] = 1
-				tab.append(list([basename+str(i),'Y']))
+				output[sim_index] = 1
+				tab.append(list([basename+str(sim_number),'Y']))
 				count_OK += 1
 			else:
-				output[i] = 0
-				tab.append(list([basename+str(i),'N']))
+				output[sim_index] = 0
+				tab.append(list([basename+str(sim_number),'N']))
 				count_notOK += 1
 		else:
-			if i in unloaded_failed:
-				output[i] = 0
-				tab.append(list([basename+str(i),'N']))
+			if sim_number in unloaded_failed:
+				output[sim_index] = 0
+				tab.append(list([basename+str(sim_number),'N']))
 				count_notOK += 1
 			else:
-				output[i] = -1
-				tab.append(list([basename+str(i),'PD']))
+				output[sim_index] = -1
+				tab.append(list([basename+str(sim_number),'PD']))
 				count_PD += 1
 
 	tab.append(list(['','OK = '+str(count_OK)]))
@@ -403,6 +408,52 @@ def     cycle_simulation_summary(output_folder,
 def file_exists(full_file_path):
     if not os.path.isfile(full_file_path):
         raise Exception("You need to have the file " + full_file_path)
+
+
+def plot_pvloops_all_sim_range(datafolder,
+				 	 output_folder,
+					 BCL,
+					 first_simulation,
+					 basename="cycle_",
+					 figname=None,
+					 mask_file=None):
+
+	print('Plotting PV loops for successful simulations...')
+
+	chambers = ['LV','RV','LA','RA']
+
+	if mask_file is None:
+		mask_file = datafolder+"/output_mask.txt"
+	
+	mask = np.loadtxt(mask_file,dtype=int)
+	idx_ok = np.where(mask==1)[0]
+	
+	ax = plt.figure(figsize=(10,10), constrained_layout=True).subplots(2, 2)
+	ax = ax.flatten()
+	for i in range(idx_ok.shape[0]):
+		
+		for j,c in enumerate(chambers):
+
+			ch = read_csv(output_folder+'/'+basename+str(first_simulation+idx_ok[i])+'/cav.'+c+'.csv', delimiter=",", skipinitialspace=True,
+								   	header=0, comment='#')  	
+			time = np.array(ch['Time'])
+
+			start = time[-1]-BCL
+
+			plot_time = np.where(time>=start)[0]
+
+			volume = np.array(ch['Volume'][plot_time])
+			pressure = np.array(ch['Pressure'][plot_time])
+			t = np.array(ch['Time'][plot_time])  	
+
+			ax[j].plot(volume,pressure,color='#3489eb')
+			ax[j].set_xlabel(c+' volume [mL]')
+			ax[j].set_ylabel(c+' pressure [mmHg]')
+
+	if figname is not None:
+		plt.savefig(figname,dpi=300)
+	else:
+		plt.show()
 
 def main(args):
 
@@ -443,6 +494,7 @@ def main(args):
                                     BCL           = BCL,
                                     AVD           = 200*[100],
                                     NBEATS        = n_beat,
+                                    first_simulation=first_simulation,
                                     basename      = "cycle_",
                                     output_file   = f"{data_folder}/Y_mechanics_beat_{n_beat}.txt",
                                     visualise     = False,
@@ -456,17 +508,18 @@ def main(args):
                                    output_folder = simulations_folder,
                                    elem_file     = elem_file,
                                    tags          = tags,
+                                   first_simulation=first_simulation,
                                    basename      = "cycle_",
                                    output_file   = f"{data_folder}/Y_EP_beat_{n_beat}.txt",
                                    output_mask=f"output_mask_beat_{n_beat}.txt")
 
 
-    fourchamber_output.plot_pvloops_all(datafolder    = output_folder,
+    plot_pvloops_all_sim_range(datafolder    = output_folder,
                                         output_folder = simulations_folder,
                                         BCL           = BCL,
                                         basename      = "cycle_",
                                         mask_file     = f"{output_folder}/output_mask_beat_{n_beat}.txt",
-                                        NBEATS        = n_beat,
+                                        first_simulation=first_simulation,
                                         figname       = f"{figures_path}/all_pv_loops_beat_{n_beat}.png")
     
     Y_array = []
@@ -484,10 +537,10 @@ def main(args):
     for index, value in enumerate(output_mask):
         # If the value is 1, plot the pv loop
         if value == 1:
-               print(f"Plotting PV loops of simulation #{index}...")
-               path2simulation = f"{simulations_folder}/cycle_{index}"
+               print(f"Plotting PV loops of simulation #{first_simulation+index}...")
+               path2simulation = f"{simulations_folder}/cycle_{first_simulation+index}"
                
-               print_PV_loops_all_cycles(path_to_simulation = path2simulation,BCL = BCL, case_number=index)
+               print_PV_loops_all_cycles(path_to_simulation = path2simulation,BCL = BCL, case_number=first_simulation+index)
 
 if __name__ == '__main__':
 
