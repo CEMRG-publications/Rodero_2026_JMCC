@@ -22,7 +22,8 @@ def passive_output_per_chamber(output_folder,
 				   basename="",
 				   tend=50,
 				   output_file="Y.txt",
-				   mask_output_file="output_mask.txt"):
+				   mask_output_file="output_mask.txt",
+                   last_frame=5):
 
     print('Reading mesh elem file...')
     elem = mesh_utils.read_tets(elem_file)
@@ -33,7 +34,7 @@ def passive_output_per_chamber(output_folder,
     LA_EIDX = np.where(np.isin(elem[:,-1],tags["la"])==1)[0]
     RA_EIDX = np.where(np.isin(elem[:,-1],tags["ra"])==1)[0]
 
-    V_EIDX = np.where(np.isin(elem[:,-1],tags["ventricles"]+tags["fast_endo"])==1)[0]
+    V_EIDX = np.where(np.isin(elem[:,-1],tags["lv"]+tags['rv']+tags["fast_endo"])==1)[0]
     A_EIDX = np.where(np.isin(elem[:,-1],tags["atria"]+tags["bachmann_bundle"])==1)[0]
 
     LV_VTX = np.unique(elem[LV_EIDX,0:4].flatten())
@@ -54,14 +55,15 @@ def passive_output_per_chamber(output_folder,
         for j,c in enumerate(chambers):
             if os.path.isfile(f"{output_folder}/{basename}{i}/{c}_endo.vol.dat"):
                 volume = np.loadtxt(output_folder+'/'+basename+str(i)+'/'+c+'_endo.vol.dat',dtype=float,usecols=[1])
-                
+
                 if volume.shape[0]==tend+1:
                     mask_output[i] = 1
                     Y[i,j] = np.max(volume)
+                else: 
+                    print(f"Simulation #{i} failed, volume file has length {volume.shape[0]} while it should be {tend+1}")
         if mask_output[i]==1:
 
             if not os.path.isfile(f"{output_folder}/{basename}{i}/fiberProjectedStrain.txt"):
-                last_frame = 5
                 print(f"Extracting strains for simulation #{i}, assuming the last frame in {last_frame}")
                 os.system(f"igbextract -o ascii_1pLn --f0={last_frame} --f1={last_frame} -O {output_folder}/{basename}{i}/fiberProjectedStrain.txt {output_folder}/{basename}{i}/fiberProjectedStrain.igb")
 
@@ -125,7 +127,8 @@ def main(args):
     elem_file          = args.elem_file
     first_simulation   = args.first_simulation
     last_simulation    = args.last_simulation
-
+    tend=args.tend
+    last_frame=args.last_frame
     with open(f"{basefolder}/json_files/tags.json","r") as f:
         tags = json.load(f)
 
@@ -139,9 +142,10 @@ def main(args):
 				   start_sample=first_simulation,
 				   last_sample=last_simulation,
 				   basename="inflation_",
-				   tend=50,
+				   tend=tend,
 				   output_file=f"{output_folder}/Y.txt",
-				   mask_output_file=f"{output_folder}/output_mask.txt")
+				   mask_output_file=f"{output_folder}/output_mask.txt",
+                   last_frame=last_frame)
     
     plot_passive_output_avoid_crashes(output_folder=simulations_folder,
                     start_sample=first_simulation,
@@ -153,7 +157,7 @@ def main(args):
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description="Script to generate a pdf and a txt file showing the simulations that worked. It also plots the simulations that crashed and the ones who didn't in the parameter space and plots all the pv loops for the ones that worked.")
+    parser = argparse.ArgumentParser()
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument('--basefolder', type=str, required=True,
@@ -162,6 +166,8 @@ if __name__ == '__main__':
     parser.add_argument('--elem_file', type=str, help="Path to the elem file of the mesh without the bachmann bundle.", required=True)
     parser.add_argument('--first_simulation', type=int)
     parser.add_argument('--last_simulation', type=int)
+    parser.add_argument('--tend', type=int, default=50)
+    parser.add_argument('--last_frame', type=int, default=5)
 
     args = parser.parse_args()
 
