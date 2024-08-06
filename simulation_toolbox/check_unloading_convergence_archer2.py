@@ -8,7 +8,7 @@ from Historia.shared.design_utils import read_labels
 
 def file_exists(full_file_path):
     if not os.path.isfile(full_file_path):
-        raise Exception("You need to have the file " + full_file_path)
+        raise Exception(f"You need to have the file {os.path.abspath(os.path.normpath(full_file_path))}")
 
 
 def check_fourchamber_unloading_(simulation_folder,
