@@ -7,9 +7,9 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "~=3.9.13"
-simulation-library = {git = "ssh://git@github.com/MarinaStrocchi/SIMULATION_library.git", rev = "developer"}
+simulation-library = {git = "ssh://git@github.com/MarinaStrocchi/SIMULATION_library.git", rev = "jb_courtemanche"}
 requests = "^2.31.0"
-scipy = "1.7.3"
+unloading-library = {git = "ssh://git@github.com/MarinaStrocchi/UNLOADING_library.git", rev = "master"}
 
 
 [build-system]
