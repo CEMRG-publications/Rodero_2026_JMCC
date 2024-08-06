@@ -8,7 +8,7 @@ from Historia.shared.design_utils import read_labels
 
 def file_exists(full_file_path):
     if not os.path.isfile(full_file_path):
-        raise Exception("You need to have the file " + full_file_path)
+        raise Exception(f"You need to have the file {os.path.abspath(os.path.normpath(full_file_path))}")
 
 
 def check_fourchamber_unloading_(simulation_folder,
@@ -91,7 +91,10 @@ def main(args):
     unloaded_volumes = np.loadtxt(os.path.join(basefolder,"unloaded_volumes.txt"),dtype=float)
 
     X = np.loadtxt(os.path.join(basefolder,"../data/X_mechanics.txt"),dtype=float)
-    mask = np.sum(unloaded_volumes,axis=1)
+    if type(np.size(unloaded_volumes)) is not int :
+        mask = np.sum(unloaded_volumes,axis=1)
+    else:
+        mask = np.sum(unloaded_volumes)
 
     xlabels = read_labels(os.path.join(basefolder,"../data/xlabels_mechanics.txt"))
 
