@@ -82,8 +82,11 @@ def main(args):
 
 
     for unloading_row_num in tqdm.tqdm(range(last_simulation - first_simulation + 1)):
-
-        if np.sum(unloaded_volumes[unloading_row_num,:])!=0:
+        if np.ndim(unloaded_volumes) > 1:
+            unloaded_check = np.sum(unloaded_volumes[unloading_row_num,:])
+        else:
+            unloaded_check = np.sum(unloaded_volumes[unloading_row_num])
+        if unloaded_check!=0:
 
             i = first_simulation + unloading_row_num
 
@@ -107,7 +110,8 @@ def main(args):
                         "-ofmt=carp_bin"]
                 cmd_str = ' '.join(cmd)
                 os.system(cmd_str) 
-                os.system(f"rm {unloaded_meshname}.lon {unloaded_meshname}.pts {unloaded_meshname}.elem")
+
+                os.system(f"rm {unloaded_meshname}.lon {unloaded_meshname}.pts {unloaded_meshname}.elem 2>/dev/null")
             
             print("Copied")
       
@@ -263,10 +267,12 @@ def main(args):
     os.system(f"cp {basefolder}/unloaded/*.bpts {initial_mesh_path}/unloaded/.")
     os.system(f"cp {basefolder}/unloaded/*.blon {initial_mesh_path}/unloaded/.")
 
-    os.system(f"rm {initial_mesh}.pts")
-    os.system(f"rm {initial_mesh}.elem")
-    os.system(f"rm {initial_mesh}.lon")
-
+    if os.path.isfile(f"{initial_mesh}.pts"):
+        os.system(f"rm {initial_mesh}.pts")
+    if os.path.isfile(f"{initial_mesh}.elem"):
+        os.system(f"rm {initial_mesh}.elem")
+    if os.path.isfile(f"{initial_mesh}.lon"):
+        os.system(f"rm {initial_mesh}.lon")
 
 if __name__ == '__main__':
 
