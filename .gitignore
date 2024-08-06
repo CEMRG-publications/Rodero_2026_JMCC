@@ -5,3 +5,9 @@ notebooks/tests.ipynb
 notebooks/tests2.ipynb
 simulation_toolbox/original_marina.py
 simulation_toolbox/__pycache__/check_cycle_output_archer2.cpython-39.pyc
+notebooks/0_sampling.ipynb
+notebooks/old_1_generate_unloading_scripts.ipynb
+notebooks/old_2_run_cell_generate_cycle.ipynb
+simulation_toolbox/old_write_simulation_scripts.py
+simulation_toolbox/scp_files_hpc.sh
+simulation_toolbox/scp_files_hpc.sh
