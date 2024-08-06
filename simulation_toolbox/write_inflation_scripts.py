@@ -140,7 +140,8 @@ def main(args):
         										simulation_script  = args.slrmfolder+"/inflation_"+str(i)+".slrm",
         										setup              = sim_setup,
     											postprocessing     = False,
-                                                get_fibre_strains  = True)
+                                                get_fibre_strains  = True,
+												mechDT=args.mechDT)
         
         
 
@@ -188,6 +189,8 @@ if __name__ == '__main__':
     parser.add_argument('--setup_file', type=str, required=False,
                         default=None,
                         help='Full path of the settings file')  
+    parser.add_argument('--mechDT', type=str, required=False,
+                        default=1.0)  
 
     args = parser.parse_args()
 
