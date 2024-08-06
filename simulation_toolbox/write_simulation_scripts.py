@@ -13,148 +13,141 @@ from SIMULATION_library.cell_sims_utils import *
 from GSA_library import ionic_output
 from GSA_library.plotting import plot_Land_output
 
-from Historia.shared.design_utils import read_labels
-
-def check_files(datafolder,fields):
-
-    for f in fields:
-        if os.path.exists(datafolder+"xlabels_"+f+".txt") and os.path.exists(datafolder+"X_"+f+".txt"):
-            print('Found files for field '+f+'.')
-        else:
-            raise Exception("Cannot find files for field "+f+".")
-        
-def X_to_json_modified(labels_fields,
-			  datafolder,
-			  outputfolder,
-			  default_json):
-
-	print('generating json file...')
-
-	os.system('mkdir '+outputfolder)
-
-	
-	N = None
-	while N is None:
-		for lab in labels_fields:
-			print(lab)
-			X_tmp = np.loadtxt(datafolder+'/X_'+lab+'.txt')
-			labels = read_labels(datafolder+'/xlabels_'+lab+'.txt')	
-			# print(lab)
-			# print(X_tmp.shape)
-			if len(X_tmp.shape)>1 or len(labels) == 1:
-				N = X_tmp.shape[0]
-			elif (len(X_tmp.shape) == 1) and len(labels)>1:
-				N = 1
-
-	# generate this dictionary to avoid reading X_*.txt at every iteration
-	dct_datasets = {}
-	for k,lab in enumerate(labels_fields):
-		print(lab)
-		dct_datasets[lab] = {}
-
-		labels = read_labels(datafolder+'/xlabels_'+lab+'.txt')	
-		dct_datasets[lab]["labels"] = labels
-
-		X = np.loadtxt(datafolder+'/X_'+lab+'.txt')
-		dct_datasets[lab]["X"] = X
-
-	for i in range(N):
-		# if you want to combine the new parameters
-		# with the default json file, then the dictionary
-		# is initialised to the default json you give.
-		# Otherwise it's empty
-
-		f_input = open(default_json,"r")
-		param_dictionary = json.load(f_input)
-		f_input.close()
-
-		for k,lab in enumerate(labels_fields):
-
-			labels = dct_datasets[lab]["labels"]
-			X = dct_datasets[lab]["X"]
-
-			if default_json is not None:
-				subdict = param_dictionary[lab]
-			else:
-				subdict = {}
-			
-			if (len(X.shape) == 1) and N==1:
-				X = X.reshape(1,X.shape[0])
-			elif (len(X.shape) == 1) and N>1:
-				X = X.reshape(N,1)
-
-			if (len(labels)!=X.shape[1]):
-				raise ValueError('xlabels_'+lab+'.txt'+' and X_'+lab+'.txt do not match')	
-			if (X.shape[0]!=N):
-				raise ValueError('X_'+lab+'.txt'+' and X_'+labels_fields[0]+'.txt do not match')		
-			for j in range(len(labels)):
-				subdict[labels[j]] = X[i,j]	
-
-
-			param_dictionary[lab] = subdict
-
-		with open(outputfolder+'/'+str(i)+'.json', 'w') as f:
-		    json.dump(param_dictionary, f, indent=4)
-
 def main(args):
 
-    os.system("mkdir -p "+args.paramfolder)
-    os.system("mkdir -p "+args.slrmfolder)
+    print("Generating cycle scripts from "+args.paramfolder+"...")
 
-    fields = args.fields
+    if not os.path.exists(args.slrmfolder):
+      os.system("mkdir -p "+args.slrmfolder)
 
-    X_tmp = np.loadtxt(args.datafolder+"/X_"+fields[0]+".txt")
-    N = X_tmp.shape[0]
-
-    idx_1 = int(args.idx1) if args.idx1 is not None else 0
-    idx_2 = int(args.idx2) if args.idx2 is not None else N-1
+    idx_1 = int(args.idx1)
+    idx_2 = int(args.idx2)
 
     sim_setup = simulation()
 
-    if args.setup_file is None:
-        setup_file = './'+args.platform+'_setup_'+args.user+'.json'
-    else:
-        setup_file = args.setup_file
-    if not os.path.exists(setup_file):
-        raise Exception("You need to have a file called "+setup_file)
-
-    sim_setup.load(setup_file)
+    if not os.path.exists(args.setup_file):
+        raise Exception("Cannot find setup file "+args.setup_file)
+    sim_setup.load(args.setup_file)
 
     original_meshname = sim_setup.meshname
 
-    # ------------------------------
-    # create json files and simulation scripts
-    # ------------------------------
+    where_to_save_param_string = args.cell_sims_folder+"/param/"
+    os.system("rm -r "+where_to_save_param_string)
 
-    X_to_json_modified(fields,
-    							  args.datafolder,	
-    							  args.paramfolder,
-    							  default_json=args.defaultfile)
+    print("Saving the parameter files for the cell simulations in "+where_to_save_param_string+"...")
 
-    
-    where_to_save_param_string = args.paramfolder_cell
     for i in range(idx_1,idx_2+1):
 
         sim_setup.meshname = "/unloaded/"+original_meshname+"_unloaded_"+str(i)
         sim_setup.testname = "cycle_"+str(i)
-        sim_setup.walltime = '24:00:00'
-        sim_setup.cycle_peri_on = True
 
-        sim_setup.torord_init_file = f"{args.HPC_statefolder}/ToRORd_dynCl/{i}/{i}_ToRORd_dynCl_LandHumanStress.sv"
-        sim_setup.torord_rv_init_file = f"{args.HPC_statefolder}/ToRORd_dynCl/{i}/{i}_ToRORd_dynCl_LandHumanStress.sv"
-        sim_setup.courtemanche_init_file = f"{args.HPC_statefolder}/converted_COURTEMANCHE/{i}/{i}_converted_COURTEMANCHE_LandHumanStress.sv"
-       
+        sim_setup.torord_init_file = args.HPC_statefolder+"/"+str(i)+"_ToRORd_dynCl_LandHumanStress.sv"
+        sim_setup.torord_rv_init_file = args.HPC_statefolder+"/"+str(i)+"_ToRORd_dynCl_rv_LandHumanStress.sv"
+        sim_setup.courtemanche_init_file = args.HPC_statefolder+"/"+str(i)+"_JB_COURTEMANCHE_LandHumanStress.sv"	   
+
         simulator_utils.write_simulation_script(args.paramfolder+'/'+str(i)+'.json',
-        										args.clinical_data,
-        										args.tags,
-        										args.slrmfolder+"/cycle_"+str(i)+".slrm",
-        										sim_setup,
-    											postprocessing=False,
+                                                args.clinical_data,
+                                                args.tags_file,
+                                                args.slrmfolder+"/cycle_"+str(i)+".slrm",
+                                                sim_setup,
+                                                postprocessing=False,
+                                                adapt_tubeArea=True,
                                                 save_param_string=where_to_save_param_string+str(i)+"_")
-        
-        
-    # os.system(f"rm -rf {where_to_save_param_string}")
 
+    # --------------------------------------------------------------------------------------------------------
+    cell_sims_basefolder = args.cell_sims_folder+"/"
+    X = np.loadtxt(os.path.join(args.datafolder,"X.txt"))
+    N = X.shape[0]
+
+    with open(args.clinical_data,"r") as f:
+      clinical_data = json.load(f)
+
+    # choice = input("Do you want to run the cell simulations - takes a long time and the states should already be there? [y/n] : ")
+    choice = 'n'
+    while choice not in ['y','n']:
+      choice = input("You need to pick y or n : ")
+    if choice == 'y':
+      print("Running cell simulations...")
+      BCL = int(clinical_data["general"]["BCL"])
+      NBEATS = 500
+      NPROC = 23 # max number of cores - 1      
+
+      generate_bench_script(N,                                # how many simulations to run (one per param.json)
+                            BCL,                              # BCL
+                            NBEATS,                           # NBEATS
+                            cell_sims_basefolder,             # basefolder containing the param folder
+                            NPROC,                            # number of CPUs to use for parallel runs
+                            0.0,                              # strain
+                            "LV",                             # chamber = LV, RV or atria
+                            sim_setup.contraction_model,      # contraction model
+                            suffix="")
+      os.system("bash "+cell_sims_basefolder+"run_ToRORd_dynCl.sh")     
+
+      ionic_output.bin_to_dat_folder(cell_sims_basefolder+"ToRORd_dynCl/",
+                                0,
+                                N-1,
+                                BCL,
+                                NBEATS,
+                                ["ToRORd_dynCl.Vm.bin","ToRORd_dynCl.Ca_i.bin","ToRORd_dynCl.Tension.bin"],
+                                ["Vm.dat","Ca_i.dat","Tension.dat"],
+                                cleanup=True)   
+
+      plot_Land_output(cell_sims_basefolder+"ToRORd_dynCl/",
+                       N,
+                       figname=cell_sims_basefolder+"/ToRORd_output.png",
+                       isometric=True)  
+
+      generate_bench_script(N,                                # how many simulations to run (one per param.json)
+                            BCL,                              # BCL
+                            NBEATS,                           # NBEATS
+                            cell_sims_basefolder,             # basefolder containing the param folder
+                            NPROC,                            # number of CPUs to use for parallel runs
+                            0.0,                              # strain
+                            "RV",                             # chamber = LV, RV or atria
+                            sim_setup.contraction_model,      # contraction model
+                            suffix="_rv")
+      os.system("bash "+cell_sims_basefolder+"run_ToRORd_dynCl_rv.sh")      
+
+      ionic_output.bin_to_dat_folder(cell_sims_basefolder+"ToRORd_dynCl_rv/",
+                                0,
+                                N-1,
+                                BCL,
+                                NBEATS,
+                                ["ToRORd_dynCl.Vm.bin","ToRORd_dynCl.Ca_i.bin","ToRORd_dynCl.Tension.bin"],
+                                ["Vm.dat","Ca_i.dat","Tension.dat"],
+                                cleanup=True) 
+          
+      plot_Land_output(cell_sims_basefolder+"ToRORd_dynCl_rv/",
+                       N,
+                       figname=cell_sims_basefolder+"/ToRORd_dynCl_Land_rv_output.png",
+                       isometric=True)  
+
+      generate_bench_script(N,                                # how many simulations to run (one per param.json)
+                            BCL,                              # BCL
+                            NBEATS,                           # NBEATS
+                            cell_sims_basefolder,             # basefolder containing the param folder
+                            NPROC,                            # number of CPUs to use for parallel runs
+                            0.0,                              # strain
+                            "atria",                          # chamber = LV, RV or atria
+                            sim_setup.contraction_model,      # contraction model
+                            suffix="")
+      os.system("bash "+cell_sims_basefolder+"run_JB_COURTEMANCHE.sh")  
+
+      ionic_output.bin_to_dat_folder(cell_sims_basefolder+"JB_COURTEMANCHE/",
+                                0,
+                                N-1,
+                                BCL,
+                                NBEATS,
+                                ["JB_COURTEMANCHE.Vm.bin","JB_COURTEMANCHE.Ca_i.bin","JB_COURTEMANCHE.Tension.bin"],
+                                ["Vm.dat","Ca_i.dat","Tension.dat"],
+                                cleanup=True) 
+          
+      plot_Land_output(cell_sims_basefolder+"JB_COURTEMANCHE/",
+                       N,
+                       figname=cell_sims_basefolder+"/JB_COURTEMANCHE_output.png",
+                       isometric=True)
+    else:
+      print("Skipping cell simulations")
 
 if __name__ == '__main__':
 
@@ -164,53 +157,35 @@ if __name__ == '__main__':
     parser.add_argument('--datafolder', type=str, required=True,
                         help='Provide folder where you have all X_*.txt and xlabels_*.txt')
 
-    parser.add_argument('--fields', nargs='+', required=True,
-                        help='Provide the list of fields you need to modify.')
-
-    parser.add_argument('--platform', type=str, required=True,
-                        help='HPC platform (tom2 or archer2)')
+    parser.add_argument('--setup_file', type=str, required=True,
+                        default=None,
+                        help='.json file with the setup for the simulations')  
 
     parser.add_argument('--paramfolder', type=str, required=True,
                         help='Where to save the json parameter files')
-
-    parser.add_argument('--paramfolder_ToRORd', type=str, required=False,
-                        help='Folder containing the parameter strings for ToRORd_dynCl and Land')
-    parser.add_argument('--paramfolder_cell', type=str, required=True,
-                        help='Folder that will contain the parameter strings for the cell simulations')
-
-    parser.add_argument('--paramfolder_ToRORd_rv', type=str, required=False, default=None,
-                        help='Folder containing the parameter strings for ToRORd_dynCl and Land for the RV')
 
     parser.add_argument('--slrmfolder', type=str, required=True,
                         help='Where to save the slrm files')  
 
     parser.add_argument('--HPC_statefolder', type=str, required=True,
-                        help='To set the states folder in the scripts')  
+                        help='Where the states for the cell simulations will be on the HPC')  
 
-    parser.add_argument('--defaultfile', type=str, required=False, default="./default/default.json",
-                        help='The json default file to modify')  
-
-    parser.add_argument('--idx1', type=str, required=False, default=None,
+    parser.add_argument('--idx1', type=str, required=True, default=None,
                         help='First index to generate the files for')  
 
-    parser.add_argument('--idx2', type=str, required=False, default=None,
+    parser.add_argument('--idx2', type=str, required=True, default=None,
                         help='Last index to generate the files for')  
 
-    parser.add_argument('--clinical_data', type=str, required=False,
-                        default="/data/Dropbox/Sensitivity/patient_data/case19/clinical_data.json",
+    parser.add_argument('--clinical_data', type=str, required=True,
+                        default=None,
                         help='Json file with the clinical data.')  
 
-    parser.add_argument('--tags', type=str, required=False,
-                        default="./data/tags_lvrv.json",
+    parser.add_argument('--tags_file', type=str, required=True,
                         help='Json file with the tags.')  
 
-    parser.add_argument('--user', type=str, required=False,
-                        default="mas",
-                        help='Username on the HPC')  
-    
-    parser.add_argument('--setup_file', type=str, required=False,
-                        default=None,
-                        help='Full path of the settings file')  
+    parser.add_argument('--cell_sims_folder', type=str, required=False,
+                        default="./SS/",
+                        help='Where to save the state files for the cell models')  
 
     args = parser.parse_args()
 
