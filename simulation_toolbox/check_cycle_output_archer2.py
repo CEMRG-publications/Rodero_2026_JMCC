@@ -407,7 +407,7 @@ def     cycle_simulation_summary(output_folder,
 
 def file_exists(full_file_path):
     if not os.path.isfile(full_file_path):
-        raise Exception("You need to have the file " + full_file_path)
+        raise Exception(f"You need to have the file {os.path.abspath(os.path.normpath(full_file_path))}")
 
 
 def plot_pvloops_all_sim_range(datafolder,
