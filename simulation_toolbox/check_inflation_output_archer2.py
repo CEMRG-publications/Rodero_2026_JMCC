@@ -118,6 +118,56 @@ def plot_passive_output_avoid_crashes(output_folder,
     else:
         plt.show()
 
+def plot_passive_output_X_Y(mask_output_file_path,X_file_path,Y_file_path,xlabels_path,ylabels_path,start_simulation,last_simulation,savepath,figsize=(9,6)):
+
+    output_mask = np.loadtxt(mask_output_file_path,dtype=int)
+
+    X = np.loadtxt(X_file_path)
+    xlabels = np.loadtxt(xlabels_path, dtype=str)
+    Y = np.loadtxt(Y_file_path)
+    ylabels = np.loadtxt(ylabels_path, dtype=str)
+
+    X_num_sim = X[start_simulation:(last_simulation+1),]
+
+    Xdata_array = np.array([row for row, mask in zip(X_num_sim, output_mask) if mask == 1])
+
+    Ydata_array = np.array([row for row, mask in zip(Y, output_mask) if mask == 1])
+
+    Xdata = Xdata_array.reshape(len(Xdata_array), len(Xdata_array[0]))
+    Ydata = Ydata_array.reshape(len(Ydata_array), len(Ydata_array[0]))
+
+
+    in_dim = Xdata.shape[1]
+    out_dim = Ydata.shape[1]
+
+    fig, axes = plt.subplots(
+        nrows=out_dim,
+        ncols=in_dim,
+        sharex="col",
+        sharey="row",
+        figsize=figsize,
+    )
+    for i, axis in enumerate(axes.flatten()):
+        axis.scatter(
+            Xdata[:, i % in_dim], Ydata[:, i // in_dim], c='#3489eb', s=0.1
+        )
+        inf = min(Xdata[:, i % in_dim])
+        sup = max(Xdata[:, i % in_dim])
+        mean = 0.5 * (inf + sup)
+        delta = sup - mean
+        if i // in_dim == out_dim - 1:
+            axis.set_xlabel(xlabels[i % in_dim],rotation=90)
+            axis.set_xticks([])
+            axis.set_xlim(left=inf - 0.3 * delta, right=sup + 0.3 * delta)
+        if i % in_dim == 0:
+            axis.set_yticks([])
+            axis.set_ylabel(ylabels[i // in_dim])
+
+    plt.savefig(savepath, bbox_inches="tight", dpi=300)
+
+
+
+
 def main(args):
 
     basefolder         = args.basefolder
@@ -129,30 +179,38 @@ def main(args):
     last_simulation    = args.last_simulation
     tend=args.tend
     last_frame=args.last_frame
+    only_X_Y = args.only_X_Y
     with open(f"{basefolder}/json_files/tags.json","r") as f:
         tags = json.load(f)
 
     os.makedirs(output_folder,exist_ok=True)
     os.makedirs(figures_path,exist_ok=True)
 
-
-    passive_output_per_chamber(output_folder = simulations_folder,
-				   elem_file = elem_file,
-				   tags = tags,
-				   start_sample=first_simulation,
-				   last_sample=last_simulation,
-				   basename="inflation_",
-				   tend=tend,
-				   output_file=f"{output_folder}/Y.txt",
-				   mask_output_file=f"{output_folder}/output_mask.txt",
-                   last_frame=last_frame)
-    
-    plot_passive_output_avoid_crashes(output_folder=simulations_folder,
+    if not only_X_Y:
+        passive_output_per_chamber(output_folder = simulations_folder,
+                    elem_file = elem_file,
+                    tags = tags,
                     start_sample=first_simulation,
                     last_sample=last_simulation,
                     basename="inflation_",
-                    figname=f"{figures_path}/PV_traces.png",
-                    mask_output_file=f"{output_folder}/output_mask.txt")
+                    tend=tend,
+                    output_file=f"{output_folder}/Y.txt",
+                    mask_output_file=f"{output_folder}/output_mask.txt",
+                    last_frame=last_frame)
+        
+        plot_passive_output_avoid_crashes(output_folder=simulations_folder,
+                        start_sample=first_simulation,
+                        last_sample=last_simulation,
+                        basename="inflation_",
+                        figname=f"{figures_path}/PV_traces.png",
+                        mask_output_file=f"{output_folder}/output_mask.txt")
+    
+    plot_passive_output_X_Y(mask_output_file_path = f"{output_folder}/output_mask.txt",
+                            X_file_path = f"{basefolder}/data/X.txt",
+                            Y_file_path = f"{output_folder}/Y.txt",
+                            xlabels_path = f"{basefolder}/data/xlabels.txt",ylabels_path = f"{basefolder}/data/ylabels.txt",start_simulation=first_simulation,
+                            last_simulation=last_simulation,
+                            savepath=f"{figures_path}/X_vs_Y.png",figsize=(10,20))
 
 
 if __name__ == '__main__':
@@ -168,6 +226,7 @@ if __name__ == '__main__':
     parser.add_argument('--last_simulation', type=int)
     parser.add_argument('--tend', type=int, default=50)
     parser.add_argument('--last_frame', type=int, default=5)
+    parser.add_argument('--only_X_Y', action='store_true')
 
     args = parser.parse_args()
 
