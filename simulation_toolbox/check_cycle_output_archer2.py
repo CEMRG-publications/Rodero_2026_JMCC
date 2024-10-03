@@ -464,13 +464,27 @@ def main(args):
     output_folder      = f"{basefolder}/output"
     figures_path       = f"{basefolder}/figures"
     BCL                = args.BCL
-    elem_file          = args.elem_file
+    elem_file_local          = args.elem_file
     n_beat             = args.n_beat
     first_simulation   = args.first_simulation
     last_simulation    = args.last_simulation
 
     file_exists(f'{basefolder}/data/ylabels.txt')
-    file_exists(f'{elem_file}')
+    # file_exists(f'{elem_file}')
+
+    elem_file = os.path.abspath(os.path.normpath(elem_file_local))
+    
+    if not os.path.isfile(elem_file):
+          
+          basename = ''.join(elem_file.split('.')[:-1])
+          file_exists(f"{basename}.belem")
+          file_exists(f"{basename}.bpts")
+          
+          os.system(f"meshtool convert -imsh={basename} -omsh={basename} -ifmt=carp_bin -ofmt=carp_txt")
+
+          clean_ascii = True
+    else:
+          clean_ascii = False
 
     
 
@@ -541,6 +555,9 @@ def main(args):
                path2simulation = f"{simulations_folder}/cycle_{first_simulation+index}"
                
                print_PV_loops_all_cycles(path_to_simulation = path2simulation,BCL = BCL, case_number=first_simulation+index)
+    
+    if clean_ascii:
+          os.system(f"rm {basename}.elem {basename}.pts {basename}.lon")
 
 if __name__ == '__main__':
 
