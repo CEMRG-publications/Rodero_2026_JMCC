@@ -185,7 +185,7 @@ def cycle_output_free_output_mask_name(datafolder,
                            header=0, comment='#')
 
         time = np.array(lv['Time'])
-        start = int((NBEATS-1)*BCL-AVD[i])
+        start = int((NBEATS-1)*BCL-AVD[idx_ok[i]])
         # start = time[-1]-BCL
         end = start+BCL
 
@@ -472,6 +472,13 @@ def main(args):
     file_exists(f'{basefolder}/data/ylabels.txt')
     # file_exists(f'{elem_file}')
 
+    X   = np.loadtxt(f"{basefolder}/data/X.txt")
+    with open(f'{basefolder}/data/xlabels.txt', 'r') as file:
+        xlabels = file.read().splitlines()
+    
+    AVD = X[:, xlabels.index('AV_delay')]
+    print(f'AVD: {AVD[first_simulation:(last_simulation+1)]}')
+
     elem_file = os.path.abspath(os.path.normpath(elem_file_local))
     
     if not os.path.isfile(elem_file):
@@ -493,20 +500,21 @@ def main(args):
 
     cycle_simulation_summary(output_folder    = simulations_folder,
                                                 BCL              = BCL,
-                                                AVD              = 200*[0],
+                                                AVD              = AVD[first_simulation:(last_simulation+1)],
                                                 NBEATS           = n_beat,
                                                 unloaded_volumes = unloaded_volumes,
                                                 start_sample     = first_simulation,
                                                 last_sample      = last_simulation,
                                                 basename         = "cycle_",
                                                 maskoutput       = f"{output_folder}/output_mask_beat_{n_beat}.txt",
-                                                output_file      = f"{output_folder}/simulation_summary_beat_{n_beat}.pdf"
+                                                output_file      = f"{output_folder}/simulation_summary_beat_{n_beat}.pdf",
+                                                include_last_AVD=True
                                             )
     
     cycle_output_free_output_mask_name(datafolder    = output_folder,
                                     output_folder = simulations_folder,
                                     BCL           = BCL,
-                                    AVD           = 200*[100],
+                                    AVD           = AVD[first_simulation:(last_simulation+1)],
                                     NBEATS        = n_beat,
                                     first_simulation=first_simulation,
                                     basename      = "cycle_",
@@ -515,7 +523,7 @@ def main(args):
                                     output_mask=f"output_mask_beat_{n_beat}.txt")
     
     output_mask = np.loadtxt(f"{output_folder}/output_mask_beat_{n_beat}.txt")
-    with open(f"{basefolder}/json_files/tags.json","r") as f:
+    with open(f"{basefolder}/json_files/tags_lvrv_fch.json","r") as f:
         tags = json.load(f)
 
     electrophysiology_cycle_output_output_mask_free(datafolder = output_folder,
