@@ -12,3 +12,4 @@ simulation_toolbox/old_write_simulation_scripts.py
 simulation_toolbox/scp_files_hpc.sh
 simulation_toolbox/scp_files_hpc.sh
 notebooks/2_scale_EP_generate_cycle.ipynb
+poetry.lock
