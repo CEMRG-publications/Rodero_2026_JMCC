@@ -271,6 +271,7 @@ def main(args):
                 _ = plotter.add_mesh(mesh    = pv_msh_init,
                                     color   = 'lightgray',
                                     opacity = 0.1)
+                plotter.camera.azimuth += 180
 
 
                 print("Taking screenshot...")
@@ -296,7 +297,6 @@ def main(args):
                                     color   = 'lightgray',
                                     opacity = 0.1)
 
-                plotter.camera.azimuth += 180
 
                 print("Taking screenshot...")
                 plotter.screenshot(filename               = f"{path2figure}/unloaded_{i}_posterior.png",
@@ -327,7 +327,8 @@ def main(args):
                                     opacity = 0.1
                                     )
 
-                
+                plotter.camera.azimuth += 180
+
                 print("Taking screenshot...")
                 plotter.screenshot(filename               = f"{path2figure}/unloaded_{i}_anterior_clipped.png", 
                                 transparent_background = None, 
@@ -357,7 +358,6 @@ def main(args):
                                     opacity = 0.1
                                     )
 
-                plotter.camera.azimuth += 180
 
                 print("Taking screenshot...")
                 plotter.screenshot(filename               = f"{path2figure}/unloaded_{i}_posterior_clipped.png", 
