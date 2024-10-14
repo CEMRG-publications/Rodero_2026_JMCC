@@ -155,7 +155,7 @@ def cycle_output_free_output_mask_name(datafolder,
                  BCL,
                  NBEATS,
                  AVD,
-                 first_simulation=0,
+                 first_simulation = 0,
                  basename="cycle_",
                  output_file="Y.txt",
                  visualise=True,
@@ -171,7 +171,11 @@ def cycle_output_free_output_mask_name(datafolder,
     output = np.zeros((idx_ok.shape[0],26))
 
     for i in range(idx_ok.shape[0]):
-        sim_number = first_simulation + idx_ok[i]
+        if first_simulation is None: # Default simulation
+            first_simulation = 0
+            sim_number = 'default'
+        else:
+            sim_number = first_simulation + idx_ok[i]
         print('Simulation '+basename+str(sim_number)+'...')
         folder = output_folder+'/'+basename+str(sim_number)
 
@@ -185,7 +189,7 @@ def cycle_output_free_output_mask_name(datafolder,
                            header=0, comment='#')
 
         time = np.array(lv['Time'])
-        start = int((NBEATS-1)*BCL-AVD[i])
+        start = int((NBEATS-1)*BCL-AVD)
         # start = time[-1]-BCL
         end = start+BCL
 
@@ -288,7 +292,10 @@ def electrophysiology_cycle_output_output_mask_free(datafolder,
     output = np.zeros((idx_ok.shape[0],2))
 
     for i in range(idx_ok.shape[0]):
-        sim_num = first_simulation + idx_ok[i]
+        if first_simulation is None:
+            sim_num = 'default'
+        else:
+            sim_num = first_simulation + idx_ok[i]
         print('Simulation '+basename+str(sim_num)+'...')
 
         folder = output_folder+'/'+basename+str(sim_num)
@@ -306,154 +313,339 @@ def electrophysiology_cycle_output_output_mask_free(datafolder,
 
 
 def     cycle_simulation_summary(output_folder,
-							 BCL,
-							 AVD,
-							 NBEATS,
-							 start_sample=0,
-							 last_sample=0,
-							 basename="cycle",
-							 maskoutput="output_mask.txt",
-							 output_file="simulation_summary.pdf",
-							 unloaded_volumes=None,
-							 include_last_AVD=False):
-	
-	output = np.zeros((last_sample-start_sample+1,),dtype=int)
+                             BCL,
+                             AVD,
+                             NBEATS,
+                             start_sample,
+                             last_sample,
+                             basename="cycle",
+                             maskoutput="output_mask.txt",
+                             output_file="simulation_summary.pdf",
+                             unloaded_volumes=None,
+                             include_last_AVD=False):
+    
+    if start_sample is not None:
+        output = np.zeros((last_sample-start_sample+1,),dtype=int)
+    else: # Default simulation
+        output = np.zeros((1,),dtype=int)
 
-	if unloaded_volumes is not None:
-		unloaded = np.loadtxt(unloaded_volumes,dtype=float)
-		unloaded_failed = np.where(unloaded[:,0]==-1)[0]
-	else:
-		unloaded_failed = []
+    if unloaded_volumes is not None:
+        unloaded = np.loadtxt(unloaded_volumes,dtype=float)
+        unloaded_failed = np.where(unloaded[:,0]==-1)[0]
+    else:
+        unloaded_failed = []
 
-	document = SimpleDocTemplate(output_file, pagesize=A4, title='Simulation Summary')
-	tab = []
-	items = []
-	header = ['sim','success']
-	tab.append(header)
+    document = SimpleDocTemplate(output_file, pagesize=A4, title='Simulation Summary')
+    tab = []
+    items = []
+    header = ['sim','success']
+    tab.append(header)
 
-	count_PD = 0
-	count_OK = 0
-	count_notOK = 0
-	for sim_index in range(0,last_sample-start_sample+1):
-		sim_number = start_sample + sim_index
-		folder = output_folder+'/'+basename+str(sim_number)
+    count_PD = 0
+    count_OK = 0
+    count_notOK = 0
 
-		if os.path.exists(folder) and os.path.isfile(f"{folder}/cav.LV.csv"):
+    if start_sample is not None:
+        for sim_index in range(0,last_sample-start_sample+1):
+            sim_number = start_sample + sim_index
+            folder = output_folder+'/'+basename+str(sim_number)
+
+            if os.path.exists(folder) and os.path.isfile(f"{folder}/cav.LV.csv"):
+                
+                print(f"Reading {folder}/cav.LV.csv...")
+
+                lv = read_csv(folder+'/cav.LV.csv', delimiter=",", skipinitialspace=True,
+                                header=0, comment='#')
+                volume = np.array(lv['Volume'])
+                time = np.array(lv['Time'])
+
+                if include_last_AVD:
+                    check_tend = BCL*NBEATS
+                else:
+                    check_tend = BCL*NBEATS - AVD[sim_index]
+
+                init_last_beat = BCL*(NBEATS-1) - AVD[sim_index]
+                end_last_beat = BCL*NBEATS - AVD[sim_index]                
+
+                last_beat = np.intersect1d(np.where(time>=init_last_beat)[0],
+                                        np.where(time<=end_last_beat)[0])
+
+
+                if last_beat.shape[0]>0:
+                    volume_last_beat = volume[last_beat]
+                    SV = np.max(volume_last_beat)-np.min(volume_last_beat)
+                    pressure_lv = np.array(lv['Pressure'][last_beat])
+                # print(f"len(lv) is {len(lv)} and should be > 0 ")
+                # print(f"max(time) is {max(time)} and should be equal to int(check_tend) which is {int(check_tend)}")
+                # print(f"SV is {SV} and should be > 5")
+                    
+                    # Checking that there's an IVR phase:
+                    dv = np.gradient(volume_last_beat)
+                    time_pmax = time[0]+np.where(pressure_lv==np.max(pressure_lv))[0][0]
+                    ind_IVC = np.intersect1d(np.where(np.abs(dv)<=0.01)[0],np.where(time<=time_pmax-10.)[0])
+                    ind_IVR = np.intersect1d(np.where(np.abs(dv)<=0.01)[0],np.where(time>=time_pmax+10.)[0])
+                    ind_ED = ind_IVC[0]
+                    EDP = pressure_lv[ind_ED]
+                    dpdt_idx = np.where(pressure_lv>EDP)[0]
+                    ind_IVR = np.intersect1d(dpdt_idx,ind_IVR)
+
+                    # Checking RV IVR phase:
+                    rv = read_csv(folder+'/cav.RV.csv', delimiter=",", skipinitialspace=True,
+                                header=0, comment='#')
+                    volume_rv = np.array(rv['Volume'][last_beat])
+                    pressure_rv = np.array(rv['Pressure'][last_beat])
+
+                    # dv_rv = np.gradient(volume_rv[last_beat])
+                    # time_pmax_rv = time[0]+np.where(pressure_rv==np.max(pressure_rv))[0][0]
+                    # ind_IVC_rv = np.intersect1d(np.where(np.abs(dv_rv)<=0.01)[0],np.where(time<=time_pmax_rv-10.)[0])
+                    # ind_IVR_rv = np.intersect1d(np.where(np.abs(dv_rv)<=0.01)[0],np.where(time>=time_pmax_rv+10.)[0])
+                    # ind_ED_rv = ind_IVC_rv[0]
+                    # EDP_rv = pressure_rv[ind_ED_rv]
+                    # dpdt_idx_rv = np.where(pressure_rv>EDP_rv)[0]
+                    # ind_IVR_rv = np.intersect1d(dpdt_idx_rv,ind_IVR_rv)
+
+                    LV_suitable = check_suitable_VV_output(time[last_beat],volume_last_beat,pressure_lv)
+                    RV_suitable = check_suitable_VV_output(time[last_beat],volume_rv,pressure_rv)
+
+
+                if len(lv)>0 and max(time) == int(check_tend) and (SV>5.0) and LV_suitable and RV_suitable:
+                    output[sim_index] = 1
+                    tab.append(list([basename+str(sim_number),'Y']))
+                    count_OK += 1
+                else:
+                    output[sim_index] = 0
+                    tab.append(list([basename+str(sim_number),'N']))
+                    count_notOK += 1
+            else:
+                if sim_number in unloaded_failed:
+                    output[sim_index] = 0
+                    tab.append(list([basename+str(sim_number),'N']))
+                    count_notOK += 1
+                else:
+                    output[sim_index] = -1
+                    tab.append(list([basename+str(sim_number),'PD']))
+                    count_PD += 1
+
+    else: ### Default simulation
+        folder = f"{output_folder}/{basename}default"
+
+        if os.path.exists(folder) and os.path.isfile(f"{folder}/cav.LV.csv"):
                
-			print(f"Reading {folder}/cav.LV.csv...")
+            print(f"Reading {folder}/cav.LV.csv...")
 
-			lv = read_csv(folder+'/cav.LV.csv', delimiter=",", skipinitialspace=True,
-							   header=0, comment='#')
-			volume = np.array(lv['Volume'])
-			time = np.array(lv['Time'])
+            lv = read_csv(folder+'/cav.LV.csv', delimiter=",", skipinitialspace=True,
+                               header=0, comment='#')
+            volume = np.array(lv['Volume'])
+            time = np.array(lv['Time'])
 
-			if include_last_AVD:
-				check_tend = BCL*NBEATS
-			else:
-				check_tend = BCL*NBEATS - AVD[sim_index]
+            if include_last_AVD:
+                check_tend = BCL*NBEATS
+            else:
+                check_tend = BCL*NBEATS - AVD
 
-			init_last_beat = BCL*(NBEATS-1) - AVD[sim_index]
-			end_last_beat = BCL*NBEATS - AVD[sim_index]				
+            init_last_beat = BCL*(NBEATS-1) - AVD
+            end_last_beat = BCL*NBEATS - AVD               
 
-			last_beat = np.intersect1d(np.where(time>=init_last_beat)[0],
-									   np.where(time<=end_last_beat)[0])
+            last_beat = np.intersect1d(np.where(time>=init_last_beat)[0],
+                                       np.where(time<=end_last_beat)[0])
 
-			if last_beat.shape[0]>0:
-				volume_last_beat = volume[last_beat]
-				SV = np.max(volume_last_beat)-np.min(volume_last_beat)
-			# print(f"len(lv) is {len(lv)} and should be > 0 ")
-			# print(f"max(time) is {max(time)} and should be equal to int(check_tend) which is {int(check_tend)}")
-			# print(f"SV is {SV} and should be > 5")
-			if len(lv)>0 and max(time) == int(check_tend) and (SV>5.0):
-				output[sim_index] = 1
-				tab.append(list([basename+str(sim_number),'Y']))
-				count_OK += 1
-			else:
-				output[sim_index] = 0
-				tab.append(list([basename+str(sim_number),'N']))
-				count_notOK += 1
-		else:
-			if sim_number in unloaded_failed:
-				output[sim_index] = 0
-				tab.append(list([basename+str(sim_number),'N']))
-				count_notOK += 1
-			else:
-				output[sim_index] = -1
-				tab.append(list([basename+str(sim_number),'PD']))
-				count_PD += 1
 
-	tab.append(list(['','OK = '+str(count_OK)]))
-	tab.append(list(['','CRASHED = '+str(count_notOK)]))
-	tab.append(list(['','PD = '+str(count_PD)]))
-	table = Table(tab)
+            if last_beat.shape[0]>0:
+                volume_last_beat = volume[last_beat]
+                SV = np.max(volume_last_beat)-np.min(volume_last_beat)
+                pressure_lv = np.array(lv['Pressure'][last_beat])
+            # print(f"len(lv) is {len(lv)} and should be > 0 ")
+            # print(f"max(time) is {max(time)} and should be equal to int(check_tend) which is {int(check_tend)}")
+            # print(f"SV is {SV} and should be > 5")
+                  
+                # Checking that there's an IVR phase:
+                dv = np.gradient(volume_last_beat)
+                time_pmax = time[0]+np.where(pressure_lv==np.max(pressure_lv))[0][0]
+                ind_IVC = np.intersect1d(np.where(np.abs(dv)<=0.01)[0],np.where(time<=time_pmax-10.)[0])
+                ind_IVR = np.intersect1d(np.where(np.abs(dv)<=0.01)[0],np.where(time>=time_pmax+10.)[0])
+                ind_ED = ind_IVC[0]
+                EDP = pressure_lv[ind_ED]
+                dpdt_idx = np.where(pressure_lv>EDP)[0]
+                ind_IVR = np.intersect1d(dpdt_idx,ind_IVR)
 
-	table.setStyle(TableStyle([('INNERGRID', (0,0), (-1,-1), 0.25, colors.black),
-	('BOX', (0,0), (-1,-1), 0.25, colors.black)
-	]))
+                # Checking RV IVR phase:
+                rv = read_csv(folder+'/cav.RV.csv', delimiter=",", skipinitialspace=True,
+                               header=0, comment='#')
+                volume_rv = np.array(rv['Volume'][last_beat])
+                pressure_rv = np.array(rv['Pressure'][last_beat])
 
-	for ii in range(1,len(tab)):
-		for jj in range(1,len(tab[ii])):
-			if tab[ii][jj]=='Y':
-				table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.lightgreen)]))
-			elif tab[ii][jj]=='N':
-				table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.fidred)]))
-			elif tab[ii][jj]=='PD':
-				table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.lightyellow)]))
+                # dv_rv = np.gradient(volume_rv[last_beat])
+                # time_pmax_rv = time[0]+np.where(pressure_rv==np.max(pressure_rv))[0][0]
+                # ind_IVC_rv = np.intersect1d(np.where(np.abs(dv_rv)<=0.01)[0],np.where(time<=time_pmax_rv-10.)[0])
+                # ind_IVR_rv = np.intersect1d(np.where(np.abs(dv_rv)<=0.01)[0],np.where(time>=time_pmax_rv+10.)[0])
+                # ind_ED_rv = ind_IVC_rv[0]
+                # EDP_rv = pressure_rv[ind_ED_rv]
+                # dpdt_idx_rv = np.where(pressure_rv>EDP_rv)[0]
+                # ind_IVR_rv = np.intersect1d(dpdt_idx_rv,ind_IVR_rv)
 
-	items.append(table)
-	document.build(items)
+                LV_suitable = check_suitable_VV_output(time[last_beat],volume_last_beat,pressure_lv)
+                RV_suitable = check_suitable_VV_output(time[last_beat],volume_rv,pressure_rv)
 
-	np.savetxt(maskoutput,output,fmt='%s')
+
+            if len(lv)>0 and max(time) == int(check_tend) and (SV>5.0) and LV_suitable and RV_suitable:
+                output[0] = 1
+                tab.append(list([basename+'default','Y']))
+                count_OK += 1
+            else:
+                output[0] = 0
+                tab.append(list([basename+'default','N']))
+                count_notOK += 1
+        else:
+            if sim_number in unloaded_failed:
+                output[0] = 0
+                tab.append(list([basename+'default','N']))
+                count_notOK += 1
+            else:
+                output[0] = -1
+                tab.append(list([basename+'default','PD']))
+                count_PD += 1
+
+
+    tab.append(list(['','OK = '+str(count_OK)]))
+    tab.append(list(['','CRASHED = '+str(count_notOK)]))
+    tab.append(list(['','PD = '+str(count_PD)]))
+    table = Table(tab)
+
+    table.setStyle(TableStyle([('INNERGRID', (0,0), (-1,-1), 0.25, colors.black),
+    ('BOX', (0,0), (-1,-1), 0.25, colors.black)
+    ]))
+
+    for ii in range(1,len(tab)):
+        for jj in range(1,len(tab[ii])):
+            if tab[ii][jj]=='Y':
+                table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.lightgreen)]))
+            elif tab[ii][jj]=='N':
+                table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.fidred)]))
+            elif tab[ii][jj]=='PD':
+                table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.lightyellow)]))
+
+    items.append(table)
+    document.build(items)
+
+    np.savetxt(maskoutput,output,fmt='%s')
 
 def file_exists(full_file_path):
     if not os.path.isfile(full_file_path):
         raise Exception(f"You need to have the file {os.path.abspath(os.path.normpath(full_file_path))}")
 
+def check_suitable_VV_output(time,volume,pressure):
+
+    time_pmax = time[0]+np.where(pressure==np.max(pressure))[0][0]
+    
+    dv = np.gradient(volume)
+
+    ind_IVC_ = np.intersect1d(np.where(np.abs(dv)<=0.01)[0],np.where(time<=time_pmax-10.)[0])
+    jump = np.where(np.gradient(ind_IVC_)>1)[0]
+
+    if len(jump) == 0:
+        ind_IVC = ind_IVC_
+    else:
+        ind_IVC = ind_IVC_[jump[-1]:-1]
+
+    ind_IVR_ = np.intersect1d(np.where(np.abs(dv)<=0.01)[0],np.where(time>=time_pmax+10.)[0])
+    jump = np.where(np.gradient(ind_IVR_)>1)[0]
+
+    if len(jump) == 0:
+        ind_IVR = ind_IVR_
+    else:
+        ind_IVR = ind_IVR_[0:jump[0]]
+
+    ind_ED = ind_IVC[0]
+
+    EDP = pressure[ind_ED]
+
+
+
+    dpdt_idx = np.where(pressure>EDP)[0]
+    ind_IVR = np.intersect1d(dpdt_idx,ind_IVR)
+    if not len(ind_IVR):
+        ind_IVR = np.intersect1d(dpdt_idx,np.where(time>=time_pmax+10)[0])
+
+    ind_IVC = np.intersect1d(dpdt_idx,ind_IVC)
+    
+    dpdt_ = np.diff(pressure)/np.diff(time)*1000.0
+    dpdt = np.zeros((pressure.shape[0],),dtype=float)
+    dpdt[0] = dpdt_[0]
+    dpdt[1:] = dpdt_
+    # dpdt = np.gradient(pressure)*1000.0
+
+    # to detect oscillations: during IVC the derivative should always be positive
+    # if it's not it means that there are oscillations (normally due to the valves)
+    # so if we find anywehere the dpdt is negative, we discard whatever happens after
+    # because that derivative will be wrong
+    wrong_IVC = np.where(dpdt[ind_IVC]<=-50.0)[0]
+    if len(wrong_IVC)>0:
+        print('Found oscillations during IVC... Removing indices after oscillation...')
+        ind_IVC = ind_IVC[:wrong_IVC[0]]
+
+    # to detect oscillations: during IVR the derivative should always be negative
+    # if it's not it means that there are oscillations (normally due to the valves)
+    # so if we find anywehere the dpdt is positive, we discard whatever happens after
+    # because that derivative will be wrong
+    wrong_IVR = np.where(dpdt[ind_IVR]>=50.0)[0]
+    if len(wrong_IVR)>0:
+        print('Found oscillations during IVR... Removing indices after oscillation...')
+        ind_IVR = ind_IVR[:wrong_IVR[0]]
+    
+    if len(dpdt[ind_IVR]) > 0:
+          return(True)
+    else:
+        return(False)
+
 
 def plot_pvloops_all_sim_range(datafolder,
-				 	 output_folder,
-					 BCL,
-					 first_simulation,
-					 basename="cycle_",
-					 figname=None,
-					 mask_file=None):
+                      output_folder,
+                     BCL,
+                     first_simulation,
+                     basename="cycle_",
+                     figname=None,
+                     mask_file=None):
 
-	print('Plotting PV loops for successful simulations...')
+    print('Plotting PV loops for successful simulations...')
 
-	chambers = ['LV','RV','LA','RA']
+    chambers = ['LV','RV','LA','RA']
 
-	if mask_file is None:
-		mask_file = datafolder+"/output_mask.txt"
-	
-	mask = np.loadtxt(mask_file,dtype=int)
-	idx_ok = np.where(mask==1)[0]
-	
-	ax = plt.figure(figsize=(10,10), constrained_layout=True).subplots(2, 2)
-	ax = ax.flatten()
-	for i in range(idx_ok.shape[0]):
-		
-		for j,c in enumerate(chambers):
+    if mask_file is None:
+        mask_file = datafolder+"/output_mask.txt"
+    
+    mask = np.loadtxt(mask_file,dtype=int)
+    idx_ok = np.where(mask==1)[0]
+    
+    ax = plt.figure(figsize=(10,10), constrained_layout=True).subplots(2, 2)
+    ax = ax.flatten()
+    for i in range(idx_ok.shape[0]):
+        
+        for j,c in enumerate(chambers):
 
-			ch = read_csv(output_folder+'/'+basename+str(first_simulation+idx_ok[i])+'/cav.'+c+'.csv', delimiter=",", skipinitialspace=True,
-								   	header=0, comment='#')  	
-			time = np.array(ch['Time'])
+            if first_simulation is None:
+                ch = read_csv(output_folder+'/'+basename+'default/cav.'+c+'.csv', delimiter=",", skipinitialspace=True,
+                                       header=0, comment='#')
+            else:
+                ch = read_csv(output_folder+'/'+basename+str(first_simulation+idx_ok[i])+'/cav.'+c+'.csv', delimiter=",", skipinitialspace=True,
+                                       header=0, comment='#')      
+            time = np.array(ch['Time'])
 
-			start = time[-1]-BCL
+            start = time[-1]-BCL
 
-			plot_time = np.where(time>=start)[0]
+            plot_time = np.where(time>=start)[0]
 
-			volume = np.array(ch['Volume'][plot_time])
-			pressure = np.array(ch['Pressure'][plot_time])
-			t = np.array(ch['Time'][plot_time])  	
+            volume = np.array(ch['Volume'][plot_time])
+            pressure = np.array(ch['Pressure'][plot_time])
+            t = np.array(ch['Time'][plot_time])      
 
-			ax[j].plot(volume,pressure,color='#3489eb')
-			ax[j].set_xlabel(c+' volume [mL]')
-			ax[j].set_ylabel(c+' pressure [mmHg]')
+            ax[j].plot(volume,pressure,color='#3489eb')
+            ax[j].set_xlabel(c+' volume [mL]')
+            ax[j].set_ylabel(c+' pressure [mmHg]')
 
-	if figname is not None:
-		plt.savefig(figname,dpi=300)
-	else:
-		plt.show()
+    if figname is not None:
+        plt.savefig(figname,dpi=300)
+    else:
+        plt.show()
 
 def main(args):
 
@@ -464,13 +656,42 @@ def main(args):
     output_folder      = f"{basefolder}/output"
     figures_path       = f"{basefolder}/figures"
     BCL                = args.BCL
-    elem_file          = args.elem_file
+    elem_file_local          = args.elem_file
     n_beat             = args.n_beat
     first_simulation   = args.first_simulation
     last_simulation    = args.last_simulation
+    default            = args.default
 
     file_exists(f'{basefolder}/data/ylabels.txt')
-    file_exists(f'{elem_file}')
+    # file_exists(f'{elem_file}')
+
+    if not default:
+        X   = np.loadtxt(f"{basefolder}/data/X.txt")
+        with open(f'{basefolder}/data/xlabels.txt', 'r') as file:
+            xlabels = file.read().splitlines()
+        
+        AVD_initial = X[:, xlabels.index('AV_delay')]
+        AVD = AVD_initial[first_simulation:(last_simulation+1)]
+        print(f'AVD: {AVD[first_simulation:(last_simulation+1)]}')
+    
+    else:
+        with open(f"{basefolder}/json_files/default.json",'r') as default_file:
+            default_json = json.load(default_file)
+        AVD = default_json["EP"]["AV_delay"]
+
+    elem_file = os.path.abspath(os.path.normpath(elem_file_local))
+    
+    if not os.path.isfile(elem_file):
+          
+          basename = ''.join(elem_file.split('.')[:-1])
+          file_exists(f"{basename}.belem")
+          file_exists(f"{basename}.bpts")
+          
+          os.system(f"meshtool convert -imsh={basename} -omsh={basename} -ifmt=carp_bin -ofmt=carp_txt")
+
+          clean_ascii = True
+    else:
+          clean_ascii = False
 
     
 
@@ -479,20 +700,21 @@ def main(args):
 
     cycle_simulation_summary(output_folder    = simulations_folder,
                                                 BCL              = BCL,
-                                                AVD              = 200*[0],
+                                                AVD              = AVD,
                                                 NBEATS           = n_beat,
                                                 unloaded_volumes = unloaded_volumes,
                                                 start_sample     = first_simulation,
                                                 last_sample      = last_simulation,
                                                 basename         = "cycle_",
                                                 maskoutput       = f"{output_folder}/output_mask_beat_{n_beat}.txt",
-                                                output_file      = f"{output_folder}/simulation_summary_beat_{n_beat}.pdf"
+                                                output_file      = f"{output_folder}/simulation_summary_beat_{n_beat}.pdf",
+                                                include_last_AVD=True
                                             )
     
     cycle_output_free_output_mask_name(datafolder    = output_folder,
                                     output_folder = simulations_folder,
                                     BCL           = BCL,
-                                    AVD           = 200*[100],
+                                    AVD           = AVD,
                                     NBEATS        = n_beat,
                                     first_simulation=first_simulation,
                                     basename      = "cycle_",
@@ -501,7 +723,7 @@ def main(args):
                                     output_mask=f"output_mask_beat_{n_beat}.txt")
     
     output_mask = np.loadtxt(f"{output_folder}/output_mask_beat_{n_beat}.txt")
-    with open(f"{basefolder}/json_files/tags.json","r") as f:
+    with open(f"{basefolder}/json_files/tags_lvrv_fch.json","r") as f:
         tags = json.load(f)
 
     electrophysiology_cycle_output_output_mask_free(datafolder = output_folder,
@@ -528,19 +750,28 @@ def main(args):
         Y_ = np.loadtxt(f"{data_folder}/Y_{field}_beat_{n_beat}.txt", dtype=float)
         Y_array.append(Y_)
 
-    Y = np.concatenate(Y_array, axis=1)
+    if isinstance(Y_array, list) and any(isinstance(item, list) for item in Y_array): # Checking that its dimension is > 1
+        Y = np.concatenate(Y_array, axis=1)
+    else:
+        Y = np.concatenate(Y_array, axis=0)
 
     np.savetxt(f"{data_folder}/Y.txt",Y,fmt="%g")
     
-    plot_statistics_file(basefolder=args.basefolder)
+    if not default:
+        plot_statistics_file(basefolder=args.basefolder)
 
-    for index, value in enumerate(output_mask):
-        # If the value is 1, plot the pv loop
-        if value == 1:
-               print(f"Plotting PV loops of simulation #{first_simulation+index}...")
-               path2simulation = f"{simulations_folder}/cycle_{first_simulation+index}"
-               
-               print_PV_loops_all_cycles(path_to_simulation = path2simulation,BCL = BCL, case_number=first_simulation+index)
+        for index, value in enumerate(output_mask):
+            # If the value is 1, plot the pv loop
+            if value == 1:
+                print(f"Plotting PV loops of simulation #{first_simulation+index}...")
+                path2simulation = f"{simulations_folder}/cycle_{first_simulation+index}"
+                
+                print_PV_loops_all_cycles(path_to_simulation = path2simulation,BCL = BCL, case_number=first_simulation+index)
+    else:
+        print_PV_loops_all_cycles(path_to_simulation = f"{simulations_folder}/cycle_default",BCL = BCL, case_number='default')
+
+    if clean_ascii:
+          os.system(f"rm {basename}.elem {basename}.pts {basename}.lon")
 
 if __name__ == '__main__':
 
@@ -555,6 +786,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_beat', type=int, required=False, help="Heartbeat number to compute the output.", default=5)
     parser.add_argument('--first_simulation', type=int)
     parser.add_argument('--last_simulation', type=int)
+    parser.add_argument('--default', action='store_true')
 
     args = parser.parse_args()
 
