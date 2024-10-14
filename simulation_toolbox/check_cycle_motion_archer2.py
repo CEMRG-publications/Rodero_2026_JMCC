@@ -210,7 +210,7 @@ def visualise_motion(displacement_file,
 
 		if not os.path.exists(f"{screenshot_basename}{t}.png"):
 			print_screenshot(plt_msh         = pv_msh,
-								 screenshot_name = f"{screenshot_basename}{t}.png",
+								 screenshot_name = f"{screenshot_basename}{str(t).zfill(3)}.png",
 								 fig_w           = window_size,
 								 fig_h           = window_size,
 								 azimuth = azimuth,
