@@ -14,3 +14,5 @@ simulation_toolbox/scp_files_hpc.sh
 notebooks/2_scale_EP_generate_cycle.ipynb
 poetry.lock
 poetry.lock
+simulation_toolbox/common/__pycache__/utils.cpython-39.pyc
+simulation_toolbox/common/__pycache__/visualisation.cpython-39.pyc
