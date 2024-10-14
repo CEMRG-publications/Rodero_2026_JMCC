@@ -1,11 +1,12 @@
 # Paths
 
-folder_experiment_name=rodero_healthy/h11/scenarios/5
+
+folder_experiment_name=HCM/2/scenarios/47
 base_folder_local=/media/croderog/SeagateExpansionDrive/$folder_experiment_name
 
 # Parameters
-hpc="imperial"
-first_simulation=50
+hpc="archer2"
+first_simulation=51
 last_simulation=99
 
 if [ "$hpc" == "imperial" ]; then
