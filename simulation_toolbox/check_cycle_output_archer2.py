@@ -189,7 +189,7 @@ def cycle_output_free_output_mask_name(datafolder,
                            header=0, comment='#')
 
         time = np.array(lv['Time'])
-        start = int((NBEATS-1)*BCL-AVD)
+        start = int((NBEATS-1)*BCL-AVD[sim_number])
         # start = time[-1]-BCL
         end = start+BCL
 
@@ -505,10 +505,12 @@ def     cycle_simulation_summary(output_folder,
                 tab.append(list([basename+'default','PD']))
                 count_PD += 1
 
-
+    success_rate = np.round(100*count_OK/(count_OK+count_notOK),2)
     tab.append(list(['','OK = '+str(count_OK)]))
     tab.append(list(['','CRASHED = '+str(count_notOK)]))
     tab.append(list(['','PD = '+str(count_PD)]))
+    tab.append(list(['','SUCESS RATE = '+str(success_rate)]))
+
     table = Table(tab)
 
     table.setStyle(TableStyle([('INNERGRID', (0,0), (-1,-1), 0.25, colors.black),
@@ -592,7 +594,7 @@ def check_suitable_VV_output(time,volume,pressure):
         print('Found oscillations during IVR... Removing indices after oscillation...')
         ind_IVR = ind_IVR[:wrong_IVR[0]]
     
-    if len(dpdt[ind_IVR]) > 0:
+    if (len(dpdt[ind_IVR]) > 0) and (len(dpdt[ind_IVC]) > 0):
           return(True)
     else:
         return(False)
@@ -655,7 +657,6 @@ def main(args):
     data_folder        = f"{basefolder}/data"
     output_folder      = f"{basefolder}/output"
     figures_path       = f"{basefolder}/figures"
-    BCL                = args.BCL
     elem_file_local          = args.elem_file
     n_beat             = args.n_beat
     first_simulation   = args.first_simulation
@@ -673,12 +674,20 @@ def main(args):
         AVD_initial = X[:, xlabels.index('AV_delay')]
         AVD = AVD_initial[first_simulation:(last_simulation+1)]
         print(f'AVD: {AVD[first_simulation:(last_simulation+1)]}')
+
+        with open(f"{basefolder}/json_files/clinical_data.json", "r") as clinical_data:
+            clinical_json = json.load(clinical_data)
+        BCL = clinical_json["general"]["BCL"]
     
     else:
         with open(f"{basefolder}/json_files/default.json",'r') as default_file:
             default_json = json.load(default_file)
         AVD = default_json["EP"]["AV_delay"]
 
+        with open(f"{basefolder}/json_files/clinical_data_GENERIC.json", "r") as clinical_data:
+            clinical_json = json.load(clinical_data)
+        BCL = clinical_json["general"]["BCL"]
+    print(f"BCL: {BCL}")
     elem_file = os.path.abspath(os.path.normpath(elem_file_local))
     
     if not os.path.isfile(elem_file):
@@ -697,7 +706,7 @@ def main(args):
 
     os.makedirs(output_folder, exist_ok=True)
     os.makedirs(figures_path, exist_ok=True)
-
+    """
     cycle_simulation_summary(output_folder    = simulations_folder,
                                                 BCL              = BCL,
                                                 AVD              = AVD,
@@ -721,11 +730,11 @@ def main(args):
                                     output_file   = f"{data_folder}/Y_mechanics_beat_{n_beat}.txt",
                                     visualise     = False,
                                     output_mask=f"output_mask_beat_{n_beat}.txt")
-    
+    """
     output_mask = np.loadtxt(f"{output_folder}/output_mask_beat_{n_beat}.txt")
     with open(f"{basefolder}/json_files/tags_lvrv_fch.json","r") as f:
         tags = json.load(f)
-
+    """
     electrophysiology_cycle_output_output_mask_free(datafolder = output_folder,
                                    output_folder = simulations_folder,
                                    elem_file     = elem_file,
@@ -743,16 +752,15 @@ def main(args):
                                         mask_file     = f"{output_folder}/output_mask_beat_{n_beat}.txt",
                                         first_simulation=first_simulation,
                                         figname       = f"{figures_path}/all_pv_loops_beat_{n_beat}.png")
-    
+    """
     Y_array = []
 
     for field in ['mechanics','EP']:
         Y_ = np.loadtxt(f"{data_folder}/Y_{field}_beat_{n_beat}.txt", dtype=float)
         Y_array.append(Y_)
-
-    if isinstance(Y_array, list) and any(isinstance(item, list) for item in Y_array): # Checking that its dimension is > 1
+    if isinstance(Y_array[0][0],np.ndarray): # Checking that its dimension is > 1
         Y = np.concatenate(Y_array, axis=1)
-    else:
+    else: # Default simulation or 1 simulation
         Y = np.concatenate(Y_array, axis=0)
 
     np.savetxt(f"{data_folder}/Y.txt",Y,fmt="%g")
@@ -781,7 +789,6 @@ if __name__ == '__main__':
     parser.add_argument('--basefolder', type=str, required=True,
                         default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations",
                         help='Path to the folder where the simulations, data, and figure folders are.')
-    parser.add_argument('--BCL', type=int, required=False, default=1000)
     parser.add_argument('--elem_file', type=str, help="Path to the elem file of the mesh to compute the activation times.", required=True)
     parser.add_argument('--n_beat', type=int, required=False, help="Heartbeat number to compute the output.", default=5)
     parser.add_argument('--first_simulation', type=int)
