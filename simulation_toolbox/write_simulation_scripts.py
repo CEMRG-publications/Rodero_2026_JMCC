@@ -41,9 +41,9 @@ def main(args):
         sim_setup.meshname = "/unloaded/"+original_meshname+"_unloaded_"+str(i)
         sim_setup.testname = "cycle_"+str(i)
 
-        sim_setup.torord_init_file = args.HPC_statefolder+"/"+str(i)+"_ToRORd_dynCl_LandHumanStress.sv"
-        sim_setup.torord_rv_init_file = args.HPC_statefolder+"/"+str(i)+"_ToRORd_dynCl_rv_LandHumanStress.sv"
-        sim_setup.courtemanche_init_file = args.HPC_statefolder+"/"+str(i)+"_JB_COURTEMANCHE_LandHumanStress.sv"	   
+        sim_setup.torord_init_file = f"{args.HPC_statefolder}/ToRORd_dynCl/{i}/{i}_ToRORd_dynCl_LandHumanStress.sv"
+        sim_setup.torord_rv_init_file = f"{args.HPC_statefolder}/ToRORd_dynCl_rv/{i}/{i}_ToRORd_dynCl_rv_LandHumanStress.sv"
+        sim_setup.courtemanche_init_file = f"{args.HPC_statefolder}/JB_COURTEMANCHE/{i}/{i}_JB_COURTEMANCHE_LandHumanStress.sv" 
 
         simulator_utils.write_simulation_script(args.paramfolder+'/'+str(i)+'.json',
                                                 args.clinical_data,
@@ -51,7 +51,7 @@ def main(args):
                                                 args.slrmfolder+"/cycle_"+str(i)+".slrm",
                                                 sim_setup,
                                                 postprocessing=False,
-                                                adapt_tubeArea=True,
+                                                adapt_tubeArea=True, ### Remember to set this to False after HCM!!
                                                 save_param_string=where_to_save_param_string+str(i)+"_")
 
     # --------------------------------------------------------------------------------------------------------

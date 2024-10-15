@@ -142,7 +142,7 @@ vtk = ">=9.3,<10.0"
 type = "git"
 url = "ssh://git@github.com/MarinaStrocchi/DATA_library.git"
 reference = "developer"
-resolved_reference = "1e4251cac28e56d60fd8b9fdd0fbfdcaf77e2d2d"
+resolved_reference = "6976b80b54391c39cd263607ece2c8e51baa72ce"
 
 [[package]]
 name = "diversipy"
@@ -1106,7 +1106,7 @@ trimesh = ">=3.20.1,<3.21.0"
 type = "git"
 url = "ssh://git@github.com/MarinaStrocchi/SIMULATION_library.git"
 reference = "jb_courtemanche"
-resolved_reference = "958b5273fdc7ccdf486ef58fc62a8ebb794c7b91"
+resolved_reference = "35f8f2754ab055bec5a08bf94fa6a0b96a0a3d05"
 
 [[package]]
 name = "six"

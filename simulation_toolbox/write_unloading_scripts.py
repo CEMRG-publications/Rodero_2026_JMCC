@@ -15,8 +15,9 @@ def main(args):
     if not os.path.exists(args.slrmfolder):
       os.system("mkdir -p "+args.slrmfolder)
 
-    idx_1 = int(args.idx1)
-    idx_2 = int(args.idx2)
+    if not args.default:
+      idx_1 = int(args.idx1)
+      idx_2 = int(args.idx2)
 
     input_params = ["a_ventricles",
                     "bf_ventricles",
@@ -57,48 +58,80 @@ def main(args):
                                                      archer2_config_file)
 
     print("Saving slrm files to "+args.slrmfolder+"...")
-    for i in range(idx_1,idx_2+1):
-        with open(os.path.join(args.paramfolder,str(i)+".json"),"r") as f:
-          parameters = json.load(f)
 
-        output_basename = "unloading_"+str(i)
+    if args.default:
+       with open(os.path.join(args.paramfolder,"default.json"),"r") as f:
+            parameters = json.load(f)
 
-        header = hpc_headers.write_archer2_header(output_basename,
-                                                  output_basename+".out",
-                                                  settings["walltime"],
-                                                  ncores) 
+       output_basename = "unloading_default"
+       header = hpc_headers.write_archer2_header(output_basename,
+                                                    output_basename+".out",
+                                                    settings["walltime"],
+                                                    ncores) 
+       runcommand = ["python",args.python_script_path_archer2,"--platform","desktop"]
+       runcommand += ["--overwrite-behaviour","overwrite"]
+       runcommand += ["--np",str(ncores)]
+       runcommand += ["--testname",output_basename]
+       runcommand += ["--tags_setup_file",args.HPC_tags_file]
+       runcommand += ["--general_setup_file",args.HPC_setup_file]      
 
-        runcommand = ["python",args.python_script_path_archer2,"--platform","desktop"]
-        runcommand += ["--overwrite-behaviour","overwrite"]
-        runcommand += ["--np",str(ncores)]
-        runcommand += ["--testname",output_basename]        
+       for ip in input_params:
+            runcommand += ["--"+ip,str(parameters["mechanics"][ip])]        
 
-        runcommand += ["--tags_setup_file",args.HPC_tags_file]
-        runcommand += ["--general_setup_file",args.HPC_setup_file]      
+       runcommand = ' '.join(runcommand) 
 
-        for ip in input_params:
-          runcommand += ["--"+ip,str(parameters["mechanics"][ip])]        
+          # -------------------------------------
+          # write slrm file 
+       slrm_script = os.path.join(args.slrmfolder,output_basename+".slrm")
+       f = open(slrm_script,"w")       
 
-        runcommand = ' '.join(runcommand) 
+       f.write(header)
+       f.write(env_variabiles)
+       f.write(runcommand)       
 
-        # -------------------------------------
-        # write slrm file 
-        slrm_script = os.path.join(args.slrmfolder,output_basename+".slrm")
-        f = open(slrm_script,"w")       
+       f.close()
 
-        f.write(header)
-        f.write(env_variabiles)
-        f.write(runcommand)       
+    else:
+       
+      for i in range(idx_1,idx_2+1):
+          with open(os.path.join(args.paramfolder,str(i)+".json"),"r") as f:
+            parameters = json.load(f)
 
-        f.close()
+          output_basename = "unloading_"+str(i)
+
+          header = hpc_headers.write_archer2_header(output_basename,
+                                                    output_basename+".out",
+                                                    settings["walltime"],
+                                                    ncores) 
+
+          runcommand = ["python",args.python_script_path_archer2,"--platform","desktop"]
+          runcommand += ["--overwrite-behaviour","overwrite"]
+          runcommand += ["--np",str(ncores)]
+          runcommand += ["--testname",output_basename]        
+
+          runcommand += ["--tags_setup_file",args.HPC_tags_file]
+          runcommand += ["--general_setup_file",args.HPC_setup_file]      
+
+          for ip in input_params:
+            runcommand += ["--"+ip,str(parameters["mechanics"][ip])]        
+
+          runcommand = ' '.join(runcommand) 
+
+          # -------------------------------------
+          # write slrm file 
+          slrm_script = os.path.join(args.slrmfolder,output_basename+".slrm")
+          f = open(slrm_script,"w")       
+
+          f.write(header)
+          f.write(env_variabiles)
+          f.write(runcommand)       
+
+          f.close()
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
-
-    parser.add_argument('--datafolder', type=str, required=True,
-                        help='Provide folder where you have all X_*.txt and xlabels_*.txt')
 
     parser.add_argument('--setup_file', type=str, required=True,
                         help='.json file with the setup for the simulations')  
@@ -109,10 +142,10 @@ if __name__ == '__main__':
     parser.add_argument('--slrmfolder', type=str, required=True,
                         help='Where to save the slrm files')  
 
-    parser.add_argument('--idx1', type=str, required=True, 
+    parser.add_argument('--idx1', type=str, required=False, 
                         help='First index to generate the files for')  
 
-    parser.add_argument('--idx2', type=str, required=True,
+    parser.add_argument('--idx2', type=str, required=False,
                         help='Last index to generate the files for')  
 
     parser.add_argument('--HPC_tags_file', type=str, required=True,
@@ -135,6 +168,7 @@ if __name__ == '__main__':
     parser.add_argument('--HPC_env_folder', type=str, required=True,
                         help='Path to the pyunload virtual environment on the HPC')  
     parser.add_argument('--python_script_path_archer2', type=str, required=True)
+    parser.add_argument('--default', action='store_true')
 
     args = parser.parse_args()
 
