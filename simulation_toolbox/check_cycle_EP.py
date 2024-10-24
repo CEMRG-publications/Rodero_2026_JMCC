@@ -65,8 +65,9 @@ def electrophysiology_all_cycle_output(datafolder,
 
 	output = np.zeros((idx_ok.shape[0],2))
 
-	for i in tqdm.tqdm(range(idx_ok.shape[0])):
-		print('Simulation '+basename+str(idx_ok[i])+'...')
+	t = tqdm.trange(len(range(idx_ok.shape[0])), desc='Bar desc', leave=True,colour='#FDFD96')
+	for i in t:
+		t.set_description('Simulation '+basename+str(idx_ok[i])+'...')
 
 		folder = output_folder+'/'+basename+str(idx_ok[i])
 

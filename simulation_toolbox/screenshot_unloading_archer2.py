@@ -202,8 +202,8 @@ def main(args):
         pv_msh_init = rotate_mesh(pv_msh_init_original)
 
 
-
-    for unloading_row_num in tqdm.tqdm(range(last_simulation - first_simulation + 1)):
+    t = tqdm.tqdm(range(last_simulation - first_simulation + 1),colour='#C3B1E1')
+    for unloading_row_num in t:
         if np.ndim(unloaded_volumes) > 1:
             unloaded_check = np.sum(unloaded_volumes[unloading_row_num,:])
         else:
@@ -216,7 +216,7 @@ def main(args):
 
             unloaded_meshname = os.path.join(basefolder,"unloaded/myocardium_AV_FEC_BB_lvrv_unloaded_"+str(i))
             
-            print("Copying files...")
+            t.set_description(f"Copying mesh {i}...")
             if os.path.isfile(f"{simulation_folder}/reference.bpts"):
                 os.system(f"cp {simulation_folder}/reference.bpts {unloaded_meshname}.bpts")
                 os.system(f"cp {initial_mesh}.belem {unloaded_meshname}.belem")
@@ -235,7 +235,6 @@ def main(args):
 
                 os.system(f"rm {unloaded_meshname}.lon {unloaded_meshname}.pts {unloaded_meshname}.elem 2>/dev/null")
             
-            print("Copied")
       
             if not only_setup:
                 ### Read unloaded pts
