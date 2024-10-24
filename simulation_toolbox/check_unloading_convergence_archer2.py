@@ -3,6 +3,7 @@ import argparse
 
 import numpy as np
 import matplotlib.pyplot as plt
+import tqdm
 
 from Historia.shared.design_utils import read_labels
 
@@ -50,13 +51,18 @@ def check_fourchamber_unloading(basefolder,
     if start_sample is not None:
         vol_unloaded = -1*np.ones((last_sample+1,len(chambers)),dtype=float)
 
-        for i in range(start_sample,last_sample+1):    
+        success_bar_format = "{l_bar}\033[92m{bar}\033[0m{r_bar}"  # Green bar
+        failure_bar_format = "{l_bar}\033[91m{bar}\033[0m{r_bar}"  # Red bar
+
+        t = tqdm.tqdm(range(start_sample,last_sample+1), desc='Bar desc', leave=True)
+        for i in t:    
 
             output = check_fourchamber_unloading_(basefolder+'/unloading_'+str(i)+'/',
                                                 chambers)
 
             if output[0]:
-                print('unloading_'+str(i)+' successful...')
+                t.bar_format = success_bar_format
+                t.set_description('unloading_'+str(i)+' successful...')
 
                 for j in range(len(chambers)):
                     # vol_unloaded[count,j] = output[1+j]
@@ -64,7 +70,8 @@ def check_fourchamber_unloading(basefolder,
                     vol_unloaded[i,j] = output[1+j]
 
             else:
-                print('unloading_'+str(i)+' crashed...')
+                t.bar_format = failure_bar_format
+                t.set_description('unloading_'+str(i)+' crashed...')
                 
                 for j in range(len(chambers)):
                     # vol_unloaded[count,j] = -1
