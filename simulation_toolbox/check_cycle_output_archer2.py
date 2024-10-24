@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pandas import read_csv
 import json
+import sys
+import tqdm
 
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
@@ -170,13 +172,14 @@ def cycle_output_free_output_mask_name(datafolder,
 
     output = np.zeros((idx_ok.shape[0],26))
 
-    for i in range(idx_ok.shape[0]):
+    t = tqdm.trange(len(range(idx_ok.shape[0])), desc='Bar desc', leave=True,colour='#B3EBF2')
+    for i in t:
         if first_simulation is None: # Default simulation
             first_simulation = 0
             sim_number = 'default'
         else:
             sim_number = first_simulation + idx_ok[i]
-        print('Simulation '+basename+str(sim_number)+'...')
+        t.set_description('Simulation '+basename+str(sim_number)+'...')
         folder = output_folder+'/'+basename+str(sim_number)
 
         lv = read_csv(folder+'/cav.LV.csv', delimiter=",", skipinitialspace=True,
@@ -189,7 +192,8 @@ def cycle_output_free_output_mask_name(datafolder,
                            header=0, comment='#')
 
         time = np.array(lv['Time'])
-        start = int((NBEATS-1)*BCL-AVD[sim_number])
+        
+        start = int((NBEATS-1)*BCL-AVD[idx_ok[i]])
         # start = time[-1]-BCL
         end = start+BCL
 
@@ -290,13 +294,13 @@ def electrophysiology_cycle_output_output_mask_free(datafolder,
     A_VTX = np.unique(elem[A_EIDX,0:4].flatten())
 
     output = np.zeros((idx_ok.shape[0],2))
-
-    for i in range(idx_ok.shape[0]):
+    t = tqdm.trange(len(range(idx_ok.shape[0])), desc='Bar desc', leave=True,colour='#FDFD96')
+    for i in t:
         if first_simulation is None:
             sim_num = 'default'
         else:
             sim_num = first_simulation + idx_ok[i]
-        print('Simulation '+basename+str(sim_num)+'...')
+        t.set_description('Simulation '+basename+str(sim_num)+'...')
 
         folder = output_folder+'/'+basename+str(sim_num)
 
@@ -346,14 +350,14 @@ def     cycle_simulation_summary(output_folder,
     count_notOK = 0
 
     if start_sample is not None:
-        for sim_index in range(0,last_sample-start_sample+1):
+        t = tqdm.trange(len(range(0,last_sample-start_sample+1)), desc='Bar desc', leave=True,colour='#C3B1E1')
+        for sim_index in t:
             sim_number = start_sample + sim_index
             folder = output_folder+'/'+basename+str(sim_number)
 
             if os.path.exists(folder) and os.path.isfile(f"{folder}/cav.LV.csv"):
+                t.set_description(f"Reading {folder}/cav.LV.csv...")
                 
-                print(f"Reading {folder}/cav.LV.csv...")
-
                 lv = read_csv(folder+'/cav.LV.csv', delimiter=",", skipinitialspace=True,
                                 header=0, comment='#')
                 volume = np.array(lv['Volume'])
@@ -404,8 +408,8 @@ def     cycle_simulation_summary(output_folder,
                     # dpdt_idx_rv = np.where(pressure_rv>EDP_rv)[0]
                     # ind_IVR_rv = np.intersect1d(dpdt_idx_rv,ind_IVR_rv)
 
-                    LV_suitable = check_suitable_VV_output(time[last_beat],volume_last_beat,pressure_lv)
-                    RV_suitable = check_suitable_VV_output(time[last_beat],volume_rv,pressure_rv)
+                    LV_suitable = check_suitable_VV_output(time[last_beat],volume_last_beat,pressure_lv,t)
+                    RV_suitable = check_suitable_VV_output(time[last_beat],volume_rv,pressure_rv,t)
 
 
                 if len(lv)>0 and max(time) == int(check_tend) and (SV>5.0) and LV_suitable and RV_suitable:
@@ -483,8 +487,8 @@ def     cycle_simulation_summary(output_folder,
                 # dpdt_idx_rv = np.where(pressure_rv>EDP_rv)[0]
                 # ind_IVR_rv = np.intersect1d(dpdt_idx_rv,ind_IVR_rv)
 
-                LV_suitable = check_suitable_VV_output(time[last_beat],volume_last_beat,pressure_lv)
-                RV_suitable = check_suitable_VV_output(time[last_beat],volume_rv,pressure_rv)
+                LV_suitable = check_suitable_VV_output(time[last_beat],volume_last_beat,pressure_lv,t)
+                RV_suitable = check_suitable_VV_output(time[last_beat],volume_rv,pressure_rv,t)
 
 
             if len(lv)>0 and max(time) == int(check_tend) and (SV>5.0) and LV_suitable and RV_suitable:
@@ -509,7 +513,7 @@ def     cycle_simulation_summary(output_folder,
     tab.append(list(['','OK = '+str(count_OK)]))
     tab.append(list(['','CRASHED = '+str(count_notOK)]))
     tab.append(list(['','PD = '+str(count_PD)]))
-    tab.append(list(['','SUCESS RATE = '+str(success_rate)]))
+    tab.append(list(['',f'SUCESS RATE = {success_rate}%']))
 
     table = Table(tab)
 
@@ -535,7 +539,7 @@ def file_exists(full_file_path):
     if not os.path.isfile(full_file_path):
         raise Exception(f"You need to have the file {os.path.abspath(os.path.normpath(full_file_path))}")
 
-def check_suitable_VV_output(time,volume,pressure):
+def check_suitable_VV_output(time,volume,pressure,t):
 
     time_pmax = time[0]+np.where(pressure==np.max(pressure))[0][0]
     
@@ -549,7 +553,14 @@ def check_suitable_VV_output(time,volume,pressure):
     else:
         ind_IVC = ind_IVC_[jump[-1]:-1]
 
+    if len(ind_IVC) < 1:
+        return False
+
     ind_IVR_ = np.intersect1d(np.where(np.abs(dv)<=0.01)[0],np.where(time>=time_pmax+10.)[0])
+
+    if(len(ind_IVR_)) <= 1:
+        return False
+
     jump = np.where(np.gradient(ind_IVR_)>1)[0]
 
     if len(jump) == 0:
@@ -582,7 +593,7 @@ def check_suitable_VV_output(time,volume,pressure):
     # because that derivative will be wrong
     wrong_IVC = np.where(dpdt[ind_IVC]<=-50.0)[0]
     if len(wrong_IVC)>0:
-        print('Found oscillations during IVC... Removing indices after oscillation...')
+        t.set_description('Found oscillations during IVC... Removing indices after oscillation...')
         ind_IVC = ind_IVC[:wrong_IVC[0]]
 
     # to detect oscillations: during IVR the derivative should always be negative
@@ -591,13 +602,13 @@ def check_suitable_VV_output(time,volume,pressure):
     # because that derivative will be wrong
     wrong_IVR = np.where(dpdt[ind_IVR]>=50.0)[0]
     if len(wrong_IVR)>0:
-        print('Found oscillations during IVR... Removing indices after oscillation...')
+        t.set_description('Found oscillations during IVR... Removing indices after oscillation...') # print('Found oscillations during IVR... Removing indices after oscillation...')
         ind_IVR = ind_IVR[:wrong_IVR[0]]
     
     if (len(dpdt[ind_IVR]) > 0) and (len(dpdt[ind_IVC]) > 0):
-          return(True)
+        return True 
     else:
-        return(False)
+        return False
 
 
 def plot_pvloops_all_sim_range(datafolder,
@@ -673,7 +684,7 @@ def main(args):
         
         AVD_initial = X[:, xlabels.index('AV_delay')]
         AVD = AVD_initial[first_simulation:(last_simulation+1)]
-        print(f'AVD: {AVD[first_simulation:(last_simulation+1)]}')
+        print(f'AVD: {AVD}')
 
         with open(f"{basefolder}/json_files/clinical_data.json", "r") as clinical_data:
             clinical_json = json.load(clinical_data)
@@ -706,7 +717,7 @@ def main(args):
 
     os.makedirs(output_folder, exist_ok=True)
     os.makedirs(figures_path, exist_ok=True)
-    """
+
     cycle_simulation_summary(output_folder    = simulations_folder,
                                                 BCL              = BCL,
                                                 AVD              = AVD,
@@ -730,11 +741,11 @@ def main(args):
                                     output_file   = f"{data_folder}/Y_mechanics_beat_{n_beat}.txt",
                                     visualise     = False,
                                     output_mask=f"output_mask_beat_{n_beat}.txt")
-    """
+
     output_mask = np.loadtxt(f"{output_folder}/output_mask_beat_{n_beat}.txt")
     with open(f"{basefolder}/json_files/tags_lvrv_fch.json","r") as f:
         tags = json.load(f)
-    """
+
     electrophysiology_cycle_output_output_mask_free(datafolder = output_folder,
                                    output_folder = simulations_folder,
                                    elem_file     = elem_file,
@@ -752,7 +763,7 @@ def main(args):
                                         mask_file     = f"{output_folder}/output_mask_beat_{n_beat}.txt",
                                         first_simulation=first_simulation,
                                         figname       = f"{figures_path}/all_pv_loops_beat_{n_beat}.png")
-    """
+
     Y_array = []
 
     for field in ['mechanics','EP']:
@@ -767,11 +778,14 @@ def main(args):
     
     if not default:
         plot_statistics_file(basefolder=args.basefolder)
+        
+        t = tqdm.trange(len(output_mask), desc='Bar desc', leave=True,colour='#80EF80')
 
-        for index, value in enumerate(output_mask):
+        for index in t:
+            value = output_mask[index]
             # If the value is 1, plot the pv loop
             if value == 1:
-                print(f"Plotting PV loops of simulation #{first_simulation+index}...")
+                t.set_description(f"Plotting PV loops of simulation #{first_simulation+index}...")
                 path2simulation = f"{simulations_folder}/cycle_{first_simulation+index}"
                 
                 print_PV_loops_all_cycles(path_to_simulation = path2simulation,BCL = BCL, case_number=first_simulation+index)
