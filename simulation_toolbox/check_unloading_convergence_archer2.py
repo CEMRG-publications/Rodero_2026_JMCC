@@ -3,6 +3,7 @@ import argparse
 
 import numpy as np
 import matplotlib.pyplot as plt
+import re
 import tqdm
 
 from Historia.shared.design_utils import read_labels
@@ -13,7 +14,7 @@ def file_exists(full_file_path):
 
 
 def check_fourchamber_unloading_(simulation_folder,
-                                 chambers):
+                                 chambers,t):
 
     converged_1 = False
     with open(simulation_folder+"unloading.log", 'r') as file:
@@ -32,9 +33,27 @@ def check_fourchamber_unloading_(simulation_folder,
     output = [converged]
     volumes = []
     for ch in chambers:
-        if converged and os.path.exists(simulation_folder+"final_data/"+ch+".vol.dat"):
-            vol = np.loadtxt(simulation_folder+"final_data/"+ch+".vol.dat",dtype=float,usecols=[1])
-            output.append(vol[0])
+        if converged:
+            if os.path.exists(simulation_folder+"final_data/"+ch+".vol.dat"):
+                vol = np.loadtxt(simulation_folder+"final_data/"+ch+".vol.dat",dtype=float,usecols=[1])
+
+                vol_final = vol[0]
+            else: 
+                t.set_description(f"Reading {simulation_folder}final_data/{ch}.vol.dat failed. Reading unloading.log instead...")
+                
+                with open(f'{simulation_folder}/unloading.log', 'r') as f:
+                    contents = f.read()
+                
+                matches = contents.split('--- CONVERGED ---')[0].split('\n')[-2].split(4*' ')[-2].split('/')
+                
+                vol = [float(match) for match in matches]
+                print(vol)
+
+                chamber_map = {'lv_endo': 0, 'rv_endo': 1, 'la_endo': 2, 'ra_endo': 3}
+                vol_final = vol[chamber_map[ch]]
+
+                print(vol_final)
+            output.append(vol_final)
         else:
             output.append(-1)
 
@@ -58,7 +77,7 @@ def check_fourchamber_unloading(basefolder,
         for i in t:    
 
             output = check_fourchamber_unloading_(basefolder+'/unloading_'+str(i)+'/',
-                                                chambers)
+                                                chambers,t)
 
             if output[0]:
                 t.bar_format = success_bar_format
@@ -80,7 +99,7 @@ def check_fourchamber_unloading(basefolder,
     else:
         vol_unloaded = -1*np.ones((2,len(chambers)),dtype=float)
 
-        output = check_fourchamber_unloading_(f"{basefolder}/unloading_default/",chambers)
+        output = check_fourchamber_unloading_(f"{basefolder}/unloading_default/",chambers,t)
         if output[0]:
             print('unloading_default successful...')
 

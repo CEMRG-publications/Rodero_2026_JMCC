@@ -6,7 +6,7 @@ base_folder_local=/media/croderog/Elements/$folder_experiment_name
 
 # Parameters
 hpc="archer2"
-first_simulation=200
+first_simulation=0
 last_simulation=599
 
 if [ "$hpc" == "imperial" ]; then
