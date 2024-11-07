@@ -4,9 +4,7 @@ import math
 import numpy as np
 import tqdm
 import pyvista as pv
-import vtk
 
-from GSA_library.pyvista_utils import  carp_to_pyvista
 from GSA_library.mesh_utils import read_elem, read_pts
 
 def pts_elem_to_pyvista(pts,elem,add_tags=False,el_type='Tt'):
@@ -198,6 +196,11 @@ def main(args):
     
         initial_pts = read_pts(f"{initial_mesh}.pts")
         print("Read.")
+
+        print("Loading vtk package...")
+
+        import vtk
+
         pv_msh_init_original = pts_elem_to_pyvista(pts=initial_pts, elem=elem_file, add_tags=True)
         pv_msh_init = rotate_mesh(pv_msh_init_original)
 

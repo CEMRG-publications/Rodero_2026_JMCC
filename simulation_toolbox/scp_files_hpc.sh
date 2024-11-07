@@ -8,6 +8,8 @@ base_folder_local=/media/croderog/Elements/$folder_experiment_name
 hpc="archer2"
 first_simulation=0
 last_simulation=599
+first_simulation=0
+last_simulation=599
 
 if [ "$hpc" == "imperial" ]; then
     username="croderog"
