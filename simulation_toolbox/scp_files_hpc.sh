@@ -1,13 +1,13 @@
 # Paths
 
 
-folder_experiment_name=HCM/2/scenarios/47
-base_folder_local=/media/croderog/SeagateExpansionDrive/$folder_experiment_name
+folder_experiment_name=HCM/4/scenarios/49
+base_folder_local=/media/croderog/Elements/$folder_experiment_name
 
 # Parameters
 hpc="archer2"
-first_simulation=200
-last_simulation=299
+first_simulation=0
+last_simulation=599
 
 if [ "$hpc" == "imperial" ]; then
     username="croderog"
