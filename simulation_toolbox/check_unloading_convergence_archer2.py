@@ -67,6 +67,9 @@ def check_fourchamber_unloading(basefolder,
 
     # vol_unloaded = np.zeros((last_sample-start_sample+1,len(chambers)),dtype=float)
     # count = 0
+    n_sim_work = 0
+    n_sim_not_work = 0
+
     if start_sample is not None:
         vol_unloaded = -1*np.ones((last_sample+1,len(chambers)),dtype=float)
 
@@ -80,6 +83,7 @@ def check_fourchamber_unloading(basefolder,
                                                 chambers,t)
 
             if output[0]:
+                n_sim_work+=1
                 t.bar_format = success_bar_format
                 t.set_description('unloading_'+str(i)+' successful...')
 
@@ -89,6 +93,7 @@ def check_fourchamber_unloading(basefolder,
                     vol_unloaded[i,j] = output[1+j]
 
             else:
+                n_sim_not_work+=1
                 t.bar_format = failure_bar_format
                 t.set_description('unloading_'+str(i)+' crashed...')
                 
@@ -101,6 +106,7 @@ def check_fourchamber_unloading(basefolder,
 
         output = check_fourchamber_unloading_(f"{basefolder}/unloading_default/",chambers,t)
         if output[0]:
+            n_sim_work+=1
             print('unloading_default successful...')
 
             for j in range(len(chambers)):
@@ -109,6 +115,7 @@ def check_fourchamber_unloading(basefolder,
                 vol_unloaded[0,j] = output[1+j]
 
         else:
+            n_sim_not_work+=1
             print('unloading_default crashed...')
             
             for j in range(len(chambers)):
@@ -117,6 +124,8 @@ def check_fourchamber_unloading(basefolder,
 
 
     np.savetxt(output_file,vol_unloaded,fmt="%g")
+
+    return (n_sim_work,n_sim_not_work)
 
 def main(args):
 
@@ -133,7 +142,7 @@ def main(args):
     os.system("mkdir -p "+ os.path.join(basefolder,"unloaded/"))
     os.system("mkdir -p "+ os.path.join(basefolder,"../figures/"))
 
-    check_fourchamber_unloading(basefolder,
+    n_sim_work,n_sim_not_work = check_fourchamber_unloading(basefolder,
                             ['lv_endo','rv_endo','la_endo','ra_endo'],
                             start_sample=first_simulation,
                             last_sample=last_simulation,
@@ -179,6 +188,8 @@ def main(args):
                     axis.set_yticks([])
                     axis.set_ylabel(xlabels[i // in_dim])
             plt.savefig(os.path.join(path2figure, "unloaded_scatter.png"), bbox_inches="tight", dpi=300)
+    
+    print(f"A total of {n_sim_work} unloadings work, and {n_sim_not_work} did not work.")
 
 
 if __name__ == '__main__':
@@ -186,8 +197,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Script to check which unloading simulations worked.")
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
 
-    parser.add_argument('--path2simulations', type=str, required=True,
-                        default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations")
+    parser.add_argument('--path2simulations', type=str, required=True)
     parser.add_argument('--path2figures', type=str, required=True)
     parser.add_argument('--first_simulation', type=int, required=False)
     parser.add_argument('--last_simulation', type=int, required=False)
