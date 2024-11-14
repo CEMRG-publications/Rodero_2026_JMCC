@@ -225,7 +225,7 @@ def cycle_output_free_output_mask_name(datafolder,
             fourchamber_output.check_ventricle_output(time,volume_lv,pressure_lv,lvoutput)
             fourchamber_output.check_ventricle_output(time,volume_rv,pressure_rv,rvoutput)
             fourchamber_output.check_atria_output(time,volume_la,pressure_la,laoutput)
-            fourchamber_output.check_atria_output(time,volume_ra,pressure_rv,raoutput)
+            fourchamber_output.check_atria_output(time,volume_ra,pressure_ra,raoutput)
 
         output[i,:] = np.concatenate((lvoutput,rvoutput,
                                       laoutput,raoutput,
@@ -739,7 +739,7 @@ def main(args):
                                     first_simulation=first_simulation,
                                     basename      = "cycle_",
                                     output_file   = f"{data_folder}/Y_mechanics_beat_{n_beat}.txt",
-                                    visualise     = False,
+                                    visualise     = True,
                                     output_mask=f"output_mask_beat_{n_beat}.txt")
 
     output_mask = np.loadtxt(f"{output_folder}/output_mask_beat_{n_beat}.txt")
