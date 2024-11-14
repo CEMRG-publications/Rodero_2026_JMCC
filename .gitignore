@@ -17,4 +17,4 @@ poetry.lock
 simulation_toolbox/common/__pycache__/utils.cpython-39.pyc
 simulation_toolbox/common/__pycache__/visualisation.cpython-39.pyc
 simulation_toolbox/scp_files_hpc.sh
-simulation_toolbox/scp_files_hpc.sh
+scp_files_hpc.sh
