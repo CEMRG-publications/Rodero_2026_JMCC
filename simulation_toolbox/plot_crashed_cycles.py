@@ -3,8 +3,9 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import json 
 
-def plot_total_crashed(X, xlabels, output_mask, figure_savepath, first_simulation, last_simulation):
+def plot_total_crashed(X, xlabels, output_mask, figure_savepath, first_simulation, last_simulation,only_prints=False):
 
     output_mask_old = output_mask
     output_mask = []
@@ -18,54 +19,56 @@ def plot_total_crashed(X, xlabels, output_mask, figure_savepath, first_simulatio
     crashed_simulations = np.count_nonzero(output_mask!=1)
     percentage_zeros = 100*crashed_simulations/len(output_mask)
 
+    if not only_prints:
+        # Create pair-plots
+        _, axes = plt.subplots(
+            nrows=num_variables, ncols=num_variables, figsize=(13, 10), sharex="col", sharey="row"
+        )
 
-    # Create pair-plots
-    _, axes = plt.subplots(
-        nrows=num_variables, ncols=num_variables, figsize=(13, 10), sharex="col", sharey="row"
-    )
+        # Iterate through each pair of variables and create scatter plots
+        for i, ax_row in enumerate(axes):
+            for j, ax in enumerate(ax_row):
+                x_var = X[first_simulation:(last_simulation+1), j]
+                y_var = X[first_simulation:(last_simulation+1), i]
 
-    # Iterate through each pair of variables and create scatter plots
-    for i, ax_row in enumerate(axes):
-        for j, ax in enumerate(ax_row):
-            x_var = X[first_simulation:(last_simulation+1), j]
-            y_var = X[first_simulation:(last_simulation+1), i]
+                # Plot the data points with different colors based on the output_mask values
+                ax.scatter(
+                    x_var[output_mask != 1],
+                    y_var[output_mask != 1],
+                    c="red",
+                    marker="x",
+                    label="Crashed",
+                    s=20
+                )
+                ax.scatter(
+                    x_var[output_mask == 1],
+                    y_var[output_mask == 1],
+                    c="green",
+                    marker="o",
+                    label="Converged",
+                    s=20
+                )
 
-            # Plot the data points with different colors based on the output_mask values
-            ax.scatter(
-                x_var[output_mask != 1],
-                y_var[output_mask != 1],
-                c="red",
-                marker="x",
-                label="Crashed",
-                s=20
-            )
-            ax.scatter(
-                x_var[output_mask == 1],
-                y_var[output_mask == 1],
-                c="green",
-                marker="o",
-                label="Converged",
-                s=20
-            )
+                if i == num_variables - 1:
+                    ax.set_xlabel(xlabels[j])
+                if j == 0:
+                    ax.set_ylabel(xlabels[i])
 
-            if i == num_variables - 1:
-                ax.set_xlabel(xlabels[j])
-            if j == 0:
-                ax.set_ylabel(xlabels[i])
+        # Add a common title for all the subplots
+        plt.suptitle(f"Total crashed simulations: {crashed_simulations}/{len(output_mask)} ({percentage_zeros:.2f}%)", fontsize=16)
 
-    # Add a common title for all the subplots
-    plt.suptitle(f"Total crashed simulations: {crashed_simulations}/{len(output_mask)} ({percentage_zeros:.2f}%)", fontsize=16)
+        # Move the legend to avoid overlapping
+        plt.subplots_adjust(left=0.1, right=0.75, top=0.9, bottom=0.1)
 
-    # Move the legend to avoid overlapping
-    plt.subplots_adjust(left=0.1, right=0.75, top=0.9, bottom=0.1)
+        # Add a common legend for all the subplots
+        axes[0, -1].legend(loc=[1,0])
 
-    # Add a common legend for all the subplots
-    axes[0, -1].legend(loc=[1,0])
+        plt.savefig(os.path.join(figure_savepath,"success_crashed_total.png"), dpi=300, bbox_inches='tight')
 
-    plt.savefig(os.path.join(figure_savepath,"success_crashed_total.png"), dpi=300, bbox_inches='tight')
+    print(f"Total crashed simulations: {crashed_simulations}/{len(output_mask)} ({percentage_zeros:.2f}%)")
 
 
-def plot_crashed_cycles(X, xlabels, output_mask, figure_savepath):
+def plot_crashed_cycles(X, xlabels, output_mask, figure_savepath, only_prints=False):
 
     num_samples, num_variables = X.shape
 
@@ -76,53 +79,53 @@ def plot_crashed_cycles(X, xlabels, output_mask, figure_savepath):
     crashed_simulations = np.count_nonzero(output_mask==0)
     percentage_zeros = 100*crashed_simulations/np.count_nonzero(output_mask!=-1)
 
+    if not only_prints:
+        # Create pair-plots
+        _, axes = plt.subplots(
+            nrows=num_variables, ncols=num_variables, figsize=(13, 10), sharex="col", sharey="row"
+        )
 
-    # Create pair-plots
-    _, axes = plt.subplots(
-        nrows=num_variables, ncols=num_variables, figsize=(13, 10), sharex="col", sharey="row"
-    )
+        # Iterate through each pair of variables and create scatter plots
+        for i, ax_row in enumerate(axes):
+            for j, ax in enumerate(ax_row):
+                x_var = X[:, j]
+                y_var = X[:, i]
 
-    # Iterate through each pair of variables and create scatter plots
-    for i, ax_row in enumerate(axes):
-        for j, ax in enumerate(ax_row):
-            x_var = X[:, j]
-            y_var = X[:, i]
+                # Plot the data points with different colors based on the output_mask values
+                ax.scatter(
+                    x_var[output_mask == 0],
+                    y_var[output_mask == 0],
+                    c="red",
+                    marker="x",
+                    label="Crashed",
+                    s=20
+                )
+                ax.scatter(
+                    x_var[output_mask == 1],
+                    y_var[output_mask == 1],
+                    c="green",
+                    marker="o",
+                    label="Converged",
+                    s=20
+                )
 
-            # Plot the data points with different colors based on the output_mask values
-            ax.scatter(
-                x_var[output_mask == 0],
-                y_var[output_mask == 0],
-                c="red",
-                marker="x",
-                label="Crashed",
-                s=20
-            )
-            ax.scatter(
-                x_var[output_mask == 1],
-                y_var[output_mask == 1],
-                c="green",
-                marker="o",
-                label="Converged",
-                s=20
-            )
+                if i == num_variables - 1:
+                    ax.set_xlabel(xlabels[j])
+                if j == 0:
+                    ax.set_ylabel(xlabels[i])
 
-            if i == num_variables - 1:
-                ax.set_xlabel(xlabels[j])
-            if j == 0:
-                ax.set_ylabel(xlabels[i])
+        # Add a common title for all the subplots
+        plt.suptitle(f"Crashed cycle simulations: {crashed_simulations}/{np.count_nonzero(output_mask!=-1)} ({percentage_zeros:.2f}%)", fontsize=16)
 
-    # Add a common title for all the subplots
-    plt.suptitle(f"Crashed cycle simulations: {crashed_simulations}/{np.count_nonzero(output_mask!=-1)} ({percentage_zeros:.2f}%)", fontsize=16)
+        # Move the legend to avoid overlapping
+        plt.subplots_adjust(left=0.1, right=0.75, top=0.9, bottom=0.1)
 
-    # Move the legend to avoid overlapping
-    plt.subplots_adjust(left=0.1, right=0.75, top=0.9, bottom=0.1)
+        # Add a common legend for all the subplots
+        axes[0, -1].legend(loc=[1,0])
 
-    # Add a common legend for all the subplots
-    axes[0, -1].legend(loc=[1,0])
+        plt.savefig(os.path.join(figure_savepath,"success_crashed_cycle.png"), dpi=300, bbox_inches='tight')
 
-    plt.savefig(os.path.join(figure_savepath,"success_crashed_cycle.png"), dpi=300, bbox_inches='tight')
-
-def plot_crashed_cycles_only_by_phase(X, xlabels, output_mask, figure_savepath, sims_folder, chamber, bcl):
+def plot_crashed_cycles_only_by_phase(X, xlabels, output_mask, figure_savepath, sims_folder, chamber, bcl, only_prints=False):
 
     files_per_last_timestep = {
         "First beat" : np.array([0, 0, 0, 0, 0]),
@@ -201,77 +204,80 @@ def plot_crashed_cycles_only_by_phase(X, xlabels, output_mask, figure_savepath, 
     if num_samples > len(output_mask):
         X = X[:len(output_mask),:]
 
+    if not only_prints:
+        # Create pair-plots
+        _, axes = plt.subplots(
+            nrows=num_variables, ncols=num_variables, figsize=(13, 10), sharex="col", sharey="row"
+        )
 
-    # Create pair-plots
-    _, axes = plt.subplots(
-        nrows=num_variables, ncols=num_variables, figsize=(13, 10), sharex="col", sharey="row"
-    )
+        # Iterate through each pair of variables and create scatter plots
+        for i, ax_row in enumerate(axes):
+            for j, ax in enumerate(ax_row):
+                x_var = X[:, j]
+                y_var = X[:, i]
 
-    # Iterate through each pair of variables and create scatter plots
-    for i, ax_row in enumerate(axes):
-        for j, ax in enumerate(ax_row):
-            x_var = X[:, j]
-            y_var = X[:, i]
+                # Plot the data points with different colors based on the output_mask values
+                ax.scatter(
+                    x_var[array_phase == 0],
+                    y_var[array_phase == 0],
+                    c=colors_by_phase["IVC"],
+                    marker=marker_by_phase["IVC"],
+                    label="IVC",
+                    s=20
+                )
+                ax.scatter(
+                    x_var[array_phase == 1],
+                    y_var[array_phase == 1],
+                    c=colors_by_phase["ejec"],
+                    marker=marker_by_phase["ejec"],
+                    label="ejec",
+                    s=20
+                )
+                ax.scatter(
+                    x_var[array_phase == 2],
+                    y_var[array_phase == 2],
+                    c=colors_by_phase["IVR"],
+                    marker=marker_by_phase["IVR"],
+                    label="IVR",
+                    s=20
+                )
+                ax.scatter(
+                    x_var[array_phase == 3],
+                    y_var[array_phase == 3],
+                    c=colors_by_phase["fill"],
+                    marker=marker_by_phase["fill"],
+                    label="fill",
+                    s=20
+                )
 
-            # Plot the data points with different colors based on the output_mask values
-            ax.scatter(
-                x_var[array_phase == 0],
-                y_var[array_phase == 0],
-                c=colors_by_phase["IVC"],
-                marker=marker_by_phase["IVC"],
-                label="IVC",
-                s=20
-            )
-            ax.scatter(
-                x_var[array_phase == 1],
-                y_var[array_phase == 1],
-                c=colors_by_phase["ejec"],
-                marker=marker_by_phase["ejec"],
-                label="ejec",
-                s=20
-            )
-            ax.scatter(
-                x_var[array_phase == 2],
-                y_var[array_phase == 2],
-                c=colors_by_phase["IVR"],
-                marker=marker_by_phase["IVR"],
-                label="IVR",
-                s=20
-            )
-            ax.scatter(
-                x_var[array_phase == 3],
-                y_var[array_phase == 3],
-                c=colors_by_phase["fill"],
-                marker=marker_by_phase["fill"],
-                label="fill",
-                s=20
-            )
+                ax.scatter(
+                    x_var[array_phase == 4],
+                    y_var[array_phase == 4],
+                    c=colors_by_phase["load"],
+                    marker=marker_by_phase["load"],
+                    label="load",
+                    s=20
+                )
 
-            ax.scatter(
-                x_var[array_phase == 4],
-                y_var[array_phase == 4],
-                c=colors_by_phase["load"],
-                marker=marker_by_phase["load"],
-                label="load",
-                s=20
-            )
+                if i == num_variables - 1:
+                    ax.set_xlabel(xlabels[j])
+                if j == 0:
+                    ax.set_ylabel(xlabels[i])
 
-            if i == num_variables - 1:
-                ax.set_xlabel(xlabels[j])
-            if j == 0:
-                ax.set_ylabel(xlabels[i])
+        # Add a common title for all the subplots
+        plt.suptitle(f"Cardiac phase where the simulation crashed in the {chamber}", fontsize=16)
 
-    # Add a common title for all the subplots
-    plt.suptitle(f"Cardiac phase where the simulation crashed in the {chamber}", fontsize=16)
+        plt.subplots_adjust(left=0.1, right=0.75, top=0.9, bottom=0.1)
 
-    plt.subplots_adjust(left=0.1, right=0.75, top=0.9, bottom=0.1)
+        # Add a common legend for all the subplots
+        axes[0, -1].legend(loc=[1,0])
 
-    # Add a common legend for all the subplots
-    axes[0, -1].legend(loc=[1,0])
+        plt.savefig(os.path.join(figure_savepath,f"cardiac_phase_crashed_{chamber}.png"), dpi=300, bbox_inches='tight')
 
-    plt.savefig(os.path.join(figure_savepath,f"cardiac_phase_crashed_{chamber}.png"), dpi=300, bbox_inches='tight')
+    for key, value in phases_indices.items():
+        print(f"In the {chamber}, {np.count_nonzero([array_phase==value])} crashed during {key}")
 
-def plot_crashed_cycles_only_by_time(X, xlabels, output_mask, figure_savepath, sims_folder, bcl):
+def plot_crashed_cycles_only_by_time(X, xlabels, output_mask, figure_savepath, sims_folder, bcl,only_prints=False):
 
     colors_by_time = {
         0 : '#d55e00',
@@ -323,82 +329,90 @@ def plot_crashed_cycles_only_by_time(X, xlabels, output_mask, figure_savepath, s
     if num_samples > len(output_mask):
         X = X[:len(output_mask),:]
 
-    # Create pair-plots
-    _, axes = plt.subplots(
-        nrows=num_variables, ncols=num_variables, figsize=(13, 10), sharex="col", sharey="row"
-    )
+    if not only_prints:
+        # Create pair-plots
+        _, axes = plt.subplots(
+            nrows=num_variables, ncols=num_variables, figsize=(13, 10), sharex="col", sharey="row"
+        )
 
-    # Iterate through each pair of variables and create scatter plots
-    for i, ax_row in enumerate(axes):
-        for j, ax in enumerate(ax_row):
-            x_var = X[:, j]
-            y_var = X[:, i]
+        # Iterate through each pair of variables and create scatter plots
+        for i, ax_row in enumerate(axes):
+            for j, ax in enumerate(ax_row):
+                x_var = X[:, j]
+                y_var = X[:, i]
 
-            # Plot the data points with different colors based on the output_mask values
-            ax.scatter(
-                x_var[array_time == 0],
-                y_var[array_time == 0],
-                c=colors_by_time[0],
-                marker=marker_by_time[0],
-                label="Beat 1",
-                s=20
-            )
-            ax.scatter(
-                x_var[array_time == 1],
-                y_var[array_time == 1],
-                c=colors_by_time[1],
-                marker=marker_by_time[1],
-                label="Beat 2",
-                s=20
-            )
-            ax.scatter(
-                x_var[array_time == 2],
-                y_var[array_time == 2],
-                c=colors_by_time[2],
-                marker=marker_by_time[2],
-                label="Beat 3",
-                s=20
-            )
-            ax.scatter(
-                x_var[array_time == 3],
-                y_var[array_time == 3],
-                c=colors_by_time[3],
-                marker=marker_by_time[3],
-                label="Beat 4",
-                s=20
-            )
-            ax.scatter(
-                x_var[array_time == 4],
-                y_var[array_time == 4],
-                c=colors_by_time[4],
-                marker=marker_by_time[4],
-                label="Beat 5",
-                s=20
-            )
+                # Plot the data points with different colors based on the output_mask values
+                ax.scatter(
+                    x_var[array_time == 0],
+                    y_var[array_time == 0],
+                    c=colors_by_time[0],
+                    marker=marker_by_time[0],
+                    label="Beat 1",
+                    s=20
+                )
+                ax.scatter(
+                    x_var[array_time == 1],
+                    y_var[array_time == 1],
+                    c=colors_by_time[1],
+                    marker=marker_by_time[1],
+                    label="Beat 2",
+                    s=20
+                )
+                ax.scatter(
+                    x_var[array_time == 2],
+                    y_var[array_time == 2],
+                    c=colors_by_time[2],
+                    marker=marker_by_time[2],
+                    label="Beat 3",
+                    s=20
+                )
+                ax.scatter(
+                    x_var[array_time == 3],
+                    y_var[array_time == 3],
+                    c=colors_by_time[3],
+                    marker=marker_by_time[3],
+                    label="Beat 4",
+                    s=20
+                )
+                ax.scatter(
+                    x_var[array_time == 4],
+                    y_var[array_time == 4],
+                    c=colors_by_time[4],
+                    marker=marker_by_time[4],
+                    label="Beat 5",
+                    s=20
+                )
 
-            ax.scatter(
-                x_var[array_time == 5],
-                y_var[array_time == 5],
-                c=colors_by_time[5],
-                marker=marker_by_time[5],
-                label="Beat 5 (no ejection)",
-                s=20
-            )
+                ax.scatter(
+                    x_var[array_time == 5],
+                    y_var[array_time == 5],
+                    c=colors_by_time[5],
+                    marker=marker_by_time[5],
+                    label="Beat 5 (no ejection)",
+                    s=20
+                )
 
-            if i == num_variables - 1:
-                ax.set_xlabel(xlabels[j])
-            if j == 0:
-                ax.set_ylabel(xlabels[i])
+                if i == num_variables - 1:
+                    ax.set_xlabel(xlabels[j])
+                if j == 0:
+                    ax.set_ylabel(xlabels[i])
 
-    # Add a common title for all the subplots
-    plt.suptitle(f"Heart beat when the simulation crashed", fontsize=16)
+        # Add a common title for all the subplots
+        plt.suptitle(f"Heart beat when the simulation crashed", fontsize=16)
 
-    plt.subplots_adjust(left=0.1, right=0.75, top=0.9, bottom=0.1)
+        plt.subplots_adjust(left=0.1, right=0.75, top=0.9, bottom=0.1)
 
-    # Add a common legend for all the subplots
-    axes[0, -1].legend(loc=[1,0])
+        # Add a common legend for all the subplots
+        axes[0, -1].legend(loc=[1,0])
 
-    plt.savefig(os.path.join(figure_savepath,f"hearbeat_crashed.png"), dpi=300, bbox_inches='tight')
+        plt.savefig(os.path.join(figure_savepath,f"hearbeat_crashed.png"), dpi=300, bbox_inches='tight')
+
+    print(f"{np.count_nonzero([array_time==0])} crashed during beat 1")
+    print(f"{np.count_nonzero([array_time==1])} crashed during beat 2")
+    print(f"{np.count_nonzero([array_time==2])} crashed during beat 3")
+    print(f"{np.count_nonzero([array_time==3])} crashed during beat 4")
+    print(f"{np.count_nonzero([array_time==5])} crashed during beat 5 before ejection")
+    print(f"{np.count_nonzero([array_time==4])} crashed during beat 5 after ejection")
 
 
 def main(args):
@@ -409,8 +423,8 @@ def main(args):
     sims_folder        = f"{args.basefolder}/simulations"
     first_simulation   = args.first_simulation
     last_simulation    = args.last_simulation
-    BCL                = args.BCL
     n_beat             = args.n_beat
+    only_prints        = args.only_prints
 
     os.makedirs(output_folder, exist_ok=True)
 
@@ -419,56 +433,74 @@ def main(args):
     
     output_mask_cycle = np.loadtxt(f"{output_folder}/output_mask_beat_{n_beat}.txt")
 
+    with open(f"{args.basefolder}/json_files/clinical_data.json", "r") as clinical_data:
+            clinical_json = json.load(clinical_data)
+    
+    BCL = clinical_json["general"]["BCL"]
+
+
+    print(f"Plotting crashed cycles...")
     plot_crashed_cycles(X               = X,
                         xlabels         = xlabels,
                         output_mask     = output_mask_cycle,
-                        figure_savepath = figures_path) 
-    
+                        figure_savepath = figures_path,
+                        only_prints = only_prints) 
+    print(f"Plotting total crashed...")
     plot_total_crashed(X               = X,
                        xlabels         = xlabels,
                        output_mask     = output_mask_cycle,
                        figure_savepath = figures_path,
                        first_simulation= first_simulation,
-                       last_simulation = last_simulation) 
-
+                       last_simulation = last_simulation,
+                       only_prints=only_prints) 
+    print(f"PLotting crashed cycles only by phase in LV...")
     plot_crashed_cycles_only_by_phase(X               = X, 
                                       xlabels         = xlabels, 
                                       output_mask     = output_mask_cycle, 
                                       figure_savepath = figures_path,
                                       sims_folder     = sims_folder,
                                       chamber         = "LV",
-                                      bcl             = BCL)
-    
+                                      bcl             = BCL,
+                                      only_prints=only_prints)
+    print(f"PLotting crashed cycles only by phase in RV...")
+
     plot_crashed_cycles_only_by_phase(X               = X, 
                                       xlabels         = xlabels, 
                                       output_mask     = output_mask_cycle, 
                                       figure_savepath = figures_path,
                                       sims_folder     = sims_folder,
                                       chamber         = "RV",
-                                      bcl             = BCL)
-    
+                                      bcl             = BCL,
+                                      only_prints=only_prints)
+    print(f"PLotting crashed cycles only by phase in LA...")
+
     plot_crashed_cycles_only_by_phase(X               = X, 
                                       xlabels         = xlabels, 
                                       output_mask     = output_mask_cycle, 
                                       figure_savepath = figures_path,
                                       sims_folder     = sims_folder,
                                       chamber         = "LA",
-                                      bcl             = BCL)
-    
+                                      bcl             = BCL,
+                                      only_prints=only_prints)
+    print(f"PLotting crashed cycles only by phase in RA...")
+
     plot_crashed_cycles_only_by_phase(X               = X, 
                                       xlabels         = xlabels, 
                                       output_mask     = output_mask_cycle, 
                                       figure_savepath = figures_path,
                                       sims_folder     = sims_folder,
                                       chamber         = "RA",
-                                      bcl             = BCL)
-    
+                                      bcl             = BCL,
+                                      only_prints=only_prints)
+    print(f"PLotting crashed cycles only by time...")
+
     plot_crashed_cycles_only_by_time(X               = X,
                                      xlabels         = xlabels, 
                                      output_mask     = output_mask_cycle, 
                                      figure_savepath = figures_path,
                                      sims_folder     = sims_folder,
-                                     bcl             = BCL)
+                                     bcl             = BCL,
+                                      only_prints=only_prints)
     
 
 if __name__ == '__main__':
@@ -482,9 +514,8 @@ if __name__ == '__main__':
                         default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations")
     parser.add_argument('--first_simulation', type=int, required=True, default=0)
     parser.add_argument('--last_simulation', type=int, required=True, default=99)
-    parser.add_argument('--BCL', type=int, required=True)
     parser.add_argument('--n_beat', type=int, required=False, help="Heartbeat number to compute the output.", default=5)
-
+    parser.add_argument('--only_prints',action='store_true')
     args = parser.parse_args()
 
     main(args)
