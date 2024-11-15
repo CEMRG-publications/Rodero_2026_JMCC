@@ -348,6 +348,7 @@ def     cycle_simulation_summary(output_folder,
     count_PD = 0
     count_OK = 0
     count_notOK = 0
+    count_NA = 0
 
     if start_sample is not None:
         t = tqdm.trange(len(range(0,last_sample-start_sample+1)), desc='Bar desc', leave=True,colour='#C3B1E1')
@@ -408,14 +409,23 @@ def     cycle_simulation_summary(output_folder,
                     # dpdt_idx_rv = np.where(pressure_rv>EDP_rv)[0]
                     # ind_IVR_rv = np.intersect1d(dpdt_idx_rv,ind_IVR_rv)
 
+                    
+
+                if len(lv)>0 and max(time) == int(check_tend) and (SV>5.0):
+
                     LV_suitable = check_suitable_VV_output(time[last_beat],volume_last_beat,pressure_lv,t)
                     RV_suitable = check_suitable_VV_output(time[last_beat],volume_rv,pressure_rv,t)
 
+                    if LV_suitable and RV_suitable:
 
-                if len(lv)>0 and max(time) == int(check_tend) and (SV>5.0) and LV_suitable and RV_suitable:
-                    output[sim_index] = 1
-                    tab.append(list([basename+str(sim_number),'Y']))
-                    count_OK += 1
+
+                        output[sim_index] = 1
+                        tab.append(list([basename+str(sim_number),'Y']))
+                        count_OK += 1
+                    else:
+                        output[sim_index] = 0
+                        tab.append(list([basename+str(sim_number),'NA']))
+                        count_NA += 1
                 else:
                     output[sim_index] = 0
                     tab.append(list([basename+str(sim_number),'N']))
@@ -487,14 +497,23 @@ def     cycle_simulation_summary(output_folder,
                 # dpdt_idx_rv = np.where(pressure_rv>EDP_rv)[0]
                 # ind_IVR_rv = np.intersect1d(dpdt_idx_rv,ind_IVR_rv)
 
+                
+
+
+            if len(lv)>0 and max(time) == int(check_tend) and (SV>5.0):
+
                 LV_suitable = check_suitable_VV_output(time[last_beat],volume_last_beat,pressure_lv,t)
                 RV_suitable = check_suitable_VV_output(time[last_beat],volume_rv,pressure_rv,t)
 
+                if LV_suitable and RV_suitable:
 
-            if len(lv)>0 and max(time) == int(check_tend) and (SV>5.0) and LV_suitable and RV_suitable:
-                output[0] = 1
-                tab.append(list([basename+'default','Y']))
-                count_OK += 1
+                    output[0] = 1
+                    tab.append(list([basename+'default','Y']))
+                    count_OK += 1
+                else:
+                    output[0] = 0
+                    tab.append(list([basename+'default','NA']))
+                    count_NA += 1
             else:
                 output[0] = 0
                 tab.append(list([basename+'default','N']))
@@ -509,8 +528,9 @@ def     cycle_simulation_summary(output_folder,
                 tab.append(list([basename+'default','PD']))
                 count_PD += 1
 
-    success_rate = np.round(100*count_OK/(count_OK+count_notOK),2)
+    success_rate = np.round(100*count_OK/(count_OK+count_notOK+count_NA),2)
     tab.append(list(['','OK = '+str(count_OK)]))
+    tab.append(list(['','NOT ANALYSABLE = '+str(count_NA)]))
     tab.append(list(['','CRASHED = '+str(count_notOK)]))
     tab.append(list(['','PD = '+str(count_PD)]))
     tab.append(list(['',f'SUCESS RATE = {success_rate}%']))
@@ -525,6 +545,8 @@ def     cycle_simulation_summary(output_folder,
         for jj in range(1,len(tab[ii])):
             if tab[ii][jj]=='Y':
                 table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.lightgreen)]))
+            if tab[ii][jj]=='NA':
+                table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.lightgrey)]))
             elif tab[ii][jj]=='N':
                 table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.fidred)]))
             elif tab[ii][jj]=='PD':
@@ -739,7 +761,7 @@ def main(args):
                                     first_simulation=first_simulation,
                                     basename      = "cycle_",
                                     output_file   = f"{data_folder}/Y_mechanics_beat_{n_beat}.txt",
-                                    visualise     = True,
+                                    visualise     = False,
                                     output_mask=f"output_mask_beat_{n_beat}.txt")
 
     output_mask = np.loadtxt(f"{output_folder}/output_mask_beat_{n_beat}.txt")
