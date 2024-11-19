@@ -117,41 +117,7 @@ def plot_statistics_file(basefolder):
         file.write(f"LAEF\t{mean_LAEF:.2f}\t{std_LAEF:.2f}\t{min_LAEF:.2f}\t{max_LAEF:.2f}\n")
         file.write(f"RAEF\t{mean_RAEF:.2f}\t{std_RAEF:.2f}\t{min_RAEF:.2f}\t{max_RAEF:.2f}\n")
 
-def print_PV_loops_all_cycles(path_to_simulation, BCL, case_number):
-    
-    chambers = ['LV', 'RV', 'LA', 'RA']
-    colours = ['red', 'blue', '#F6BE00', 'green']
-    
-    ax = plt.figure(figsize=(10,10), constrained_layout=True).subplots(2, 2)
-    ax = ax.flatten()
-    n_cycles = 5
 
-    for j, chamber_name in enumerate(chambers):
-        
-        for n in range(n_cycles):
-
-            chamber_structure = read_csv(os.path.join(path_to_simulation,'cav.'+chamber_name+'.csv'), delimiter=",",
-                          skipinitialspace=True, header=0, comment='#')
-            time = np.array(chamber_structure['Time'])
-
-    #         start = time[-1]-BCL
-            start = time[0] + n*BCL
-            end = start + BCL
-
-            plot_time = np.where((time>=start) & (time<end))[0]
-
-            volume = np.array(chamber_structure['Volume'][plot_time])
-            pressure = np.array(chamber_structure['Pressure'][plot_time])
-            ax[j].plot(volume,pressure,color=colours[j],linewidth=3.0, alpha = 0.1+n*((1-0.1)/n_cycles))
-            ax[j].set_xlabel(chamber_name+' volume [mL]')
-            ax[j].set_ylabel(chamber_name+' pressure [mmHg]')
-        EF = round(100*(np.max(volume)-np.min(volume))/np.max(volume),2)
-        ax[j].text(0.95, 0.95, 'EF: ' + str(EF) + "%", horizontalalignment='right', verticalalignment='top',
-                transform=ax[j].transAxes)
-    plt.suptitle(f"Simulation #{case_number}", fontsize=20, weight='bold')
-    plt.savefig(f"{path_to_simulation}/../../figures/{case_number}_pv_loops_all_cycles.png",dpi=300)
-    plt.close('all')
-    
 def cycle_output_free_output_mask_name(datafolder,
                  output_folder,
                  BCL,
@@ -659,54 +625,6 @@ def check_suitable_VV_output(time,volume,pressure,t):
         return False
 
 
-def plot_pvloops_all_sim_range(datafolder,
-                      output_folder,
-                     BCL,
-                     first_simulation,
-                     basename="cycle_",
-                     figname=None,
-                     mask_file=None):
-
-    print('Plotting PV loops for successful simulations...')
-
-    chambers = ['LV','RV','LA','RA']
-
-    if mask_file is None:
-        mask_file = datafolder+"/output_mask.txt"
-    
-    mask = np.loadtxt(mask_file,dtype=int)
-    idx_ok = np.where(mask==1)[0]
-    
-    ax = plt.figure(figsize=(10,10), constrained_layout=True).subplots(2, 2)
-    ax = ax.flatten()
-    for i in range(idx_ok.shape[0]):
-        
-        for j,c in enumerate(chambers):
-
-            if first_simulation is None:
-                ch = read_csv(output_folder+'/'+basename+'default/cav.'+c+'.csv', delimiter=",", skipinitialspace=True,
-                                       header=0, comment='#')
-            else:
-                ch = read_csv(output_folder+'/'+basename+str(first_simulation+idx_ok[i])+'/cav.'+c+'.csv', delimiter=",", skipinitialspace=True,
-                                       header=0, comment='#')      
-            time = np.array(ch['Time'])
-
-            start = time[-1]-BCL
-
-            plot_time = np.where(time>=start)[0]
-
-            volume = np.array(ch['Volume'][plot_time])
-            pressure = np.array(ch['Pressure'][plot_time])
-            t = np.array(ch['Time'][plot_time])      
-
-            ax[j].plot(volume,pressure,color='#3489eb')
-            ax[j].set_xlabel(c+' volume [mL]')
-            ax[j].set_ylabel(c+' pressure [mmHg]')
-
-    if figname is not None:
-        plt.savefig(figname,dpi=300)
-    else:
-        plt.show()
 
 def main(args):
 
@@ -791,7 +709,6 @@ def main(args):
                                     visualise     = False,
                                     output_mask=f"output_mask_beat_{n_beat}.txt")
 
-    output_mask = np.loadtxt(f"{output_folder}/output_mask_beat_{n_beat}.txt")
     with open(f"{basefolder}/json_files/tags_lvrv_fch.json","r") as f:
         tags = json.load(f)
 
@@ -805,13 +722,7 @@ def main(args):
                                    output_mask=f"output_mask_beat_{n_beat}.txt")
 
 
-    plot_pvloops_all_sim_range(datafolder    = output_folder,
-                                        output_folder = simulations_folder,
-                                        BCL           = BCL,
-                                        basename      = "cycle_",
-                                        mask_file     = f"{output_folder}/output_mask_beat_{n_beat}.txt",
-                                        first_simulation=first_simulation,
-                                        figname       = f"{figures_path}/all_pv_loops_beat_{n_beat}.png")
+    
 
     Y_array = []
 
@@ -824,22 +735,10 @@ def main(args):
         Y = np.concatenate(Y_array, axis=0)
 
     np.savetxt(f"{data_folder}/Y.txt",Y,fmt="%g")
-    
+
     if not default:
         plot_statistics_file(basefolder=args.basefolder)
-        
-        t = tqdm.trange(len(output_mask), desc='Bar desc', leave=True,colour='#80EF80')
-
-        for index in t:
-            value = output_mask[index]
-            # If the value is 1, plot the pv loop
-            if value == 1:
-                t.set_description(f"Plotting PV loops of simulation #{first_simulation+index}...")
-                path2simulation = f"{simulations_folder}/cycle_{first_simulation+index}"
-                
-                print_PV_loops_all_cycles(path_to_simulation = path2simulation,BCL = BCL, case_number=first_simulation+index)
-    else:
-        print_PV_loops_all_cycles(path_to_simulation = f"{simulations_folder}/cycle_default",BCL = BCL, case_number='default')
+    
 
     if clean_ascii:
           os.system(f"rm {basename}.elem {basename}.pts {basename}.lon")
