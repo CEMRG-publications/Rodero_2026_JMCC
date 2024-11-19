@@ -326,7 +326,8 @@ def     cycle_simulation_summary(output_folder,
                              maskoutput="output_mask.txt",
                              output_file="simulation_summary.pdf",
                              unloaded_volumes=None,
-                             include_last_AVD=False):
+                             include_last_AVD=False,
+                             sims_folder=None):
     
     if start_sample is not None:
         output = np.zeros((last_sample-start_sample+1,),dtype=int)
@@ -342,7 +343,7 @@ def     cycle_simulation_summary(output_folder,
     document = SimpleDocTemplate(output_file, pagesize=A4, title='Simulation Summary')
     tab = []
     items = []
-    header = ['sim','success']
+    header = ['sim','success','error']
     tab.append(header)
 
     count_PD = 0
@@ -420,24 +421,36 @@ def     cycle_simulation_summary(output_folder,
 
 
                         output[sim_index] = 1
-                        tab.append(list([basename+str(sim_number),'Y']))
+                        tab.append(list([basename+str(sim_number),'Y',]))
                         count_OK += 1
                     else:
                         output[sim_index] = 0
-                        tab.append(list([basename+str(sim_number),'NA']))
+                        tab.append(list([basename+str(sim_number),'NA',]))
                         count_NA += 1
                 else:
                     output[sim_index] = 0
-                    tab.append(list([basename+str(sim_number),'N']))
+                    error_file = os.path.join(sims_folder, f"{basename}{sim_number}.out")
+                    error_message = "New error"
+                    with open(error_file,'r') as file:
+                        for line in file:
+                            # Check if the line contains the specified substring
+                            if "mechanic solver diverged" in line:
+                                error_message = line.strip()
+                            if "MPICH" in line:
+                                error_message = line.strip()
+                            if "CANCELLED" in line:
+                                error_message += " / CANCELLED"
+
+                    tab.append(list([basename+str(sim_number),'N',error_message]))
                     count_notOK += 1
             else:
                 if sim_number in unloaded_failed:
                     output[sim_index] = 0
-                    tab.append(list([basename+str(sim_number),'N']))
+                    tab.append(list([basename+str(sim_number),'N',"Unloading failed"]))
                     count_notOK += 1
                 else:
                     output[sim_index] = -1
-                    tab.append(list([basename+str(sim_number),'PD']))
+                    tab.append(list([basename+str(sim_number),'PD',]))
                     count_PD += 1
 
     else: ### Default simulation
@@ -508,32 +521,43 @@ def     cycle_simulation_summary(output_folder,
                 if LV_suitable and RV_suitable:
 
                     output[0] = 1
-                    tab.append(list([basename+'default','Y']))
+                    tab.append(list([basename+'default','Y',]))
                     count_OK += 1
                 else:
                     output[0] = 0
-                    tab.append(list([basename+'default','NA']))
+                    tab.append(list([basename+'default','NA',]))
                     count_NA += 1
             else:
                 output[0] = 0
-                tab.append(list([basename+'default','N']))
+                error_file = os.path.join(sims_folder, f"{basename}{sim_number}.out")
+                error_message = "New error"
+
+                with open(error_file,'r') as file:
+                    for line in file:
+                        # Check if the line contains the specified substring
+                        if "mechanic solver diverged" in line:
+                            error_message = line.strip()
+                        
+                        if "CANCELLED" in line:
+                            error_message += " / CANCELLED"
+                tab.append(list([basename+'default','N',error_message]))
                 count_notOK += 1
         else:
             if sim_number in unloaded_failed:
                 output[0] = 0
-                tab.append(list([basename+'default','N']))
+                tab.append(list([basename+'default','N',"Unloading failed"]))
                 count_notOK += 1
             else:
                 output[0] = -1
-                tab.append(list([basename+'default','PD']))
+                tab.append(list([basename+'default','PD',]))
                 count_PD += 1
 
     success_rate = np.round(100*count_OK/(count_OK+count_notOK+count_NA),2)
-    tab.append(list(['','OK = '+str(count_OK)]))
-    tab.append(list(['','NOT ANALYSABLE = '+str(count_NA)]))
-    tab.append(list(['','CRASHED = '+str(count_notOK)]))
-    tab.append(list(['','PD = '+str(count_PD)]))
-    tab.append(list(['',f'SUCESS RATE = {success_rate}%']))
+    tab.append(list(['','OK = '+str(count_OK),]))
+    tab.append(list(['','NOT ANALYSABLE = '+str(count_NA),]))
+    tab.append(list(['','CRASHED = '+str(count_notOK),]))
+    tab.append(list(['','PD = '+str(count_PD),]))
+    tab.append(list(['',f'SUCESS RATE = {success_rate}%',]))
 
     table = Table(tab)
 
@@ -551,6 +575,8 @@ def     cycle_simulation_summary(output_folder,
                 table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.fidred)]))
             elif tab[ii][jj]=='PD':
                 table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.lightyellow)]))
+            elif 'CANCELLED' in tab[ii][jj] or 'New error' in tab[ii][jj]:
+                table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.orange)]))
 
     items.append(table)
     document.build(items)
@@ -750,7 +776,8 @@ def main(args):
                                                 basename         = "cycle_",
                                                 maskoutput       = f"{output_folder}/output_mask_beat_{n_beat}.txt",
                                                 output_file      = f"{output_folder}/simulation_summary_beat_{n_beat}.pdf",
-                                                include_last_AVD=True
+                                                include_last_AVD=True,
+                                                sims_folder=simulations_folder
                                             )
     
     cycle_output_free_output_mask_name(datafolder    = output_folder,
