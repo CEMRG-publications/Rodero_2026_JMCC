@@ -13,60 +13,6 @@ from reportlab.lib import colors
 
 from SIMULATION_library import fourchamber_output, mesh_utils
 
-def plot_crashed_simulations(X, xlabels, output_mask, figure_savepath, first_simulation, last_simulation):
-
-    num_points, num_variables = X.shape
-
-    # Calculate the percentage of 0's in the output mask
-    percentage_zeros = np.mean(output_mask == 0) * 100
-
-    # Create pair-plots
-    fig, axes = plt.subplots(
-        nrows=num_variables, ncols=num_variables, figsize=(10, 10), sharex="col", sharey="row"
-    )
-
-    # Iterate through each pair of variables and create scatter plots
-    for i, ax_row in enumerate(axes):
-        for j, ax in enumerate(ax_row):
-            x_var = X[first_simulation:(last_simulation+1), j]
-            y_var = X[first_simulation:(last_simulation+1), i]
-
-            # Plot the data points with different colors based on the output_mask values
-            ax.scatter(
-                x_var[output_mask == 0],
-                y_var[output_mask == 0],
-                c="red",
-                marker="x",
-                label="Crashed",
-                s=20
-            )
-            ax.scatter(
-                x_var[output_mask == 1],
-                y_var[output_mask == 1],
-                c="green",
-                marker="o",
-                label="Converged",
-                s=20
-            )
-
-            if i == num_variables - 1:
-                ax.set_xlabel(xlabels[j])
-            if j == 0:
-                ax.set_ylabel(xlabels[i])
-
-    # Add a common title for all the subplots
-    plt.suptitle(f"Crashed simulations: {percentage_zeros:.2f}%", fontsize=16)
-
-    # Move the legend to avoid overlapping
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-
-    # Add a common legend for all the subplots
-    axes[0, -1].legend(loc=[1,0])
-
-    os.makedirs(figure_savepath, exist_ok=True)
-
-    plt.savefig(os.path.join(figure_savepath,"success_crashed.png"), dpi=300)
-
 def plot_statistics_file(basefolder):
     # Load data from Y.txt
     data = np.loadtxt(f'{basefolder}/data/Y.txt')
@@ -81,41 +27,20 @@ def plot_statistics_file(basefolder):
     min_values = np.min(data, axis=0)
     max_values = np.max(data, axis=0)
 
-    # Calculate ejection fractions for all cases
-    LVEF_all = 100 * (data[:, labels.index('LVedv')] - data[:, labels.index('LVesv')]) / data[:, labels.index('LVedv')]
-    RVEF_all = 100 * (data[:, labels.index('RVedv')] - data[:, labels.index('RVesv')]) / data[:, labels.index('RVedv')]
-    LAEF_all = 100 * (data[:, labels.index('LAedv')] - data[:, labels.index('LAesv')]) / data[:, labels.index('LAedv')]
-    RAEF_all = 100 * (data[:, labels.index('RAedv')] - data[:, labels.index('RAesv')]) / data[:, labels.index('RAedv')]
-
-    # Calculate mean and standard deviation of ejection fractions
-    mean_LVEF = np.mean(LVEF_all)
-    std_LVEF = np.std(LVEF_all)
-    min_LVEF = np.min(LVEF_all)
-    max_LVEF = np.max(LVEF_all)
-    mean_RVEF = np.mean(RVEF_all)
-    std_RVEF = np.std(RVEF_all)
-    min_RVEF = np.min(RVEF_all)
-    max_RVEF = np.max(RVEF_all)
-    mean_LAEF = np.mean(LAEF_all)
-    std_LAEF = np.std(LAEF_all)
-    min_LAEF = np.min(LAEF_all)
-    max_LAEF = np.max(LAEF_all)
-    mean_RAEF = np.mean(RAEF_all)
-    std_RAEF = np.std(RAEF_all)
-    min_RAEF = np.min(RAEF_all)
-    max_RAEF = np.max(RAEF_all)
-
     # Save results to a file
     with open(f'{basefolder}/output/output_statistics.csv', 'w') as file:
         file.write("Variable\tMean\tStd\tMin\tMax\n")
         for label, mean, std, min, max in zip(labels, mean_values, std_values, min_values, max_values):
             file.write(f"{label}\t{mean:.2f}\t{std:.2f}\t{min:.2f}\t{max:.2f}\n")
 
-        # Add ejection fractions to the file
-        file.write(f"LVEF\t{mean_LVEF:.2f}\t{std_LVEF:.2f}\t{min_LVEF:.2f}\t{max_LVEF:.2f}\n")
-        file.write(f"RVEF\t{mean_RVEF:.2f}\t{std_RVEF:.2f}\t{min_RVEF:.2f}\t{max_RVEF:.2f}\n")
-        file.write(f"LAEF\t{mean_LAEF:.2f}\t{std_LAEF:.2f}\t{min_LAEF:.2f}\t{max_LAEF:.2f}\n")
-        file.write(f"RAEF\t{mean_RAEF:.2f}\t{std_RAEF:.2f}\t{min_RAEF:.2f}\t{max_RAEF:.2f}\n")
+def artery_cycle_output_free_output_mask_name(pressure):
+    
+    diast_pressure = pressure.min()
+    syst_pressure = pressure.max()
+    pulse_pressure = syst_pressure - diast_pressure
+    mean_pressure = (2*diast_pressure + syst_pressure)/3.0
+
+    return([diast_pressure, syst_pressure, pulse_pressure, mean_pressure])
 
 
 def cycle_output_free_output_mask_name(datafolder,
@@ -136,7 +61,7 @@ def cycle_output_free_output_mask_name(datafolder,
     mask = np.loadtxt(f"{datafolder}/{output_mask}",dtype=int)
     idx_ok = np.where(mask==1)[0]
 
-    output = np.zeros((idx_ok.shape[0],26))
+    output = []
 
     t = tqdm.trange(len(range(idx_ok.shape[0])), desc='Bar desc', leave=True,colour='#B3EBF2')
     for i in t:
@@ -155,6 +80,12 @@ def cycle_output_free_output_mask_name(datafolder,
         la = read_csv(folder+'/cav.LA.csv', delimiter=",", skipinitialspace=True,
                            header=0, comment='#')
         ra = read_csv(folder+'/cav.RA.csv', delimiter=",", skipinitialspace=True,
+                           header=0, comment='#')
+
+        ao = read_csv(f"{folder}/tube.AO.csv", delimiter=",", skipinitialspace=True,
+                           header=0, comment='#')
+        
+        pa = read_csv(f"{folder}/tube.AP.csv", delimiter=",", skipinitialspace=True,
                            header=0, comment='#')
 
         time = np.array(lv['Time'])
@@ -179,13 +110,40 @@ def cycle_output_free_output_mask_name(datafolder,
         volume_ra = np.array(ra['Volume'][last_beat])
         pressure_ra = np.array(ra['Pressure'][last_beat])
 
+        pressure_ao = np.array(ao['Pressure'][last_beat])
+        pressure_pa = np.array(pa['Pressure'][last_beat])
+
+        labels_computed = []
+
         lvoutput = fourchamber_output.VV_output(time,volume_lv,pressure_lv,BCL)
+        LVSV = lvoutput[0] - lvoutput[2]
+        LVEF = 100*(LVSV / lvoutput[0])
+        labels_computed.extend(["LVedv","LVedp","LVesv","LVpMax","LVdpdtMax","LVdpdtMin","LVSV","LVEF"])
+        lvoutput.extend([LVSV,LVEF])
+
         rvoutput = fourchamber_output.VV_output(time,volume_rv,pressure_rv,BCL)
+        labels_computed.extend(["RVedv","RVedp","RVesv","RVpMax","RVdpdtMax","RVdpdtMin","RVSV","RVEF"])
+        RVSV = rvoutput[0] - rvoutput[2]
+        RVEF = 100*(RVSV / rvoutput[0])
+        lvoutput.extend([RVSV,RVEF])
+
         laoutput = fourchamber_output.AA_output(time,volume_la,pressure_la)
+        labels_computed.extend(["LAedv","LAesv","LAvMax","LApMax"])
+
         raoutput = fourchamber_output.AA_output(time,volume_ra,pressure_ra)
+        labels_computed.extend(["RAedv","RAesv","RAvMax","RApMax"])
 
         laoutput_ej = fourchamber_output.AA_output_ej(time,volume_la)
+        labels_computed.extend(["LAsvA","LAinflV","LAsvV"])
         raoutput_ej = fourchamber_output.AA_output_ej(time,volume_ra)
+        labels_computed.extend(["RAsvA","RAinflV","RAsvV"])
+
+
+        aooutput = artery_cycle_output_free_output_mask_name(pressure_ao)
+        labels_computed.extend(["diastAP","systAP","pulseAP","mAP"])
+
+        paoutput = artery_cycle_output_free_output_mask_name(pressure_pa)
+        labels_computed.extend(["diastPAP","systPAP","pulsePAP","mPAP"])
 
         if visualise:
             fourchamber_output.check_ventricle_output(time,volume_lv,pressure_lv,lvoutput)
@@ -193,11 +151,15 @@ def cycle_output_free_output_mask_name(datafolder,
             fourchamber_output.check_atria_output(time,volume_la,pressure_la,laoutput)
             fourchamber_output.check_atria_output(time,volume_ra,pressure_ra,raoutput)
 
-        output[i,:] = np.concatenate((lvoutput,rvoutput,
-                                      laoutput,raoutput,
-                                      laoutput_ej,raoutput_ej),axis=0)
+
+        concatenated = np.concatenate((lvoutput, rvoutput, laoutput, raoutput, laoutput_ej, raoutput_ej, aooutput, paoutput), axis=0)
+        output.append(concatenated)
+        
+    output = np.array(output, dtype=object)
 
     np.savetxt(output_file, output, fmt='%.2f')
+
+    return(labels_computed)
 
 def electrophysiology_cycle_output_output_mask_free(datafolder,
                                    output_folder,
@@ -262,24 +224,33 @@ def electrophysiology_cycle_output_output_mask_free(datafolder,
     output = np.zeros((idx_ok.shape[0],2))
     t = tqdm.trange(len(range(idx_ok.shape[0])), desc='Bar desc', leave=True,colour='#FDFD96')
     for i in t:
-        if first_simulation is None:
-            sim_num = 'default'
-        else:
-            sim_num = first_simulation + idx_ok[i]
-        t.set_description('Simulation '+basename+str(sim_num)+'...')
+        # Determine simulation number
+        sim_num = 'default' if first_simulation is None else first_simulation + idx_ok[i]
 
-        folder = output_folder+'/'+basename+str(sim_num)
+        # Update progress bar description
+        t.set_description(f'Simulation {basename}{sim_num}...')
 
-        AT=np.loadtxt(folder+"/vm_act_seq.dat",dtype=float)
-        if (np.min(AT[V_VTX]<0)):
+        # Load activation times
+        folder = f"{output_folder}/{basename}{sim_num}"
+        AT = np.loadtxt(f"{folder}/vm_act_seq.dat", dtype=float)
+
+        # Extract ventricular and atrial activation times
+        AT_A = AT[A_VTX]
+        AT_V = AT[V_VTX]
+
+        # Check for negative activation times
+        if np.any(AT_V < 0):
             raise Exception("The ventricles contain a negative activation time.")
-        if (np.min(AT[A_VTX]<0)):
+        if np.any(AT_A < 0):
             raise Exception("The atria contain a negative activation time.")
-            
-        output[i,0] = np.max(AT[A_VTX])-np.min(AT[A_VTX])
-        output[i,1] = np.max(AT[V_VTX])-np.min(AT[V_VTX])
+
+        # Calculate and store activation ranges
+        output[i, 0] = AT_A.max() - AT_A.min()
+        output[i, 1] = AT_V.max() - AT_V.min()
 
     np.savetxt(output_file,output,fmt="%g")
+
+    return(["A_TAT","V_TAT"])
 
 
 def     cycle_simulation_summary(output_folder,
@@ -684,6 +655,7 @@ def main(args):
     os.makedirs(output_folder, exist_ok=True)
     os.makedirs(figures_path, exist_ok=True)
 
+
     cycle_simulation_summary(output_folder    = simulations_folder,
                                                 BCL              = BCL,
                                                 AVD              = AVD,
@@ -698,7 +670,7 @@ def main(args):
                                                 sims_folder=simulations_folder
                                             )
     
-    cycle_output_free_output_mask_name(datafolder    = output_folder,
+    labels_computed = cycle_output_free_output_mask_name(datafolder    = output_folder,
                                     output_folder = simulations_folder,
                                     BCL           = BCL,
                                     AVD           = AVD,
@@ -712,7 +684,7 @@ def main(args):
     with open(f"{basefolder}/json_files/tags_lvrv_fch.json","r") as f:
         tags = json.load(f)
 
-    electrophysiology_cycle_output_output_mask_free(datafolder = output_folder,
+    EP_labels = electrophysiology_cycle_output_output_mask_free(datafolder = output_folder,
                                    output_folder = simulations_folder,
                                    elem_file     = elem_file,
                                    tags          = tags,
@@ -735,6 +707,12 @@ def main(args):
         Y = np.concatenate(Y_array, axis=0)
 
     np.savetxt(f"{data_folder}/Y.txt",Y,fmt="%g")
+
+    final_labels = np.concatenate((labels_computed, EP_labels))
+
+    with open(f"{data_folder}/ylabels.txt", "w") as file:
+        for label in final_labels:
+            file.write(label + "\n")
 
     if not default:
         plot_statistics_file(basefolder=args.basefolder)
