@@ -20,9 +20,12 @@ def plot_biomarkers_VV(first_simulation,last_simulation,datafolder,mask_file,NBE
     dict_labels = {"LV_volume": ["LVedv","LVesv"],
                    "LV_pressure": ["LVedp","LVpMax"],
                    "LV_dpressure": ["LVdpdtMax","LVdpdtMin"],
+                   "LV_ratio": ["LVSV", "LVEF"],
+                   "VV_EP": ["V_TAT"],
                    "RV_volume": ["RVedv","RVesv"],
                    "RV_pressure": ["RVedp","RVpMax"],
                    "RV_dpressure": ["RVdpdtMax","RVdpdtMin"],
+                   "RV_ratio": ["RVSV", "RVEF"],
                    "LA_volume": ["LAedv","LAesv","LAvMax","LAinflV"],
                    "LA_pressure": ["LApMax"],
                    "RA_volume": ["RAedv","RAesv","RAvMax","RAinflV"],
@@ -118,7 +121,7 @@ def plot_biomarkers_VV(first_simulation,last_simulation,datafolder,mask_file,NBE
             v_plt.set_xlim([np.min(time)-0.1*time_range,
                              np.max(time)+0.1*time_range])
 
-
+            ratio_text = []
 
             for label_idx, label in enumerate(ylabels):
                 if label in dict_labels[f"{chamber}_volume"]:
@@ -278,9 +281,17 @@ def plot_biomarkers_VV(first_simulation,last_simulation,datafolder,mask_file,NBE
                         va='center',        # Central alignment
                         ha='left'         # Right alignment
                     )
+                
+                elif label in dict_labels['VV_EP']:
+                    ratio_text.append(f"{label}={Y[i,label_idx]} ms")
+                
+                elif label in dict_labels[f'{chamber}_ratio']:
+                    ratio_text.append(f"{label}={Y[i,label_idx]}")
 
                 else:
                     not_plotted.append(label)
+
+            fig.text(0.5, 0.02, f"{', '.join(ratio_text)}", fontsize=14, ha='center', va='center')
 
             os.makedirs(f"{fig_path}/biomarkers", exist_ok=True)
             plt.savefig(f"{fig_path}/biomarkers/biomarkers_cycle_{sim_number}_{chamber}.png",dpi=300)
@@ -310,7 +321,8 @@ def plot_biomarkers_AA(first_simulation,last_simulation,datafolder,mask_file,NBE
                    "RA_volume": ["RAedv","RAesv","RAvMax","RAinflV"],
                    "RA_pressure": ["RApMax"],
                    "LA_ratio": ["LAsvA","LAsvV"],
-                   "RA_ratio": ["RAsvA","RAsvV"]
+                   "RA_ratio": ["RAsvA","RAsvV"],
+                   "AA_EP": ["A_TAT"]
                    }
     
     Y = np.loadtxt(f"{datafolder}/{output_file}",dtype=float)
@@ -517,6 +529,9 @@ def plot_biomarkers_AA(first_simulation,last_simulation,datafolder,mask_file,NBE
 
                 elif label in dict_labels[f'{chamber}_ratio']:
                     ratio_text.append(f"{label}={Y[i,label_idx]}")
+                
+                elif label in dict_labels['AA_EP']:
+                    ratio_text.append(f"{label}={Y[i,label_idx]} ms")
 
                 else:
                     not_plotted.append(label)
@@ -529,6 +544,189 @@ def plot_biomarkers_AA(first_simulation,last_simulation,datafolder,mask_file,NBE
             plt.close()
         
     return(not_plotted)
+
+def plot_biomarkers_arteries(first_simulation,last_simulation,datafolder,mask_file,NBEATS,BCL,AVD,sims_folder,fig_path,output_file):
+
+    print(f"Plotting biomarkers for the arteries...")
+
+    
+    mask = np.loadtxt(mask_file,dtype=int)
+    idx_ok = np.where(mask==1)[0]
+
+    ylabels = np.loadtxt(f"{datafolder}/ylabels.txt", dtype="str")
+
+    dict_labels = {"ao_pressure": ["diastAP","systAP","mAP"],
+                   "ao_ratio": ["pulseAP"],
+                   "pa_pressure": ["diastPAP","systPAP","mPAP"],
+                   "pa_ratio": ["pulsePAP"]
+                   }
+    
+    Y = np.loadtxt(f"{datafolder}/{output_file}",dtype=float)
+
+    t = tqdm.trange(idx_ok.shape[0], desc='Bar desc', leave=True,colour='#8B0000')
+    print_message_outer = "Plotting biomarkers of cycle " 
+    total_message_length_outer = len(print_message_outer) + 6
+
+    not_plotted = []
+
+    for i in t:
+        
+        sim_number = first_simulation + idx_ok[i]
+
+        if sim_number <= last_simulation:
+
+            t.set_description(f"{print_message_outer}{sim_number}...".ljust(total_message_length_outer))
+
+            start = int((NBEATS-1)*BCL-AVD[idx_ok[i]])
+            # start = time[-1]-BCL
+            end = start+BCL
+
+            
+            ao = read_csv(f"{sims_folder}/cycle_{sim_number}/tube.AO.csv", delimiter=",", skipinitialspace=True,
+                            header=0, comment='#')
+            pa = read_csv(f"{sims_folder}/cycle_{sim_number}/tube.AP.csv", delimiter=",", skipinitialspace=True,
+                            header=0, comment='#')
+            
+            last_beat = np.intersect1d(np.where(np.array(ao['Time'])>=start)[0],
+                                    np.where(np.array(ao['Time'])<=end)[0])
+
+            time = np.array(ao['Time'][last_beat])
+
+            pressure_ao = np.array(ao['Pressure'][last_beat])
+            pressure_pa = np.array(pa['Pressure'][last_beat])
+            
+            fig = plt.figure(figsize=(17,10))
+            fig.suptitle(f"Cycle #{sim_number}", fontsize=20, weight='bold')
+
+
+            ap_plt = fig.add_subplot(2,1,1)
+            pap_plt = fig.add_subplot(2,1,2)
+
+            ap_plt.set_xlabel('Time (s)')
+            ap_plt.set_ylabel('Pressure (mmHg)')
+            ap_plt.plot(time,pressure_ao,color='#8B0000',linewidth=2.0)
+
+            pap_plt.set_xlabel('Time (s)')
+            pap_plt.set_ylabel('Pressure (mmHg)')
+            pap_plt.plot(time,pressure_pa,color='#8B0000',linewidth=2.0)
+
+            
+            time_range = np.max(time) - np.min(time)
+            ao_pressure_range = np.max(pressure_ao) - np.min(pressure_ao)
+            pa_pressure_range = np.max(pressure_pa) - np.min(pressure_pa)
+
+            ap_plt.set_ylim([np.min(pressure_ao)-0.1*ao_pressure_range,
+                             np.max(pressure_ao)+0.1*ao_pressure_range])
+            ap_plt.set_xlim([np.min(time)-0.1*time_range,
+                             np.max(time)+0.1*time_range])
+            
+            pap_plt.set_ylim([np.min(pressure_pa)-0.1*pa_pressure_range,
+                             np.max(pressure_pa)+0.1*pa_pressure_range])
+            pap_plt.set_xlim([np.min(time)-0.1*time_range,
+                             np.max(time)+0.1*time_range])
+
+            ratio_text = []
+
+            for label_idx, label in enumerate(ylabels):
+
+                if label in dict_labels[f"ao_pressure"]:
+                    
+                    # Get the current x-axis limits
+                    xmin, xmax = ap_plt.get_xlim()
+
+                    label_fontsize = plt.rcParams['axes.labelsize']
+                    if isinstance(label_fontsize, str):
+                        label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
+                    label_fontsize += 2
+
+                    # Get the current x-axis limits
+                    xmin, xmax = ap_plt.get_xlim()
+
+                    # Draw the vertical dashed line from the bottom to the top of the plot area
+                    
+                    ap_plt.hlines(
+                        y=Y[i, label_idx], 
+                        xmin=xmin, 
+                        xmax=xmax, 
+                        linewidth=1,        # Thinner line
+                        color='k', 
+                        linestyle='--'      # Dashed line
+                    )
+
+                    label_fontsize = plt.rcParams['axes.labelsize']
+                    if isinstance(label_fontsize, str):
+                        label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
+                    label_fontsize += 2
+
+                    # Add text centered and above the line
+                    ap_plt.text(
+                        x = xmax + 0.01*ao_pressure_range,
+                        y = Y[i, label_idx],    # X position (aligned with the line)
+                        s = label,              # Text content
+                        fontsize=label_fontsize,  # Match font size with xlabel
+                        color='#8B0000',    # Dark red
+                        va='center',        # Central alignment
+                        ha='left'         # Right alignment
+                    )
+
+                elif label in dict_labels[f'ao_ratio']:
+                    ratio_text.append(f"Ao {label}={Y[i,label_idx]}")
+                
+                elif label in dict_labels[f"pa_pressure"]:
+                    
+                    # Get the current x-axis limits
+                    xmin, xmax = pap_plt.get_xlim()
+
+                    label_fontsize = plt.rcParams['axes.labelsize']
+                    if isinstance(label_fontsize, str):
+                        label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
+                    label_fontsize += 2
+
+                    # Get the current x-axis limits
+                    xmin, xmax = pap_plt.get_xlim()
+
+                    # Draw the vertical dashed line from the bottom to the top of the plot area
+                    
+                    pap_plt.hlines(
+                        y=Y[i, label_idx], 
+                        xmin=xmin, 
+                        xmax=xmax, 
+                        linewidth=1,        # Thinner line
+                        color='k', 
+                        linestyle='--'      # Dashed line
+                    )
+
+                    label_fontsize = plt.rcParams['axes.labelsize']
+                    if isinstance(label_fontsize, str):
+                        label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
+                    label_fontsize += 2
+
+                    # Add text centered and above the line
+                    pap_plt.text(
+                        x = xmax + 0.01*pa_pressure_range,
+                        y = Y[i, label_idx],    # X position (aligned with the line)
+                        s = label,              # Text content
+                        fontsize=label_fontsize,  # Match font size with xlabel
+                        color='#8B0000',    # Dark red
+                        va='center',        # Central alignment
+                        ha='left'         # Right alignment
+                    )
+
+                elif label in dict_labels[f'pa_ratio']:
+                    ratio_text.append(f"PA {label}={Y[i,label_idx]}")
+                
+                else:
+                    not_plotted.append(label)
+
+            fig.text(0.5, 0.02, f"{', '.join(ratio_text)}", fontsize=14, ha='center', va='center')
+
+            os.makedirs(f"{fig_path}/biomarkers", exist_ok=True)
+            plt.savefig(f"{fig_path}/biomarkers/biomarkers_cycle_{sim_number}_arteries.png",dpi=300)
+
+            plt.close()
+        
+    return(not_plotted)
+
 
 
 def print_PV_loops_all_cycles(path_to_simulation, BCL, case_number):
@@ -688,11 +886,23 @@ def main(args):
                     fig_path = figures_path,
                     output_file=output_file,
                     chamber="RA")
+    
+    not_plotted_arteries = plot_biomarkers_arteries(first_simulation = first_simulation,
+                    last_simulation = last_simulation,
+                    datafolder = f"{basefolder}/data",
+                    mask_file = f"{output_folder}/output_mask_beat_{n_beat}.txt",
+                    NBEATS = n_beat,
+                    BCL = BCL,
+                    AVD = AVD,
+                    sims_folder = simulations_folder,
+                    fig_path = figures_path,
+                    output_file=output_file)
 
 
-    common_biomarkers = set(not_plotted_LV) & set(not_plotted_RV) &  set(not_plotted_LA) & set(not_plotted_RA) 
+    common_biomarkers = set(not_plotted_LV) & set(not_plotted_RV) &  set(not_plotted_LA) & set(not_plotted_RA) & set(not_plotted_arteries)
 
-    print(f"Biomarkers not plotted: {common_biomarkers}")
+    if common_biomarkers:
+        print(f"Biomarkers not plotted: {common_biomarkers}")
       
     plot_pvloops_all_sim_range(datafolder    = output_folder,
                                         output_folder = simulations_folder,
