@@ -152,10 +152,14 @@ def main(args):
         unloaded_volumes = np.loadtxt(os.path.join(basefolder,"unloaded_volumes.txt"),dtype=float)
 
         X = np.loadtxt(os.path.join(basefolder,"../data/X_mechanics.txt"),dtype=float)
-        if type(np.size(unloaded_volumes)) is not int :
-            mask = np.sum(unloaded_volumes,axis=1)
+
+        def is_list_of_lists(lst):
+            return all(isinstance(i, list) for i in lst)
+
+        if unloaded_volumes.ndim > 1:
+            mask = np.all(unloaded_volumes != -1, axis=1)
         else:
-            mask = np.sum(unloaded_volumes)
+            mask = np.all(unloaded_volumes != -1)
 
         xlabels = read_labels(os.path.join(basefolder,"../data/xlabels_mechanics.txt"))
 
@@ -164,29 +168,36 @@ def main(args):
 
         if len(X.shape) > 1:
             in_dim = X.shape[1]
-            
             out_dim = in_dim
             _, axes = plt.subplots(
                 nrows=out_dim,
                 ncols=in_dim,
                 sharex="col",
                 sharey="row",
-                figsize=(10,10),
+                figsize=(10, 10),
             )
+
             for i, axis in enumerate(axes.flatten()):
+                # Scatter plots for ok and not-ok indices
                 axis.scatter(X[idx_ok, i % in_dim], X[idx_ok, i // in_dim], c='green', s=1)
                 axis.scatter(X[idx_notok, i % in_dim], X[idx_notok, i // in_dim], c='red', s=1)
-                inf = min(X[:, i % in_dim])
-                sup = max(X[:, i % in_dim])
-                mean = 0.5 * (inf + sup)
-                delta = sup - mean
+
+                # Automatically set x-axis limits and ticks
+                axis.autoscale(enable=True, axis='x', tight=True)  # Let Matplotlib automatically adjust limits
+                xticks = axis.get_xticks()  # Retrieve auto-set x-ticks
+                axis.set_xticklabels([f"{x:.2f}" for x in xticks])  # Format ticks to 2 decimal places
+
+                # Customize x-label and limits if on the bottom row
                 if i // in_dim == out_dim - 1:
-                    axis.set_xlabel(xlabels[i % in_dim],rotation=90)
-                    axis.set_xticks([])
-                    axis.set_xlim(left=inf - 0.3 * delta, right=sup + 0.3 * delta)
+                    axis.set_xlabel(xlabels[i % in_dim], rotation=90)
+                # else:
+                #     axis.set_xticks([])  # Hide x-ticks for non-bottom rows
+
+                # Customize y-label if in the first column
                 if i % in_dim == 0:
-                    axis.set_yticks([])
                     axis.set_ylabel(xlabels[i // in_dim])
+                # else:
+                #     axis.set_yticks([])  # Hide y-ticks for non-left columns
             plt.savefig(os.path.join(path2figure, "unloaded_scatter.png"), bbox_inches="tight", dpi=300)
     
     print(f"A total of {n_sim_work} unloadings work, and {n_sim_not_work} did not work.")
