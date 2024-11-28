@@ -318,19 +318,17 @@ def     cycle_simulation_summary(output_folder,
                     volume_last_beat = volume[last_beat]
                     SV = np.max(volume_last_beat)-np.min(volume_last_beat)
                     pressure_lv = np.array(lv['Pressure'][last_beat])
-                # print(f"len(lv) is {len(lv)} and should be > 0 ")
-                # print(f"max(time) is {max(time)} and should be equal to int(check_tend) which is {int(check_tend)}")
-                # print(f"SV is {SV} and should be > 5")
                     
                     # Checking that there's an IVR phase:
-                    dv = np.gradient(volume_last_beat)
-                    time_pmax = time[0]+np.where(pressure_lv==np.max(pressure_lv))[0][0]
-                    ind_IVC = np.intersect1d(np.where(np.abs(dv)<=0.01)[0],np.where(time<=time_pmax-10.)[0])
-                    ind_IVR = np.intersect1d(np.where(np.abs(dv)<=0.01)[0],np.where(time>=time_pmax+10.)[0])
-                    ind_ED = ind_IVC[0]
-                    EDP = pressure_lv[ind_ED]
-                    dpdt_idx = np.where(pressure_lv>EDP)[0]
-                    ind_IVR = np.intersect1d(dpdt_idx,ind_IVR)
+                    # dv = np.gradient(volume_last_beat)
+                    # time_pmax = time[0]+np.where(pressure_lv==np.max(pressure_lv))[0][0]
+                    # ind_IVC = np.intersect1d(np.where(np.abs(dv)<=0.01)[0],np.where(time<=time_pmax-10.)[0])
+                    # ind_IVR = np.intersect1d(np.where(np.abs(dv)<=0.01)[0],np.where(time>=time_pmax+10.)[0])
+                    
+                    # ind_ED = ind_IVC[0]
+                    # EDP = pressure_lv[ind_ED]
+                    # dpdt_idx = np.where(pressure_lv>EDP)[0]
+                    # ind_IVR = np.intersect1d(dpdt_idx,ind_IVR)
 
                     # Checking RV IVR phase:
                     rv = read_csv(folder+'/cav.RV.csv', delimiter=",", skipinitialspace=True,
@@ -349,12 +347,12 @@ def     cycle_simulation_summary(output_folder,
 
                     
 
-                if len(lv)>0 and max(time) == int(check_tend) and (SV>5.0):
+                if len(lv)>0 and max(time) == int(check_tend):
 
                     LV_suitable = check_suitable_VV_output(time[last_beat],volume_last_beat,pressure_lv,t)
                     RV_suitable = check_suitable_VV_output(time[last_beat],volume_rv,pressure_rv,t)
 
-                    if LV_suitable and RV_suitable:
+                    if LV_suitable and RV_suitable and (SV>5.0):
 
 
                         output[sim_index] = 1
@@ -374,7 +372,7 @@ def     cycle_simulation_summary(output_folder,
                             if "mechanic solver diverged" in line:
                                 error_message = line.strip()
                             if "MPICH" in line:
-                                error_message = line.strip()
+                                error_message = "MPICH error"
                             if "CANCELLED" in line:
                                 error_message += " / CANCELLED"
 
@@ -450,12 +448,12 @@ def     cycle_simulation_summary(output_folder,
                 
 
 
-            if len(lv)>0 and max(time) == int(check_tend) and (SV>5.0):
+            if len(lv)>0 and max(time) == int(check_tend):
 
                 LV_suitable = check_suitable_VV_output(time[last_beat],volume_last_beat,pressure_lv,t)
                 RV_suitable = check_suitable_VV_output(time[last_beat],volume_rv,pressure_rv,t)
 
-                if LV_suitable and RV_suitable:
+                if LV_suitable and RV_suitable and (SV>5.0):
 
                     output[0] = 1
                     tab.append(list([basename+'default','Y',]))
@@ -509,11 +507,14 @@ def     cycle_simulation_summary(output_folder,
             if tab[ii][jj]=='NA':
                 table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.lightgrey)]))
             elif tab[ii][jj]=='N':
-                table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.fidred)]))
+                table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.Color(1, 0.41176, 0.38039) )]))
             elif tab[ii][jj]=='PD':
                 table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.lightyellow)]))
-            elif 'CANCELLED' in tab[ii][jj] or 'New error' in tab[ii][jj]:
+            elif 'CANCELLED' in tab[ii][jj] or 'New error' in tab[ii][jj] or 'MPICH' in tab[ii][jj]:
                 table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.orange)]))
+            elif tab[ii][jj]=='Unloading failed':
+                table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.Color(1, 0.41176, 0.38039, alpha=0.5) )]))
+            
 
     items.append(table)
     document.build(items)
