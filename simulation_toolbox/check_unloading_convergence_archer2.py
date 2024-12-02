@@ -5,6 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import re
 import tqdm
+import seaborn as sns
+import pandas as pd
 
 from Historia.shared.design_utils import read_labels
 
@@ -167,38 +169,21 @@ def main(args):
         idx_notok = np.where(mask==0)[0]
 
         if len(X.shape) > 1:
-            in_dim = X.shape[1]
-            out_dim = in_dim
-            _, axes = plt.subplots(
-                nrows=out_dim,
-                ncols=in_dim,
-                sharex="col",
-                sharey="row",
-                figsize=(10, 10),
-            )
+            
+            # Prepare the data in a DataFrame for Seaborn
+            data = pd.DataFrame(X, columns=xlabels)
 
-            for i, axis in enumerate(axes.flatten()):
-                # Scatter plots for ok and not-ok indices
-                axis.scatter(X[idx_ok, i % in_dim], X[idx_ok, i // in_dim], c='green', s=1)
-                axis.scatter(X[idx_notok, i % in_dim], X[idx_notok, i // in_dim], c='red', s=1)
+            # Assign 'status' column based on the index arrays
+            data['status'] = np.where(np.isin(np.arange(X.shape[0]), idx_ok), 'OK', 'Not OK')
 
-                # Automatically set x-axis limits and ticks
-                axis.autoscale(enable=True, axis='x', tight=True)  # Let Matplotlib automatically adjust limits
-                xticks = axis.get_xticks()  # Retrieve auto-set x-ticks
-                axis.set_xticklabels([f"{x:.2f}" for x in xticks])  # Format ticks to 2 decimal places
+            g = sns.pairplot(data, hue ='status', diag_kind='hist', diag_kws={'color':'red', 'bins':30, 'alpha': 0.5}, palette={'OK': 'green', 'Not OK': 'red'}, corner=True)
 
-                # Customize x-label and limits if on the bottom row
-                if i // in_dim == out_dim - 1:
-                    axis.set_xlabel(xlabels[i % in_dim], rotation=90)
-                # else:
-                #     axis.set_xticks([])  # Hide x-ticks for non-bottom rows
+            sns.move_legend(g, "lower center",bbox_to_anchor=(0.5, -0.035),  ncol=5, title='Group', frameon=False,)
 
-                # Customize y-label if in the first column
-                if i % in_dim == 0:
-                    axis.set_ylabel(xlabels[i // in_dim])
-                # else:
-                #     axis.set_yticks([])  # Hide y-ticks for non-left columns
+            
+
             plt.savefig(os.path.join(path2figure, "unloaded_scatter.png"), bbox_inches="tight", dpi=300)
+
     
     print(f"A total of {n_sim_work} unloadings work, and {n_sim_not_work} did not work.")
 
