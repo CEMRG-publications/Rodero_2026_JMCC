@@ -194,6 +194,21 @@ unicode = ["unicodedata2 (>=14.0.0)"]
 woff = ["brotli (>=1.0.1)", "brotlicffi (>=0.8.0)", "zopfli (>=0.1.4)"]
 
 [[package]]
+name = "GPyEm"
+version = "1.0"
+description = "A wrapper for GPyTorch to generate multi-output emulators"
+optional = false
+python-versions = "*"
+files = []
+develop = false
+
+[package.source]
+type = "git"
+url = "https://github.com/cwlanyon/GPyEm.git"
+reference = "HEAD"
+resolved_reference = "b3877e104066c71b0fcc15f5e30609fd30f45401"
+
+[[package]]
 name = "gpytGPE"
 version = "1.0.0"
 description = "A univariate Gaussian Process Emulator (GPE) implementation around GPyTorch (gpyt)"
@@ -1311,4 +1326,4 @@ web = ["wslink (>=1.0.4)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "~=3.9.13"
-content-hash = "f9ace44fa621fee3fbc0cd44c8bbb38518af57e2648c5a022889c89d8984add5"
+content-hash = "88d3e55b1a03ece33194cd65f11e42a901dee6db6c595631c30c07b0e7bcee80"
