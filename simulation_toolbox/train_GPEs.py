@@ -1,9 +1,11 @@
 import argparse
-import GPErks.gp.data.dataset
-import GPErks.gp.experiment
-import GPErks.perks.cross_validation
-import GPErks.utils.metrics
-import GPErks.utils.random
+import GPErks_modified.gp.data.dataset
+import GPErks_modified.gp.data.dataset
+import GPErks_modified.gp.experiment
+import GPErks_modified.perks.cross_validation
+import GPErks_modified.train.early_stop
+import GPErks_modified.utils.metrics
+import GPErks_modified.utils.random
 import gpytorch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -31,7 +33,7 @@ def train_gpe_kfcv(seed, emulators_folder_base, X_, y_all, x_labels, y_labels, f
         random_state=seed
     )
 
-    dataset = GPErks.gp.data.dataset.Dataset(
+    dataset = GPErks_modified.gp.data.dataset.Dataset(
     X,
     y,
     x_labels=x_labels,
@@ -42,7 +44,7 @@ def train_gpe_kfcv(seed, emulators_folder_base, X_, y_all, x_labels, y_labels, f
     mean_function = gpytorch.means.LinearMean(input_size=dataset.input_size)
     kernel = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(ard_num_dims=dataset.input_size))
 
-    experiment = GPErks.gp.experiment.GPExperiment(
+    experiment = GPErks_modified.gp.experiment.GPExperiment(
         dataset,
         likelihood,
         mean_function,
@@ -55,10 +57,10 @@ def train_gpe_kfcv(seed, emulators_folder_base, X_, y_all, x_labels, y_labels, f
 
     device = "cpu"
     devices = [device]
-    kfcv = GPErks.perks.cross_validation.KFoldCrossValidation(experiment, devices, n_splits=5, max_workers=1)
+    kfcv = GPErks_modified.perks.cross_validation.KFoldCrossValidation(experiment, devices, n_splits=5, max_workers=1)
 
     optimizer = torch.optim.Adam(experiment.model.parameters(), lr=0.1)
-    esc = GPErks.train.early_stop.GLEarlyStoppingCriterion(
+    esc = GPErks_modified.train.early_stop.GLEarlyStoppingCriterion(
         max_epochs=1000, alpha=0.1, patience=8
     )
     best_model_dct, best_train_stats_dct, test_scores_dct = kfcv.train(
@@ -110,7 +112,7 @@ def train_gpe_kfcv(seed, emulators_folder_base, X_, y_all, x_labels, y_labels, f
 
 
 def train_gpe_whole_dataset(seed, basefolder, emulators_folder, X, y, X_test, y_test, x_labels, y_labels, feature_idx, metrics, max_epochs):
-    dataset = GPErks.gp.data.dataset.Dataset(
+    dataset = GPErks_modified.gp.data.dataset.Dataset(
     X,
     y,
     X_test=X_test,
@@ -123,7 +125,7 @@ def train_gpe_whole_dataset(seed, basefolder, emulators_folder, X, y, X_test, y_
     mean_function = gpytorch.means.LinearMean(input_size=dataset.input_size)
     kernel = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(ard_num_dims=dataset.input_size))
 
-    experiment = GPErks.gp.experiment.GPExperiment(
+    experiment = GPErks_modified.gp.experiment.GPExperiment(
         dataset,
         likelihood,
         mean_function,
@@ -135,20 +137,20 @@ def train_gpe_whole_dataset(seed, basefolder, emulators_folder, X, y, X_test, y_
     )
     device = "cpu"
 
-    emulator = GPErks.train.emulator.GPEmulator(experiment, device)
+    emulator = GPErks_modified.train.emulator.GPEmulator(experiment, device)
 
     optimizer = torch.optim.Adam(experiment.model.parameters(), lr=0.1)
 
-    esc = GPErks.train.early_stop.NoEarlyStoppingCriterion(max_epochs)
+    esc = GPErks_modified.train.early_stop.NoEarlyStoppingCriterion(max_epochs)
 
     os.makedirs(emulators_folder, exist_ok=True)
 
-    snpc = GPErks.train.snapshot.NeverSaveSnapshottingCriterion(
-            GPErks.serialization.path.posix_path(
+    snpc = GPErks_modified.train.snapshot.NeverSaveSnapshottingCriterion(
+            GPErks_modified.serialization.path.posix_path(
                 f"{emulators_folder}/",
-                GPErks.constants.DEFAULT_TRAIN_SNAPSHOT_RESTART_TEMPLATE,
+                GPErks_modified.constants.DEFAULT_TRAIN_SNAPSHOT_RESTART_TEMPLATE,
             ),
-            GPErks.constants.DEFAULT_TRAIN_SNAPSHOT_EPOCH_TEMPLATE,
+            GPErks_modified.constants.DEFAULT_TRAIN_SNAPSHOT_EPOCH_TEMPLATE,
         )
 
     best_model, best_train_stats = emulator.train(
@@ -159,7 +161,7 @@ def train_gpe_whole_dataset(seed, basefolder, emulators_folder, X, y, X_test, y_
 
     experiment.save_to_config_file(f"{emulators_folder}/emulator.ini")
 
-    inference = GPErks.perks.inference.Inference(emulator)
+    inference = GPErks_modified.perks.inference.Inference(emulator)
 
     with open(f"{emulators_folder}/training_summary.txt", "a") as f:
         sys_out = sys.stdout
@@ -171,7 +173,7 @@ def train_gpe_whole_dataset(seed, basefolder, emulators_folder, X, y, X_test, y_
     plot_inference(inference=inference, savepath=f"{basefolder}/figures", figname=f"gpe_inference_{y_labels[feature_idx]}")
 
 def plot_inference(inference, savepath, figname):
-    fig, axis = plt.subplots(1, 1, figsize=(2 * GPErks.constants.WIDTH, 2 * GPErks.constants.HEIGHT / 3))
+    fig, axis = plt.subplots(1, 1, figsize=(2 * GPErks_modified.constants.WIDTH, 2 * GPErks_modified.constants.HEIGHT / 3))
 
     idx_sort = np.argsort(
         inference.y_pred_mean
@@ -302,7 +304,7 @@ def main(args):
     output_mask_name = args.output_mask_name
 
     seed = 8
-    GPErks.utils.random.set_seed(seed)
+    GPErks_modified.utils.random.set_seed(seed)
 
     emulators_folder_base = F"{basefolder}/output/emulators/"
     X_all =  np.loadtxt(f"{basefolder}/data/X.txt", dtype=float)
@@ -318,7 +320,7 @@ def main(args):
     with open(f"{basefolder}/data/ylabels.txt", "r") as f:
             y_labels = f.read().splitlines()
 
-    metrics = [GPErks.utils.metrics.IndependentStandardErrorMetric(), torchmetrics.MeanSquaredError(), torchmetrics.R2Score()]
+    metrics = [GPErks_modified.utils.metrics.IndependentStandardErrorMetric(), torchmetrics.MeanSquaredError(), torchmetrics.R2Score()]
 
     if feature_idx == -1:
         feature_array = [i for i in range(len(y_labels))]
