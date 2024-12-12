@@ -151,9 +151,13 @@ def main(args):
                             output_file=os.path.join(basefolder,'unloaded_volumes.txt'))    
     
     if not default:
-        unloaded_volumes = np.loadtxt(os.path.join(basefolder,"unloaded_volumes.txt"),dtype=float)
+        unloaded_volumes_all_samples = np.loadtxt(os.path.join(basefolder,"unloaded_volumes.txt"),dtype=float)
 
-        X = np.loadtxt(os.path.join(basefolder,"../data/X_mechanics.txt"),dtype=float)
+        unloaded_volumes = unloaded_volumes_all_samples[first_simulation:(last_simulation+1),:]
+
+        X_all_samples = np.loadtxt(os.path.join(basefolder,"../data/X_mechanics.txt"),dtype=float)
+
+        X = X_all_samples[first_simulation:(last_simulation+1),:]
 
         def is_list_of_lists(lst):
             return all(isinstance(i, list) for i in lst)
@@ -178,7 +182,7 @@ def main(args):
 
             g = sns.pairplot(data, hue ='status', diag_kind='hist', diag_kws={'color':'red', 'bins':30, 'alpha': 0.5}, palette={'OK': 'green', 'Not OK': 'red'}, corner=True)
 
-            sns.move_legend(g, "lower center",bbox_to_anchor=(0.5, -0.035),  ncol=5, title='Group', frameon=False,)
+            sns.move_legend(g, "lower center",bbox_to_anchor=(0.5, -0.035),  title='Group', frameon=False,)
 
             
 
