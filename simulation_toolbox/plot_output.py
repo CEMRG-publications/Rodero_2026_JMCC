@@ -761,7 +761,8 @@ def print_PV_loops_all_cycles(path_to_simulation, BCL, case_number):
         ax[j].text(0.95, 0.95, 'EF: ' + str(EF) + "%", horizontalalignment='right', verticalalignment='top',
                 transform=ax[j].transAxes)
     plt.suptitle(f"Simulation #{case_number}", fontsize=20, weight='bold')
-    plt.savefig(f"{path_to_simulation}/../../figures/{case_number}_pv_loops_all_cycles.png",dpi=300)
+    os.makedirs(f"{path_to_simulation}/../../figures/PV_loops/", exist_ok=True)
+    plt.savefig(f"{path_to_simulation}/../../figures/PV_loops/{case_number}_pv_loops_all_cycles.png",dpi=300)
     plt.close('all')
     
 
