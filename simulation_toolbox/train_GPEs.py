@@ -1,4 +1,5 @@
 import argparse
+from fpdf import FPDF
 import GPErks_modified.gp.data.dataset
 import GPErks_modified.gp.data.dataset
 import GPErks_modified.gp.experiment
@@ -169,8 +170,8 @@ def train_gpe_whole_dataset(seed, basefolder, emulators_folder, X, y, X_test, y_
         print("\n*** Final GPE ***")
         inference.summary()
         sys.stdout = sys_out
-
-    plot_inference(inference=inference, savepath=f"{basefolder}/figures", figname=f"gpe_inference_{y_labels[feature_idx]}")
+    os.makedirs(f"{basefolder}/figures/gpe_inference", exist_ok=True)
+    plot_inference(inference=inference, savepath=f"{basefolder}/figures/gpe_inference", figname=f"gpe_inference_{y_labels[feature_idx]}")
 
 def plot_inference(inference, savepath, figname):
     fig, axis = plt.subplots(1, 1, figsize=(2 * GPErks_modified.constants.WIDTH, 2 * GPErks_modified.constants.HEIGHT / 3))
@@ -214,15 +215,19 @@ def plot_inference(inference, savepath, figname):
     plt.savefig(f"{savepath}/{figname}.png")
     plt.close()
 
-import os
-from fpdf import FPDF
 
-def create_pdf_with_table(ylabels_path, emulators_folder, output_pdf_path):
+
+def create_pdf_with_table(ylabels_path, emulators_folder, output_pdf_path, n_train_set, bold_labels):
     # Initialize PDF
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-    pdf.set_font("Arial", size=10)
+    
+    # Add title
+    pdf.set_font("Arial", style="B", size=12)
+    title = f"Trained on {n_train_set} simulations"
+    pdf.cell(0, 10, title, ln=True, align='C')
+    pdf.ln(10)  # Add some space after the title
 
     # Read ylabels
     with open(ylabels_path, "r") as f:
@@ -286,13 +291,18 @@ def create_pdf_with_table(ylabels_path, emulators_folder, output_pdf_path):
             for column in columns:
                 row.append(gpe_scores.get(column, "N/A"))
 
-        # Add row to PDF
-        for cell in row:
+       # Add row to PDF
+        for idx, cell in enumerate(row):
+            if idx == 0 and cell in bold_labels:
+                pdf.set_font("Arial", style="B", size=10)
+            else:
+                pdf.set_font("Arial", size=10)
             pdf.cell(cell_width, 10, str(cell), border=1, align='C', fill=True)
         pdf.ln()
 
     # Output the PDF
     pdf.output(output_pdf_path)
+
 
 
 
@@ -329,7 +339,7 @@ def main(args):
 
     for feature_idx2 in feature_array:
 
-        if not os.path.isfile(f"{basefolder}/figures/gpe_inference_{y_labels[feature_idx2]}.png"):
+        if not os.path.isfile(f"{basefolder}/figures/gpe_inference/gpe_inference_{y_labels[feature_idx2]}.png"):
 
             emulators_folder, X, y, X_test, y_test, max_epochs = train_gpe_kfcv(seed=seed,
                         mask=mask,
@@ -355,8 +365,8 @@ def main(args):
                                     max_epochs=max_epochs)
         
     
-    output_pdf_path = f"{emulators_folder_base}/output_table.pdf"
-    create_pdf_with_table(ylabels_path=f"{basefolder}/data/ylabels.txt", emulators_folder=emulators_folder_base, output_pdf_path=f"{emulators_folder_base}/summary_metrics.pdf")
+    n_train_set = int(0.8*np.shape(X_)[0])
+    create_pdf_with_table(ylabels_path=f"{basefolder}/data/ylabels.txt", emulators_folder=emulators_folder_base, output_pdf_path=f"{emulators_folder_base}/summary_metrics.pdf", n_train_set=n_train_set, bold_labels=["LVedv","LVedp","LVesv","LVpmax","LVEF","A_TAT","V_TAT"])
 
 
 if __name__ == '__main__':
