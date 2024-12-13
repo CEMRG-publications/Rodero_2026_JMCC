@@ -125,7 +125,7 @@ def cycle_output_free_output_mask_name(datafolder,
         labels_computed.extend(["RVedv","RVedp","RVesv","RVpMax","RVdpdtMax","RVdpdtMin","RVSV","RVEF"])
         RVSV = rvoutput[0] - rvoutput[2]
         RVEF = 100*(RVSV / rvoutput[0])
-        lvoutput.extend([RVSV,RVEF])
+        rvoutput.extend([RVSV,RVEF])
 
         laoutput = fourchamber_output.AA_output(time,volume_la,pressure_la)
         labels_computed.extend(["LAedv","LAesv","LAvMax","LApMax"])
