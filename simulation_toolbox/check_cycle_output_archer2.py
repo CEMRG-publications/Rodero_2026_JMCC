@@ -410,6 +410,7 @@ def     cycle_simulation_summary(output_folder,
     count_OK = 0
     count_notOK = 0
     count_NA = 0
+    count_warning = 0
 
     if start_sample is not None:
         t = tqdm.trange(len(range(0,last_sample-start_sample+1)), desc='Bar desc', leave=True,colour='#C3B1E1')
@@ -496,8 +497,12 @@ def     cycle_simulation_summary(output_folder,
                                 error_message = line.strip()
                             if "MPICH" in line:
                                 error_message = "MPICH error"
+                                count_warning += 1
                             if "CANCELLED" in line:
                                 error_message += " / CANCELLED"
+                                count_warning += 1
+                            else: # New error
+                                count_warning += 1
 
                     tab.append(list([basename+str(sim_number),'N',error_message]))
                     count_notOK += 1
@@ -595,9 +600,14 @@ def     cycle_simulation_summary(output_folder,
                         # Check if the line contains the specified substring
                         if "mechanic solver diverged" in line:
                             error_message = line.strip()
+                            count_warning += 1
                         
                         if "CANCELLED" in line:
                             error_message += " / CANCELLED"
+                            count_warning += 1
+                        
+                        else: # New error
+                            count_warning += 1
                 tab.append(list([basename+'default','N',error_message]))
                 count_notOK += 1
         else:
@@ -615,7 +625,8 @@ def     cycle_simulation_summary(output_folder,
     tab.append(list(['','NOT ANALYSABLE = '+str(count_NA),]))
     tab.append(list(['','CRASHED = '+str(count_notOK),]))
     tab.append(list(['','PD = '+str(count_PD),]))
-    tab.append(list(['',f'SUCESS RATE = {success_rate}%',]))
+    tab.append(list(['','WARNING = '+str(count_warning),]))
+    tab.append(list(['',f'SUCCESS RATE = {success_rate}%',]))
 
     table = Table(tab)
 
@@ -635,6 +646,7 @@ def     cycle_simulation_summary(output_folder,
                 table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.lightyellow)]))
             elif 'CANCELLED' in tab[ii][jj] or 'New error' in tab[ii][jj] or 'MPICH' in tab[ii][jj]:
                 table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.orange)]))
+                count_warning+=1
             elif tab[ii][jj]=='Unloading failed':
                 table.setStyle(TableStyle([('BACKGROUND',(jj,ii),(jj,ii),colors.Color(1, 0.41176, 0.38039, alpha=0.5) )]))
             
