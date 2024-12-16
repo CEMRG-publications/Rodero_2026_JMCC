@@ -161,6 +161,129 @@ def cycle_output_free_output_mask_name(datafolder,
 
     return(labels_computed)
 
+def timings_output(datafolder,
+                 output_folder,
+                 BCL,
+                 NBEATS,
+                 AVD,
+                 first_simulation = 0,
+                 basename="cycle_",
+                 output_file="Y_timings.txt",
+                 output_mask="output_mask.txt"):
+
+    print('Computing only output for successful simulations...')
+
+    mask = np.loadtxt(f"{datafolder}/{output_mask}",dtype=int)
+    idx_ok = np.where(mask==1)[0]
+
+    output = []
+
+    t = tqdm.trange(len(range(idx_ok.shape[0])), desc='Bar desc', leave=True,colour='#779ECB')
+    for i in t:
+        if first_simulation is None: # Default simulation
+            first_simulation = 0
+            sim_number = 'default'
+        else:
+            sim_number = first_simulation + idx_ok[i]
+        t.set_description('Simulation '+basename+str(sim_number)+'...')
+        folder = output_folder+'/'+basename+str(sim_number)
+
+        lv = read_csv(folder+'/cav.LV.csv', delimiter=",", skipinitialspace=True,
+                           header=0, comment='#')
+        rv = read_csv(folder+'/cav.RV.csv', delimiter=",", skipinitialspace=True,
+                           header=0, comment='#')
+        
+        time = np.array(lv['Time'])
+        
+        start = int((NBEATS-1)*BCL-AVD[idx_ok[i]])
+        # start = time[-1]-BCL
+        end = start+BCL
+
+        last_beat = np.intersect1d(np.where(np.array(lv['Time'])>=start)[0],
+                                   np.where(np.array(lv['Time'])<=end)[0])
+        time = np.array(lv['Time'][last_beat])
+
+        volume_lv = np.array(lv['Volume'][last_beat])
+        pressure_lv = np.array(lv['Pressure'][last_beat])
+
+        time_pmax_lv = time[0]+np.where(pressure_lv==np.max(pressure_lv))[0][0]
+	
+        dv_lv = np.gradient(volume_lv)
+
+
+        ind_IVC_lv_ = np.intersect1d(np.where(np.abs(dv_lv)<=0.01)[0],np.where(time<=time_pmax_lv-10.)[0])
+
+        jump_ivc_lv = np.where(np.gradient(ind_IVC_lv_)>1)[0]	
+
+        if len(jump_ivc_lv) == 0:
+            ind_IVC_lv = ind_IVC_lv_
+        else:
+            ind_IVC_lv = ind_IVC_lv_[jump_ivc_lv[-1]:-1]	
+
+        ind_IVR_lv_ = np.intersect1d(np.where(np.abs(dv_lv)<=0.01)[0],np.where(time>time_pmax_lv-10.)[0])
+
+        jump_ivr_lv = np.where(np.gradient(ind_IVR_lv_)>1)[0]	
+
+        if len(jump_ivr_lv) == 0:
+            ind_IVR_lv = ind_IVR_lv_
+        else:
+            ind_IVR_lv = ind_IVR_lv_[0:jump_ivr_lv[0]]
+
+        labels_computed = []
+        timings_output_lv = []
+
+        labels_computed.extend(["LVivc","LVeje","LVivr","LVfil"])
+        timings_output_lv.extend([time[ind_IVC_lv[0]],
+                               time[ind_IVC_lv[-1]],
+                               time[ind_IVR_lv[0]],
+                               time[ind_IVR_lv[-1]]])
+        
+        volume_rv = np.array(rv['Volume'][last_beat])
+        pressure_rv = np.array(rv['Pressure'][last_beat])
+
+        time_pmax_rv = time[0]+np.where(pressure_rv==np.max(pressure_rv))[0][0]
+	
+        dv_rv = np.gradient(volume_rv)
+
+        ind_IVC_rv_ = np.intersect1d(np.where(np.abs(dv_rv)<=0.01)[0],np.where(time<=time_pmax_rv-10.)[0])
+
+        jump_ivc_rv = np.where(np.gradient(ind_IVC_rv_)>1)[0]	
+
+        if len(jump_ivc_rv) == 0:
+            ind_IVC_rv = ind_IVC_rv_
+        else:
+            ind_IVC_rv = ind_IVC_rv_[jump_ivc_rv[-1]:-1]	
+
+        ind_IVR_rv_ = np.intersect1d(np.where(np.abs(dv_rv)<=0.01)[0],np.where(time>time_pmax_rv-10.)[0])
+
+        jump_ivr_rv = np.where(np.gradient(ind_IVR_rv_)>1)[0]	
+
+        if len(jump_ivr_rv) == 0:
+            ind_IVR_rv = ind_IVR_rv_
+        else:
+            ind_IVR_rv = ind_IVR_rv_[0:jump_ivr_rv[0]]
+
+
+        timings_output_rv = []
+
+        labels_computed.extend(["RVivc","RVeje","RVivr","RVfil"])
+        timings_output_rv.extend([time[ind_IVC_rv[0]],
+                               time[ind_IVC_rv[-1]],
+                               time[ind_IVR_rv[0]],
+                               time[ind_IVR_rv[-1]]])
+
+
+
+        concatenated = np.concatenate((timings_output_lv,timings_output_rv), axis=0)
+
+        output.append(concatenated)
+        
+    output = np.array(output, dtype=object)
+
+    np.savetxt(output_file, output, fmt='%.2f')
+
+    return(labels_computed)
+
 def electrophysiology_cycle_output_output_mask_free(datafolder,
                                    output_folder,
                                    elem_file,
@@ -554,6 +677,9 @@ def check_suitable_VV_output(time,volume,pressure,t):
     else:
         ind_IVR = ind_IVR_[0:jump[0]]
 
+    if(len(ind_IVR)) == 0:
+        return False
+
     ind_ED = ind_IVC[0]
 
     EDP = pressure[ind_ED]
@@ -681,6 +807,16 @@ def main(args):
                                     output_file   = f"{data_folder}/Y_mechanics_beat_{n_beat}.txt",
                                     visualise     = False,
                                     output_mask=f"output_mask_beat_{n_beat}.txt")
+    
+    labels_timings = timings_output(datafolder    = output_folder,
+                                    output_folder = simulations_folder,
+                                    BCL           = BCL,
+                                    AVD           = AVD,
+                                    NBEATS        = n_beat,
+                                    first_simulation=first_simulation,
+                                    basename      = "cycle_",
+                                    output_file   = f"{data_folder}/Y_timings_beat_{n_beat}.txt",
+                                    output_mask=f"output_mask_beat_{n_beat}.txt")
 
     with open(f"{basefolder}/json_files/tags_lvrv_fch.json","r") as f:
         tags = json.load(f)
@@ -699,7 +835,7 @@ def main(args):
 
     Y_array = []
 
-    for field in ['mechanics','EP']:
+    for field in ['mechanics','timings','EP']:
         Y_ = np.loadtxt(f"{data_folder}/Y_{field}_beat_{n_beat}.txt", dtype=float)
         Y_array.append(Y_)
     if isinstance(Y_array[0][0],np.ndarray): # Checking that its dimension is > 1
@@ -709,7 +845,7 @@ def main(args):
 
     np.savetxt(f"{data_folder}/Y.txt",Y,fmt="%g")
 
-    final_labels = np.concatenate((labels_computed, EP_labels))
+    final_labels = np.concatenate((labels_computed, labels_timings, EP_labels))
 
     with open(f"{data_folder}/ylabels.txt", "w") as file:
         for label in final_labels:

@@ -31,7 +31,9 @@ def plot_biomarkers_VV(first_simulation,last_simulation,datafolder,mask_file,NBE
                    "RA_volume": ["RAedv","RAesv","RAvMax","RAinflV"],
                    "RA_pressure": ["RApMax"],
                    "LA_ratio": ["LAsvA","LAsvV"],
-                   "RA_ratio": ["RAsvA","RAsvV"]
+                   "RA_ratio": ["RAsvA","RAsvV"],
+                   "LV_timing": ["LVivc","LVeje","LVivr","LVfil"],
+                   "RV_timing": ["RVivc","RVeje","RVivr","RVfil"],
                    }
     
     Y = np.loadtxt(f"{datafolder}/{output_file}",dtype=float)
@@ -75,8 +77,8 @@ def plot_biomarkers_VV(first_simulation,last_simulation,datafolder,mask_file,NBE
 
             pv_plt = fig.add_subplot(3,2,(1,5)) 
             p_plt = fig.add_subplot(3,2,4)
-            dp_plt = fig.add_subplot(3,2,2)
-            v_plt = fig.add_subplot(3,2,6)
+            dp_plt = fig.add_subplot(3,2,6)
+            v_plt = fig.add_subplot(3,2,2)
 
             fig.subplots_adjust(wspace=0.3)
 
@@ -92,7 +94,7 @@ def plot_biomarkers_VV(first_simulation,last_simulation,datafolder,mask_file,NBE
             p_plt.set_ylabel('Pressure (mmHg)')
             p_plt.plot(time,pressure_lv,color='#8B0000',linewidth=2.0)
 
-            v_plt.set_xlabel('Time (s)')
+            # v_plt.set_xlabel('Time (s)')
             v_plt.set_ylabel('Volume (mL)')
             v_plt.plot(time,volume_lv,color='#8B0000',linewidth=2.0)
             
@@ -120,6 +122,8 @@ def plot_biomarkers_VV(first_simulation,last_simulation,datafolder,mask_file,NBE
                              np.max(volume_lv)+0.1*volume_range])
             v_plt.set_xlim([np.min(time)-0.1*time_range,
                              np.max(time)+0.1*time_range])
+            v_plt.set_xticks([])
+            v_plt.set_xticklabels([])
 
             ratio_text = []
 
@@ -287,6 +291,50 @@ def plot_biomarkers_VV(first_simulation,last_simulation,datafolder,mask_file,NBE
                 
                 elif label in dict_labels[f'{chamber}_ratio']:
                     ratio_text.append(f"{label}={Y[i,label_idx]}")
+
+                elif label in dict_labels[f"{chamber}_timing"]:
+                    
+
+                    label_fontsize = plt.rcParams['axes.labelsize']
+                    if isinstance(label_fontsize, str):
+                        label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
+                    label_fontsize += 2
+
+                    # Get the current y-axis limits
+                    ymin, ymax = v_plt.get_ylim()
+
+                    # Draw the vertical dashed line from the bottom to the top of the plot area
+                    
+
+                    v_plt.vlines(
+                        x=Y[i, label_idx], 
+                        ymin=ymin, 
+                        ymax=ymax, 
+                        linewidth=1,        # Thinner line
+                        color='k', 
+                        linestyle='--'      # Dashed line
+                    )
+
+                    label_fontsize = plt.rcParams['axes.labelsize']
+                    if isinstance(label_fontsize, str):
+                        label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
+                    label_fontsize += 2
+
+                    if "ivc" in label or "ivr" in label:
+                        y_pos = ymax + 0.01*volume_range
+                    else:
+                        y_pos = ymin - 0.15*volume_range
+
+                    # Add text centered and below the line
+                    v_plt.text(
+                        Y[i, label_idx],    # X position (aligned with the line)
+                        y_pos,               # Y position (at the very top of the plot area)
+                        label,              # Text content
+                        fontsize=label_fontsize,  # Match font size with xlabel
+                        color='#8B0000',    # Dark red
+                        ha='center',        # Horizontal alignment
+                        va='bottom'         # Vertical alignment
+                    )
 
                 else:
                     not_plotted.append(label)
