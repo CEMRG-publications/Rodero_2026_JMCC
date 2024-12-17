@@ -490,6 +490,7 @@ def     cycle_simulation_summary(output_folder,
                     output[sim_index] = 0
                     error_file = os.path.join(sims_folder, f"{basename}{sim_number}.out")
                     error_message = "New error"
+                    warning_flag = False
                     with open(error_file,'r') as file:
                         for line in file:
                             # Check if the line contains the specified substring
@@ -497,12 +498,15 @@ def     cycle_simulation_summary(output_folder,
                                 error_message = line.strip()
                             if "MPICH" in line:
                                 error_message = "MPICH error"
-                                count_warning += 1
+                                warning_flag = True
                             if "CANCELLED" in line:
                                 error_message += " / CANCELLED"
-                                count_warning += 1
-                            else: # New error
-                                count_warning += 1
+                                warning_flag = True
+
+
+                    if warning_flag or error_message == "New error":
+                        count_warning += 1
+                        
 
                     tab.append(list([basename+str(sim_number),'N',error_message]))
                     count_notOK += 1
@@ -595,19 +599,22 @@ def     cycle_simulation_summary(output_folder,
                 error_file = os.path.join(sims_folder, f"{basename}{sim_number}.out")
                 error_message = "New error"
 
+                warning_flag = False
                 with open(error_file,'r') as file:
                     for line in file:
                         # Check if the line contains the specified substring
                         if "mechanic solver diverged" in line:
                             error_message = line.strip()
-                            count_warning += 1
-                        
+                        if "MPICH" in line:
+                            error_message = "MPICH error"
+                            warning_flag = True
                         if "CANCELLED" in line:
                             error_message += " / CANCELLED"
-                            count_warning += 1
-                        
-                        else: # New error
-                            count_warning += 1
+                            warning_flag = True
+
+
+                if warning_flag or error_message == "New error":
+                    count_warning += 1
                 tab.append(list([basename+'default','N',error_message]))
                 count_notOK += 1
         else:
