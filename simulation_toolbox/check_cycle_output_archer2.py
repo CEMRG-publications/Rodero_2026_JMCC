@@ -483,9 +483,12 @@ def     cycle_simulation_summary(output_folder,
                         tab.append(list([basename+str(sim_number),'Y',]))
                         count_OK += 1
                     else:
-                        output[sim_index] = 0
+                        print(f"Sim index: {sim_index}, Before {output[:(sim_index+1)]}")
+                        output[sim_index] = -5
                         tab.append(list([basename+str(sim_number),'NA',]))
                         count_NA += 1
+                        print(f"Usable simulations: {np.count_nonzero(output==1)}, countok: {count_OK}, count na: {np.count_nonzero(output==-5)}")
+
                 else:
                     output[sim_index] = 0
                     error_file = os.path.join(sims_folder, f"{basename}{sim_number}.out")
@@ -661,6 +664,8 @@ def     cycle_simulation_summary(output_folder,
     items.append(table)
     document.build(items)
 
+    print(f"Usable simulations: {np.count_nonzero(output == 1)}, countok: {count_OK}, count na: {count_NA}")
+
     np.savetxt(maskoutput,output,fmt='%s')
 
 def file_exists(full_file_path):
@@ -757,7 +762,7 @@ def main(args):
     last_simulation    = args.last_simulation
     default            = args.default
 
-    file_exists(f'{basefolder}/data/ylabels.txt')
+    # file_exists(f'{basefolder}/data/ylabels.txt')
     # file_exists(f'{elem_file}')
 
     if not default:
