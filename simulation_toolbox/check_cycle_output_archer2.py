@@ -483,11 +483,11 @@ def     cycle_simulation_summary(output_folder,
                         tab.append(list([basename+str(sim_number),'Y',]))
                         count_OK += 1
                     else:
-                        print(f"Sim index: {sim_index}, Before {output[:(sim_index+1)]}")
-                        output[sim_index] = -5
+                        # print(f"Sim index: {sim_index}, Before {output[:(sim_index+1)]}")
+                        output[sim_index] = -1
                         tab.append(list([basename+str(sim_number),'NA',]))
                         count_NA += 1
-                        print(f"Usable simulations: {np.count_nonzero(output==1)}, countok: {count_OK}, count na: {np.count_nonzero(output==-5)}")
+                        # print(f"Usable simulations: {np.count_nonzero(output==1)}, countok: {count_OK}, count na: {np.count_nonzero(output==-5)}")
 
                 else:
                     output[sim_index] = 0
@@ -664,7 +664,7 @@ def     cycle_simulation_summary(output_folder,
     items.append(table)
     document.build(items)
 
-    print(f"Usable simulations: {np.count_nonzero(output == 1)}, countok: {count_OK}, count na: {count_NA}")
+    # print(f"Usable simulations: {np.count_nonzero(output == 1)}, countok: {count_OK}, count na: {count_NA}")
 
     np.savetxt(maskoutput,output,fmt='%s')
 
