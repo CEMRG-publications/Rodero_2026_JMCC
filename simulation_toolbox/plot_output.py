@@ -13,7 +13,6 @@ def plot_biomarkers_VV(first_simulation,last_simulation,datafolder,mask_file,NBE
 
     
     mask = np.loadtxt(mask_file,dtype=int)
-    idx_ok = np.where(mask==1)[0]
 
     ylabels = np.loadtxt(f"{datafolder}/ylabels.txt", dtype="str")
 
@@ -36,315 +35,333 @@ def plot_biomarkers_VV(first_simulation,last_simulation,datafolder,mask_file,NBE
                    "RV_timing": ["RVivc","RVeje","RVivr","RVfil"],
                    }
     
-    Y = np.loadtxt(f"{datafolder}/{output_file}",dtype=float)
+    Y_original = np.loadtxt(f"{datafolder}/{output_file}", dtype=float)
 
-    t = tqdm.trange(idx_ok.shape[0], desc='Bar desc', leave=True,colour='#8B0000')
+    # Create Y by selecting the corresponding rows from Y_original
+    Y = []
+    Y_index = 0
+
+    for i in range(len(mask)):
+        if mask[i] == 1:
+            Y.append(Y_original[Y_index])
+            Y_index += 1
+        else:
+            Y.append(np.zeros(Y_original.shape[1]))
+
+    # Convert Y to a NumPy array
+    Y = np.array(Y)
+    
+
+    t = tqdm.tqdm(range(first_simulation, last_simulation + 1), desc='Bar desc', leave=True, colour='#8B0000')
     print_message_outer = "Plotting biomarkers of cycle " 
     total_message_length_outer = len(print_message_outer) + 6
 
     not_plotted = []
 
-    for i in t:
-        
-        sim_number = first_simulation + idx_ok[i]
+    # Precompute label font size
+    label_fontsize = plt.rcParams['axes.labelsize']
+    if isinstance(label_fontsize, str):
+        label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
+    label_fontsize += 2
 
-        if sim_number <= last_simulation:
+    for sim_number in t:
+        if mask[sim_number] == 1:
 
-            t.set_description(f"{print_message_outer}{sim_number}...".ljust(total_message_length_outer))
+                t.set_description(f"{print_message_outer}{sim_number}...".ljust(total_message_length_outer))
 
-            start = int((NBEATS-1)*BCL-AVD[idx_ok[i]])
-            # start = time[-1]-BCL
-            end = start+BCL
+                start = int((NBEATS-1)*BCL-AVD[mask[sim_number]])
+                # start = time[-1]-BCL
+                end = start+BCL
 
-            
-            lv = read_csv(f"{sims_folder}/cycle_{sim_number}/cav.{chamber}.csv", delimiter=",", skipinitialspace=True,
-                            header=0, comment='#')
-            
-            last_beat = np.intersect1d(np.where(np.array(lv['Time'])>=start)[0],
-                                    np.where(np.array(lv['Time'])<=end)[0])
-
-            time = np.array(lv['Time'][last_beat])
-            volume_lv = np.array(lv['Volume'][last_beat])
-            pressure_lv = np.array(lv['Pressure'][last_beat])
-            dpdt_lv_ = np.diff(pressure_lv)/np.diff(time)*1000.0
-            dpdt_lv = np.zeros(pressure_lv.shape,dtype=float)
-            dpdt_lv[0] = dpdt_lv_[0]
-            dpdt_lv[1:] = dpdt_lv_
-
-            fig = plt.figure(figsize=(17,10))
-            fig.suptitle(f"Cycle #{sim_number}", fontsize=20, weight='bold')
-
-
-            pv_plt = fig.add_subplot(3,2,(1,5)) 
-            p_plt = fig.add_subplot(3,2,4)
-            dp_plt = fig.add_subplot(3,2,6)
-            v_plt = fig.add_subplot(3,2,2)
-
-            fig.subplots_adjust(wspace=0.3)
-
-            pv_plt.set_xlabel('Volume (mL)')
-            pv_plt.set_ylabel('Pressure (mmHg)')
-            pv_plt.plot(volume_lv,pressure_lv,color='#8B0000',linewidth=2.0)
-
-            dp_plt.set_xlabel('Time (s)')
-            dp_plt.set_ylabel('Pressure rate (mmHg/ms)')
-            dp_plt.plot(time,dpdt_lv,color='#8B0000',linewidth=2.0)
-
-            p_plt.set_xlabel('Time (s)')
-            p_plt.set_ylabel('Pressure (mmHg)')
-            p_plt.plot(time,pressure_lv,color='#8B0000',linewidth=2.0)
-
-            # v_plt.set_xlabel('Time (s)')
-            v_plt.set_ylabel('Volume (mL)')
-            v_plt.plot(time,volume_lv,color='#8B0000',linewidth=2.0)
-            
-            time_range = np.max(time) - np.min(time)
-            volume_range = np.max(volume_lv) - np.min(volume_lv)
-            pressure_range = np.max(pressure_lv) - np.min(pressure_lv)
-            d_pressure_range = np.max(dpdt_lv) - np.min(dpdt_lv)
-
-            pv_plt.set_ylim([np.min(pressure_lv)-0.1*pressure_range,
-                             np.max(pressure_lv)+0.1*pressure_range])
-            pv_plt.set_xlim([np.min(volume_lv)-0.1*volume_range,
-                             np.max(volume_lv)+0.1*volume_range])
-            
-            dp_plt.set_ylim([np.min(dpdt_lv)-0.1*d_pressure_range,
-                             np.max(dpdt_lv)+0.1*d_pressure_range])
-            dp_plt.set_xlim([np.min(time)-0.1*time_range,
-                             np.max(time)+0.1*time_range])
-            
-            p_plt.set_ylim([np.min(pressure_lv)-0.1*pressure_range,
-                             np.max(pressure_lv)+0.1*pressure_range])
-            p_plt.set_xlim([np.min(time)-0.1*time_range,
-                             np.max(time)+0.1*time_range])
-            
-            v_plt.set_ylim([np.min(volume_lv)-0.1*volume_range,
-                             np.max(volume_lv)+0.1*volume_range])
-            v_plt.set_xlim([np.min(time)-0.1*time_range,
-                             np.max(time)+0.1*time_range])
-            v_plt.set_xticks([])
-            v_plt.set_xticklabels([])
-
-            ratio_text = []
-
-            for label_idx, label in enumerate(ylabels):
-                if label in dict_labels[f"{chamber}_volume"]:
-                    # Get the current y-axis limits
-                    ymin, ymax = pv_plt.get_ylim()
-
-                    # Draw the vertical dashed line from the bottom to the top of the plot area
-                    
-                    pv_plt.vlines(
-                        x=Y[i, label_idx], 
-                        ymin=ymin, 
-                        ymax=ymax, 
-                        linewidth=1,        # Thinner line
-                        color='k', 
-                        linestyle='--'      # Dashed line
-                    )
-
-                    label_fontsize = plt.rcParams['axes.labelsize']
-                    if isinstance(label_fontsize, str):
-                        label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
-                    label_fontsize += 2
-
-                    # Add text centered and above the line
-                    pv_plt.text(
-                        Y[i, label_idx],    # X position (aligned with the line)
-                        ymax + 0.01*pressure_range,               # Y position (at the very top of the plot area)
-                        label,              # Text content
-                        fontsize=label_fontsize,  # Match font size with xlabel
-                        color='#8B0000',    # Dark red
-                        ha='center',        # Horizontal alignment
-                        va='bottom'         # Vertical alignment
-                    )
-
-                    # Get the current y-axis limits
-                    xmin, xmax = v_plt.get_xlim()
-
-                    # Draw the vertical dashed line from the bottom to the top of the plot area
-                    
-
-                    v_plt.hlines(
-                        y=Y[i, label_idx], 
-                        xmin=xmin, 
-                        xmax=xmax, 
-                        linewidth=1,        # Thinner line
-                        color='k', 
-                        linestyle='--'      # Dashed line
-                    )
-
-                    label_fontsize = plt.rcParams['axes.labelsize']
-                    if isinstance(label_fontsize, str):
-                        label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
-                    label_fontsize += 2
-
-                    # Add text centered and above the line
-                    v_plt.text(
-                        x = xmax + 0.01*volume_range,
-                        y = Y[i, label_idx],    # X position (aligned with the line)
-                        s = label,              # Text content
-                        fontsize=label_fontsize,  # Match font size with xlabel
-                        color='#8B0000',    # Dark red
-                        va='center',        # Central alignment
-                        ha='left'         # Right alignment
-                    )
-
-                elif label in dict_labels[f"{chamber}_pressure"]:
-                    
-                    # Get the current x-axis limits
-                    xmin, xmax = pv_plt.get_xlim()
-
-                    # Draw the vertical dashed line from the bottom to the top of the plot area
-                    
-                    pv_plt.hlines(
-                        y=Y[i, label_idx], 
-                        xmin=xmin, 
-                        xmax=xmax, 
-                        linewidth=1,        # Thinner line
-                        color='k', 
-                        linestyle='--'      # Dashed line
-                    )
-
-                    label_fontsize = plt.rcParams['axes.labelsize']
-                    if isinstance(label_fontsize, str):
-                        label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
-                    label_fontsize += 2
-
-                    # Add text centered and above the line
-                    pv_plt.text(
-                        x = xmax + 0.01*volume_range,
-                        y = Y[i, label_idx],    # X position (aligned with the line)
-                        s = label,              # Text content
-                        fontsize=label_fontsize,  # Match font size with xlabel
-                        color='#8B0000',    # Dark red
-                        va='center',        # Central alignment
-                        ha='left'         # Right alignment
-                    )
-
-
-
-                    # Get the current x-axis limits
-                    xmin, xmax = p_plt.get_xlim()
-
-                    # Draw the vertical dashed line from the bottom to the top of the plot area
-                    
-                    p_plt.hlines(
-                        y=Y[i, label_idx], 
-                        xmin=xmin, 
-                        xmax=xmax, 
-                        linewidth=1,        # Thinner line
-                        color='k', 
-                        linestyle='--'      # Dashed line
-                    )
-
-                    label_fontsize = plt.rcParams['axes.labelsize']
-                    if isinstance(label_fontsize, str):
-                        label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
-                    label_fontsize += 2
-
-                    # Add text centered and above the line
-                    p_plt.text(
-                        x = xmax + 0.01*pressure_range,
-                        y = Y[i, label_idx],    # X position (aligned with the line)
-                        s = label,              # Text content
-                        fontsize=label_fontsize,  # Match font size with xlabel
-                        color='#8B0000',    # Dark red
-                        va='center',        # Central alignment
-                        ha='left'         # Right alignment
-                    )
-            
-                elif label in dict_labels[f'{chamber}_dpressure']:
-                    
-                    # Get the current x-axis limits
-                    xmin, xmax = dp_plt.get_xlim()
-
-                    # Draw the vertical dashed line from the bottom to the top of the plot area
-                    
-                    dp_plt.hlines(
-                        y=Y[i, label_idx], 
-                        xmin=xmin, 
-                        xmax=xmax, 
-                        linewidth=1,        # Thinner line
-                        color='k', 
-                        linestyle='--'      # Dashed line
-                    )
-
-                    label_fontsize = plt.rcParams['axes.labelsize']
-                    if isinstance(label_fontsize, str):
-                        label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
-                    label_fontsize += 2
-
-                    # Add text centered and above the line
-                    dp_plt.text(
-                        x = xmax + 0.01*time_range,
-                        y = Y[i, label_idx],    # X position (aligned with the line)
-                        s = label,              # Text content
-                        fontsize=label_fontsize,  # Match font size with xlabel
-                        color='#8B0000',    # Dark red
-                        va='center',        # Central alignment
-                        ha='left'         # Right alignment
-                    )
                 
-                elif label in dict_labels['VV_EP']:
-                    ratio_text.append(f"{label}={Y[i,label_idx]} ms")
+                lv = read_csv(f"{sims_folder}/cycle_{sim_number}/cav.{chamber}.csv", delimiter=",", skipinitialspace=True,
+                                header=0, comment='#')
                 
-                elif label in dict_labels[f'{chamber}_ratio']:
-                    ratio_text.append(f"{label}={Y[i,label_idx]}")
+                last_beat = np.intersect1d(np.where(np.array(lv['Time'])>=start)[0],
+                                        np.where(np.array(lv['Time'])<=end)[0])
 
-                elif label in dict_labels[f"{chamber}_timing"]:
+                time = np.array(lv['Time'][last_beat])
+                volume_lv = np.array(lv['Volume'][last_beat])
+                pressure_lv = np.array(lv['Pressure'][last_beat])
+                dpdt_lv_ = np.diff(pressure_lv)/np.diff(time)*1000.0
+                dpdt_lv = np.zeros(pressure_lv.shape,dtype=float)
+                dpdt_lv[0] = dpdt_lv_[0]
+                dpdt_lv[1:] = dpdt_lv_
+
+                fig = plt.figure(figsize=(17,10))
+                fig.suptitle(f"Cycle #{sim_number}", fontsize=20, weight='bold')
+
+
+                pv_plt = fig.add_subplot(3,2,(1,5)) 
+                p_plt = fig.add_subplot(3,2,4)
+                dp_plt = fig.add_subplot(3,2,6)
+                v_plt = fig.add_subplot(3,2,2)
+
+                fig.subplots_adjust(wspace=0.3)
+
+                pv_plt.set_xlabel('Volume (mL)')
+                pv_plt.set_ylabel('Pressure (mmHg)')
+                pv_plt.plot(volume_lv,pressure_lv,color='#8B0000',linewidth=2.0)
+
+                dp_plt.set_xlabel('Time (s)')
+                dp_plt.set_ylabel('Pressure rate (mmHg/ms)')
+                dp_plt.plot(time,dpdt_lv,color='#8B0000',linewidth=2.0)
+
+                p_plt.set_xlabel('Time (s)')
+                p_plt.set_ylabel('Pressure (mmHg)')
+                p_plt.plot(time,pressure_lv,color='#8B0000',linewidth=2.0)
+
+                # v_plt.set_xlabel('Time (s)')
+                v_plt.set_ylabel('Volume (mL)')
+                v_plt.plot(time,volume_lv,color='#8B0000',linewidth=2.0)
+                
+                time_range = np.max(time) - np.min(time)
+                volume_range = np.max(volume_lv) - np.min(volume_lv)
+                pressure_range = np.max(pressure_lv) - np.min(pressure_lv)
+                d_pressure_range = np.max(dpdt_lv) - np.min(dpdt_lv)
+
+                pv_plt.set_ylim([np.min(pressure_lv)-0.1*pressure_range,
+                                np.max(pressure_lv)+0.1*pressure_range])
+                pv_plt.set_xlim([np.min(volume_lv)-0.1*volume_range,
+                                np.max(volume_lv)+0.1*volume_range])
+                
+                dp_plt.set_ylim([np.min(dpdt_lv)-0.1*d_pressure_range,
+                                np.max(dpdt_lv)+0.1*d_pressure_range])
+                dp_plt.set_xlim([np.min(time)-0.1*time_range,
+                                np.max(time)+0.1*time_range])
+                
+                p_plt.set_ylim([np.min(pressure_lv)-0.1*pressure_range,
+                                np.max(pressure_lv)+0.1*pressure_range])
+                p_plt.set_xlim([np.min(time)-0.1*time_range,
+                                np.max(time)+0.1*time_range])
+                
+                v_plt.set_ylim([np.min(volume_lv)-0.1*volume_range,
+                                np.max(volume_lv)+0.1*volume_range])
+                v_plt.set_xlim([np.min(time)-0.1*time_range,
+                                np.max(time)+0.1*time_range])
+                v_plt.set_xticks([])
+                v_plt.set_xticklabels([])
+
+                ratio_text = []
+
+                for label_idx, label in enumerate(ylabels):
+                    if label in dict_labels[f"{chamber}_volume"]:
+                        # Get the current y-axis limits
+                        ymin, ymax = pv_plt.get_ylim()
+
+                        # Draw the vertical dashed line from the bottom to the top of the plot area
+                        
+                        pv_plt.vlines(
+                            x=Y[sim_number, label_idx], 
+                            ymin=ymin, 
+                            ymax=ymax, 
+                            linewidth=1,        # Thinner line
+                            color='k', 
+                            linestyle='--'      # Dashed line
+                        )
+
+                        label_fontsize = plt.rcParams['axes.labelsize']
+                        if isinstance(label_fontsize, str):
+                            label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
+                        label_fontsize += 2
+
+                        # Add text centered and above the line
+                        pv_plt.text(
+                            Y[sim_number, label_idx],    # X position (aligned with the line)
+                            ymax + 0.01*pressure_range,               # Y position (at the very top of the plot area)
+                            label,              # Text content
+                            fontsize=label_fontsize,  # Match font size with xlabel
+                            color='#8B0000',    # Dark red
+                            ha='center',        # Horizontal alignment
+                            va='bottom'         # Vertical alignment
+                        )
+
+                        # Get the current y-axis limits
+                        xmin, xmax = v_plt.get_xlim()
+
+                        # Draw the vertical dashed line from the bottom to the top of the plot area
+                        
+
+                        v_plt.hlines(
+                            y=Y[sim_number, label_idx], 
+                            xmin=xmin, 
+                            xmax=xmax, 
+                            linewidth=1,        # Thinner line
+                            color='k', 
+                            linestyle='--'      # Dashed line
+                        )
+
+                        label_fontsize = plt.rcParams['axes.labelsize']
+                        if isinstance(label_fontsize, str):
+                            label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
+                        label_fontsize += 2
+
+                        # Add text centered and above the line
+                        v_plt.text(
+                            x = xmax + 0.01*volume_range,
+                            y = Y[sim_number, label_idx],    # X position (aligned with the line)
+                            s = label,              # Text content
+                            fontsize=label_fontsize,  # Match font size with xlabel
+                            color='#8B0000',    # Dark red
+                            va='center',        # Central alignment
+                            ha='left'         # Right alignment
+                        )
+
+                    elif label in dict_labels[f"{chamber}_pressure"]:
+                        
+                        # Get the current x-axis limits
+                        xmin, xmax = pv_plt.get_xlim()
+
+                        # Draw the vertical dashed line from the bottom to the top of the plot area
+                        
+                        pv_plt.hlines(
+                            y=Y[sim_number, label_idx], 
+                            xmin=xmin, 
+                            xmax=xmax, 
+                            linewidth=1,        # Thinner line
+                            color='k', 
+                            linestyle='--'      # Dashed line
+                        )
+
+                        label_fontsize = plt.rcParams['axes.labelsize']
+                        if isinstance(label_fontsize, str):
+                            label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
+                        label_fontsize += 2
+
+                        # Add text centered and above the line
+                        pv_plt.text(
+                            x = xmax + 0.01*volume_range,
+                            y = Y[sim_number, label_idx],    # X position (aligned with the line)
+                            s = label,              # Text content
+                            fontsize=label_fontsize,  # Match font size with xlabel
+                            color='#8B0000',    # Dark red
+                            va='center',        # Central alignment
+                            ha='left'         # Right alignment
+                        )
+
+
+
+                        # Get the current x-axis limits
+                        xmin, xmax = p_plt.get_xlim()
+
+                        # Draw the vertical dashed line from the bottom to the top of the plot area
+                        
+                        p_plt.hlines(
+                            y=Y[sim_number, label_idx], 
+                            xmin=xmin, 
+                            xmax=xmax, 
+                            linewidth=1,        # Thinner line
+                            color='k', 
+                            linestyle='--'      # Dashed line
+                        )
+
+                        label_fontsize = plt.rcParams['axes.labelsize']
+                        if isinstance(label_fontsize, str):
+                            label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
+                        label_fontsize += 2
+
+                        # Add text centered and above the line
+                        p_plt.text(
+                            x = xmax + 0.01*pressure_range,
+                            y = Y[sim_number, label_idx],    # X position (aligned with the line)
+                            s = label,              # Text content
+                            fontsize=label_fontsize,  # Match font size with xlabel
+                            color='#8B0000',    # Dark red
+                            va='center',        # Central alignment
+                            ha='left'         # Right alignment
+                        )
+                
+                    elif label in dict_labels[f'{chamber}_dpressure']:
+                        
+                        # Get the current x-axis limits
+                        xmin, xmax = dp_plt.get_xlim()
+
+                        # Draw the vertical dashed line from the bottom to the top of the plot area
+                        
+                        dp_plt.hlines(
+                            y=Y[sim_number, label_idx], 
+                            xmin=xmin, 
+                            xmax=xmax, 
+                            linewidth=1,        # Thinner line
+                            color='k', 
+                            linestyle='--'      # Dashed line
+                        )
+
+                        label_fontsize = plt.rcParams['axes.labelsize']
+                        if isinstance(label_fontsize, str):
+                            label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
+                        label_fontsize += 2
+
+                        # Add text centered and above the line
+                        dp_plt.text(
+                            x = xmax + 0.01*time_range,
+                            y = Y[sim_number, label_idx],    # X position (aligned with the line)
+                            s = label,              # Text content
+                            fontsize=label_fontsize,  # Match font size with xlabel
+                            color='#8B0000',    # Dark red
+                            va='center',        # Central alignment
+                            ha='left'         # Right alignment
+                        )
                     
-
-                    label_fontsize = plt.rcParams['axes.labelsize']
-                    if isinstance(label_fontsize, str):
-                        label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
-                    label_fontsize += 2
-
-                    # Get the current y-axis limits
-                    ymin, ymax = v_plt.get_ylim()
-
-                    # Draw the vertical dashed line from the bottom to the top of the plot area
+                    elif label in dict_labels['VV_EP']:
+                        ratio_text.append(f"{label}={Y[sim_number,label_idx]} ms")
                     
+                    elif label in dict_labels[f'{chamber}_ratio']:
+                        ratio_text.append(f"{label}={Y[sim_number,label_idx]}")
 
-                    v_plt.vlines(
-                        x=Y[i, label_idx], 
-                        ymin=ymin, 
-                        ymax=ymax, 
-                        linewidth=1,        # Thinner line
-                        color='k', 
-                        linestyle='--'      # Dashed line
-                    )
+                    elif label in dict_labels[f"{chamber}_timing"]:
+                        
 
-                    label_fontsize = plt.rcParams['axes.labelsize']
-                    if isinstance(label_fontsize, str):
-                        label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
-                    label_fontsize += 2
+                        label_fontsize = plt.rcParams['axes.labelsize']
+                        if isinstance(label_fontsize, str):
+                            label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
+                        label_fontsize += 2
 
-                    if "ivc" in label or "ivr" in label:
-                        y_pos = ymax + 0.01*volume_range
+                        # Get the current y-axis limits
+                        ymin, ymax = v_plt.get_ylim()
+
+                        # Draw the vertical dashed line from the bottom to the top of the plot area
+                        
+
+                        v_plt.vlines(
+                            x=Y[sim_number, label_idx], 
+                            ymin=ymin, 
+                            ymax=ymax, 
+                            linewidth=1,        # Thinner line
+                            color='k', 
+                            linestyle='--'      # Dashed line
+                        )
+
+                        label_fontsize = plt.rcParams['axes.labelsize']
+                        if isinstance(label_fontsize, str):
+                            label_fontsize = 12 if label_fontsize == "medium" else 10  # Default fallback for common values
+                        label_fontsize += 2
+
+                        if "ivc" in label or "ivr" in label:
+                            y_pos = ymax + 0.01*volume_range
+                        else:
+                            y_pos = ymin - 0.15*volume_range
+
+                        # Add text centered and below the line
+                        v_plt.text(
+                            Y[sim_number, label_idx],    # X position (aligned with the line)
+                            y_pos,               # Y position (at the very top of the plot area)
+                            label,              # Text content
+                            fontsize=label_fontsize,  # Match font size with xlabel
+                            color='#8B0000',    # Dark red
+                            ha='center',        # Horizontal alignment
+                            va='bottom'         # Vertical alignment
+                        )
+
                     else:
-                        y_pos = ymin - 0.15*volume_range
+                        not_plotted.append(label)
 
-                    # Add text centered and below the line
-                    v_plt.text(
-                        Y[i, label_idx],    # X position (aligned with the line)
-                        y_pos,               # Y position (at the very top of the plot area)
-                        label,              # Text content
-                        fontsize=label_fontsize,  # Match font size with xlabel
-                        color='#8B0000',    # Dark red
-                        ha='center',        # Horizontal alignment
-                        va='bottom'         # Vertical alignment
-                    )
+                fig.text(0.5, 0.02, f"{', '.join(ratio_text)}", fontsize=14, ha='center', va='center')
 
-                else:
-                    not_plotted.append(label)
+                os.makedirs(f"{fig_path}/biomarkers", exist_ok=True)
+                plt.savefig(f"{fig_path}/biomarkers/biomarkers_cycle_{sim_number}_{chamber}.png",dpi=300)
 
-            fig.text(0.5, 0.02, f"{', '.join(ratio_text)}", fontsize=14, ha='center', va='center')
-
-            os.makedirs(f"{fig_path}/biomarkers", exist_ok=True)
-            plt.savefig(f"{fig_path}/biomarkers/biomarkers_cycle_{sim_number}_{chamber}.png",dpi=300)
-
-            plt.close()
+                plt.close()
 
     return(not_plotted)
 
@@ -354,7 +371,6 @@ def plot_biomarkers_AA(first_simulation,last_simulation,datafolder,mask_file,NBE
 
     
     mask = np.loadtxt(mask_file,dtype=int)
-    idx_ok = np.where(mask==1)[0]
 
     ylabels = np.loadtxt(f"{datafolder}/ylabels.txt", dtype="str")
 
@@ -373,23 +389,35 @@ def plot_biomarkers_AA(first_simulation,last_simulation,datafolder,mask_file,NBE
                    "AA_EP": ["A_TAT"]
                    }
     
-    Y = np.loadtxt(f"{datafolder}/{output_file}",dtype=float)
+    Y_original = np.loadtxt(f"{datafolder}/{output_file}", dtype=float)
 
-    t = tqdm.trange(idx_ok.shape[0], desc='Bar desc', leave=True,colour='#8B0000')
+    # Create Y by selecting the corresponding rows from Y_original
+    Y = []
+    Y_index = 0
+
+    for i in range(len(mask)):
+        if mask[i] == 1:
+            Y.append(Y_original[Y_index])
+            Y_index += 1
+        else:
+            Y.append(np.zeros(Y_original.shape[1]))
+
+    # Convert Y to a NumPy array
+    Y = np.array(Y)
+
+    t = tqdm.tqdm(range(first_simulation, last_simulation + 1), desc='Bar desc', leave=True, colour='#8B0000')
     print_message_outer = "Plotting biomarkers of cycle " 
     total_message_length_outer = len(print_message_outer) + 6
 
     not_plotted = []
 
-    for i in t:
+    for sim_number in t:
         
-        sim_number = first_simulation + idx_ok[i]
-
-        if sim_number <= last_simulation:
+        if mask[sim_number] == 1:
 
             t.set_description(f"{print_message_outer}{sim_number}...".ljust(total_message_length_outer))
 
-            start = int((NBEATS-1)*BCL-AVD[idx_ok[i]])
+            start = int((NBEATS-1)*BCL-AVD[mask[sim_number]])
             # start = time[-1]-BCL
             end = start+BCL
 
@@ -456,7 +484,7 @@ def plot_biomarkers_AA(first_simulation,last_simulation,datafolder,mask_file,NBE
                     # Draw the vertical dashed line from the bottom to the top of the plot area
                     
                     pv_plt.vlines(
-                        x=Y[i, label_idx], 
+                        x=Y[sim_number, label_idx], 
                         ymin=ymin, 
                         ymax=ymax, 
                         linewidth=1,        # Thinner line
@@ -471,7 +499,7 @@ def plot_biomarkers_AA(first_simulation,last_simulation,datafolder,mask_file,NBE
 
                     # Add text centered and above the line
                     pv_plt.text(
-                        Y[i, label_idx],    # X position (aligned with the line)
+                        Y[sim_number, label_idx],    # X position (aligned with the line)
                         ymax + 0.01*pressure_range,               # Y position (at the very top of the plot area)
                         label,              # Text content
                         fontsize=label_fontsize,  # Match font size with xlabel
@@ -487,7 +515,7 @@ def plot_biomarkers_AA(first_simulation,last_simulation,datafolder,mask_file,NBE
                     
 
                     v_plt.hlines(
-                        y=Y[i, label_idx], 
+                        y=Y[sim_number, label_idx], 
                         xmin=xmin, 
                         xmax=xmax, 
                         linewidth=1,        # Thinner line
@@ -503,7 +531,7 @@ def plot_biomarkers_AA(first_simulation,last_simulation,datafolder,mask_file,NBE
                     # Add text centered and above the line
                     v_plt.text(
                         x = xmax + 0.01*volume_range,
-                        y = Y[i, label_idx],    # X position (aligned with the line)
+                        y = Y[sim_number, label_idx],    # X position (aligned with the line)
                         s = label,              # Text content
                         fontsize=label_fontsize,  # Match font size with xlabel
                         color='#8B0000',    # Dark red
@@ -519,7 +547,7 @@ def plot_biomarkers_AA(first_simulation,last_simulation,datafolder,mask_file,NBE
                     # Draw the vertical dashed line from the bottom to the top of the plot area
                     
                     pv_plt.hlines(
-                        y=Y[i, label_idx], 
+                        y=Y[sim_number, label_idx], 
                         xmin=xmin, 
                         xmax=xmax, 
                         linewidth=1,        # Thinner line
@@ -535,7 +563,7 @@ def plot_biomarkers_AA(first_simulation,last_simulation,datafolder,mask_file,NBE
                     # Add text centered and above the line
                     pv_plt.text(
                         x = xmax + 0.01*volume_range,
-                        y = Y[i, label_idx],    # X position (aligned with the line)
+                        y = Y[sim_number, label_idx],    # X position (aligned with the line)
                         s = label,              # Text content
                         fontsize=label_fontsize,  # Match font size with xlabel
                         color='#8B0000',    # Dark red
@@ -551,7 +579,7 @@ def plot_biomarkers_AA(first_simulation,last_simulation,datafolder,mask_file,NBE
                     # Draw the vertical dashed line from the bottom to the top of the plot area
                     
                     p_plt.hlines(
-                        y=Y[i, label_idx], 
+                        y=Y[sim_number, label_idx], 
                         xmin=xmin, 
                         xmax=xmax, 
                         linewidth=1,        # Thinner line
@@ -567,7 +595,7 @@ def plot_biomarkers_AA(first_simulation,last_simulation,datafolder,mask_file,NBE
                     # Add text centered and above the line
                     p_plt.text(
                         x = xmax + 0.01*pressure_range,
-                        y = Y[i, label_idx],    # X position (aligned with the line)
+                        y = Y[sim_number, label_idx],    # X position (aligned with the line)
                         s = label,              # Text content
                         fontsize=label_fontsize,  # Match font size with xlabel
                         color='#8B0000',    # Dark red
@@ -576,10 +604,10 @@ def plot_biomarkers_AA(first_simulation,last_simulation,datafolder,mask_file,NBE
                     )
 
                 elif label in dict_labels[f'{chamber}_ratio']:
-                    ratio_text.append(f"{label}={Y[i,label_idx]}")
+                    ratio_text.append(f"{label}={Y[sim_number,label_idx]}")
                 
                 elif label in dict_labels['AA_EP']:
-                    ratio_text.append(f"{label}={Y[i,label_idx]} ms")
+                    ratio_text.append(f"{label}={Y[sim_number,label_idx]} ms")
 
                 else:
                     not_plotted.append(label)
@@ -599,7 +627,6 @@ def plot_biomarkers_arteries(first_simulation,last_simulation,datafolder,mask_fi
 
     
     mask = np.loadtxt(mask_file,dtype=int)
-    idx_ok = np.where(mask==1)[0]
 
     ylabels = np.loadtxt(f"{datafolder}/ylabels.txt", dtype="str")
 
@@ -611,21 +638,19 @@ def plot_biomarkers_arteries(first_simulation,last_simulation,datafolder,mask_fi
     
     Y = np.loadtxt(f"{datafolder}/{output_file}",dtype=float)
 
-    t = tqdm.trange(idx_ok.shape[0], desc='Bar desc', leave=True,colour='#8B0000')
+    t = tqdm.tqdm(range(first_simulation, last_simulation + 1), desc='Bar desc', leave=True, colour='#8B0000')
     print_message_outer = "Plotting biomarkers of cycle " 
     total_message_length_outer = len(print_message_outer) + 6
 
     not_plotted = []
 
-    for i in t:
+    for sim_number in t:
         
-        sim_number = first_simulation + idx_ok[i]
-
-        if sim_number <= last_simulation:
+        if mask[sim_number] == 1:
 
             t.set_description(f"{print_message_outer}{sim_number}...".ljust(total_message_length_outer))
 
-            start = int((NBEATS-1)*BCL-AVD[idx_ok[i]])
+            start = int((NBEATS-1)*BCL-AVD[mask[sim_number]])
             # start = time[-1]-BCL
             end = start+BCL
 
@@ -693,7 +718,7 @@ def plot_biomarkers_arteries(first_simulation,last_simulation,datafolder,mask_fi
                     # Draw the vertical dashed line from the bottom to the top of the plot area
                     
                     ap_plt.hlines(
-                        y=Y[i, label_idx], 
+                        y=Y[sim_number, label_idx], 
                         xmin=xmin, 
                         xmax=xmax, 
                         linewidth=1,        # Thinner line
@@ -709,7 +734,7 @@ def plot_biomarkers_arteries(first_simulation,last_simulation,datafolder,mask_fi
                     # Add text centered and above the line
                     ap_plt.text(
                         x = xmax + 0.01*ao_pressure_range,
-                        y = Y[i, label_idx],    # X position (aligned with the line)
+                        y = Y[sim_number, label_idx],    # X position (aligned with the line)
                         s = label,              # Text content
                         fontsize=label_fontsize,  # Match font size with xlabel
                         color='#8B0000',    # Dark red
@@ -718,7 +743,7 @@ def plot_biomarkers_arteries(first_simulation,last_simulation,datafolder,mask_fi
                     )
 
                 elif label in dict_labels[f'ao_ratio']:
-                    ratio_text.append(f"Ao {label}={Y[i,label_idx]}")
+                    ratio_text.append(f"Ao {label}={Y[sim_number,label_idx]}")
                 
                 elif label in dict_labels[f"pa_pressure"]:
                     
@@ -736,7 +761,7 @@ def plot_biomarkers_arteries(first_simulation,last_simulation,datafolder,mask_fi
                     # Draw the vertical dashed line from the bottom to the top of the plot area
                     
                     pap_plt.hlines(
-                        y=Y[i, label_idx], 
+                        y=Y[sim_number, label_idx], 
                         xmin=xmin, 
                         xmax=xmax, 
                         linewidth=1,        # Thinner line
@@ -752,7 +777,7 @@ def plot_biomarkers_arteries(first_simulation,last_simulation,datafolder,mask_fi
                     # Add text centered and above the line
                     pap_plt.text(
                         x = xmax + 0.01*pa_pressure_range,
-                        y = Y[i, label_idx],    # X position (aligned with the line)
+                        y = Y[sim_number, label_idx],    # X position (aligned with the line)
                         s = label,              # Text content
                         fontsize=label_fontsize,  # Match font size with xlabel
                         color='#8B0000',    # Dark red
@@ -761,7 +786,7 @@ def plot_biomarkers_arteries(first_simulation,last_simulation,datafolder,mask_fi
                     )
 
                 elif label in dict_labels[f'pa_ratio']:
-                    ratio_text.append(f"PA {label}={Y[i,label_idx]}")
+                    ratio_text.append(f"PA {label}={Y[sim_number,label_idx]}")
                 
                 else:
                     not_plotted.append(label)
@@ -774,7 +799,6 @@ def plot_biomarkers_arteries(first_simulation,last_simulation,datafolder,mask_fi
             plt.close()
         
     return(not_plotted)
-
 
 
 def print_PV_loops_all_cycles(path_to_simulation, BCL, case_number):
@@ -818,6 +842,7 @@ def plot_pvloops_all_sim_range(datafolder,
                       output_folder,
                      BCL,
                      first_simulation,
+                     last_simulation,
                      basename="cycle_",
                      figname=None,
                      mask_file=None):
@@ -830,12 +855,11 @@ def plot_pvloops_all_sim_range(datafolder,
         mask_file = datafolder+"/output_mask.txt"
     
     mask = np.loadtxt(mask_file,dtype=int)
-    idx_ok = np.where(mask==1)[0]
     
     ax = plt.figure(figsize=(10,10), constrained_layout=True).subplots(2, 2)
     ax = ax.flatten()
 
-    for i in range(idx_ok.shape[0]):
+    for i in range(first_simulation, last_simulation+1):
         
         for j,c in enumerate(chambers):
 
@@ -843,7 +867,7 @@ def plot_pvloops_all_sim_range(datafolder,
                 ch = read_csv(output_folder+'/'+basename+'default/cav.'+c+'.csv', delimiter=",", skipinitialspace=True,
                                        header=0, comment='#')
             else:
-                ch = read_csv(output_folder+'/'+basename+str(first_simulation+idx_ok[i])+'/cav.'+c+'.csv', delimiter=",", skipinitialspace=True,
+                ch = read_csv(output_folder+'/'+basename+str(first_simulation+mask[i])+'/cav.'+c+'.csv', delimiter=",", skipinitialspace=True,
                                        header=0, comment='#')      
             time = np.array(ch['Time'])
 
@@ -959,6 +983,7 @@ def main(args):
                                         basename      = "cycle_",
                                         mask_file     = f"{output_folder}/output_mask_beat_{n_beat}.txt",
                                         first_simulation=first_simulation,
+                                        last_simulation=last_simulation,
                                         figname       = f"{figures_path}/all_pv_loops_beat_{n_beat}.png")
 
 
@@ -968,16 +993,15 @@ def main(args):
         output_mask = np.loadtxt(f"{output_folder}/output_mask_beat_{n_beat}.txt")
 
         
-        t = tqdm.trange(len(output_mask), desc='Bar desc', leave=True,colour='#80EF80')
+        t = tqdm.tqdm(range(first_simulation, last_simulation+1), desc='Bar desc', leave=True,colour='#80EF80')
 
-        for index in t:
-            value = output_mask[index]
-            # If the value is 1, plot the pv loop
-            if value == 1:
-                t.set_description(f"Plotting PV loops of simulation #{first_simulation+index}...")
-                path2simulation = f"{simulations_folder}/cycle_{first_simulation+index}"
+        for sim_number in t:
+            if output_mask[sim_number] == 1:
+                t.set_description(f"Plotting PV loops of simulation #{sim_number}...")
+                path2simulation = f"{simulations_folder}/cycle_{sim_number}"
                 
-                print_PV_loops_all_cycles(path_to_simulation = path2simulation,BCL = BCL, case_number=first_simulation+index)
+                print_PV_loops_all_cycles(path_to_simulation = path2simulation,
+                                          BCL = BCL, case_number=sim_number)
     else:
         print_PV_loops_all_cycles(path_to_simulation = f"{simulations_folder}/cycle_default",BCL = BCL, case_number='default')
 if __name__ == '__main__':
