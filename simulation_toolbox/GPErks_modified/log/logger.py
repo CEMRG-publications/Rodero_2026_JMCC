@@ -10,7 +10,7 @@ from GPErks_modified.constants import (
 def get_logger(
     name=APPLICATION_NAME,
     log_format=DEFAULT_LOG_FORMAT,
-    stdout_level=logging.INFO,
+    stdout_level=logging.WARNING,
     file_name=DEFAULT_LOG_FILE,
     file_level=logging.INFO,
 ):
