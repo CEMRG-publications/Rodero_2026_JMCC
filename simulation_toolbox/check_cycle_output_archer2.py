@@ -484,7 +484,7 @@ def     cycle_simulation_summary(output_folder,
                         count_OK += 1
                     else:
                         # print(f"Sim index: {sim_index}, Before {output[:(sim_index+1)]}")
-                        output[sim_index] = -1
+                        output[sim_index] = 0
                         tab.append(list([basename+str(sim_number),'NA',]))
                         count_NA += 1
                         # print(f"Usable simulations: {np.count_nonzero(output==1)}, countok: {count_OK}, count na: {np.count_nonzero(output==-5)}")
@@ -519,7 +519,7 @@ def     cycle_simulation_summary(output_folder,
                     tab.append(list([basename+str(sim_number),'N',"Unloading failed"]))
                     count_notOK += 1
                 else:
-                    output[sim_index] = -1
+                    output[sim_index] = 0
                     tab.append(list([basename+str(sim_number),'PD',]))
                     count_PD += 1
 
@@ -626,7 +626,7 @@ def     cycle_simulation_summary(output_folder,
                 tab.append(list([basename+'default','N',"Unloading failed"]))
                 count_notOK += 1
             else:
-                output[0] = -1
+                output[0] = 0
                 tab.append(list([basename+'default','PD',]))
                 count_PD += 1
 
@@ -686,12 +686,12 @@ def check_suitable_VV_output(time,volume,pressure,t):
     else:
         ind_IVC = ind_IVC_[jump[-1]:-1]
 
-    if len(ind_IVC) < 1:
+    if len(ind_IVC) <= 5:
         return False
 
     ind_IVR_ = np.intersect1d(np.where(np.abs(dv)<=0.01)[0],np.where(time>=time_pmax+10.)[0])
 
-    if(len(ind_IVR_)) <= 1:
+    if(len(ind_IVR_)) <= 5:
         return False
 
     jump = np.where(np.gradient(ind_IVR_)>1)[0]
@@ -701,7 +701,7 @@ def check_suitable_VV_output(time,volume,pressure,t):
     else:
         ind_IVR = ind_IVR_[0:jump[0]]
 
-    if(len(ind_IVR)) == 0:
+    if(len(ind_IVR)) <= 5:
         return False
 
     ind_ED = ind_IVC[0]
