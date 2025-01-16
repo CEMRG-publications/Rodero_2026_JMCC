@@ -204,14 +204,14 @@ class GPEmulator(Trainable):
             f"Linked best train stats {best_train_stats_file} to {best_train_stats_link}."
         )
 
-        log.info("The fitted emulator hyperparameters are:")
-        self.experiment.print_stats()
+        # log.info("The fitted emulator hyperparameters are:")
+        # self.experiment.print_stats()
 
         if self.scaled_data.with_val:
             msg = ""
             for metric_name, best_value in self.best_val_metrics_score.items():
                 msg += f"{metric_name}: {best_value:.4f}\n"
-            print(msg)
+            log.debug(msg)
 
         return best_model, best_train_stats
 
