@@ -15,6 +15,7 @@ import sklearn.model_selection
 import sys
 import torch
 import torchmetrics
+from tqdm import tqdm
 
 def train_gpe_kfcv(seed, emulators_folder_base, X_, y_all, x_labels, y_labels, feature_idx, metrics, mask):
     y_feature = y_all[:,feature_idx]
@@ -40,7 +41,6 @@ def train_gpe_kfcv(seed, emulators_folder_base, X_, y_all, x_labels, y_labels, f
     x_labels=x_labels,
     y_label=y_labels[feature_idx]
 )
-
     likelihood = gpytorch.likelihoods.GaussianLikelihood()
     mean_function = gpytorch.means.LinearMean(input_size=dataset.input_size)
     kernel = gpytorch.kernels.ScaleKernel(gpytorch.kernels.RBFKernel(ard_num_dims=dataset.input_size))
@@ -64,6 +64,7 @@ def train_gpe_kfcv(seed, emulators_folder_base, X_, y_all, x_labels, y_labels, f
     esc = GPErks_modified.train.early_stop.GLEarlyStoppingCriterion(
         max_epochs=1000, alpha=0.1, patience=8
     )
+
     best_model_dct, best_train_stats_dct, test_scores_dct = kfcv.train(
         optimizer,
         esc,
@@ -112,7 +113,7 @@ def train_gpe_kfcv(seed, emulators_folder_base, X_, y_all, x_labels, y_labels, f
 
 
 
-def train_gpe_whole_dataset(seed, basefolder, emulators_folder, X, y, X_test, y_test, x_labels, y_labels, feature_idx, metrics, max_epochs):
+def train_gpe_whole_dataset(seed, basefolder, emulators_folder, X, y, X_test, y_test, x_labels, y_labels, feature_idx, metrics, max_epochs, emulators_folder_name):
     dataset = GPErks_modified.gp.data.dataset.Dataset(
     X,
     y,
@@ -170,8 +171,8 @@ def train_gpe_whole_dataset(seed, basefolder, emulators_folder, X, y, X_test, y_
         print("\n*** Final GPE ***")
         inference.summary()
         sys.stdout = sys_out
-    os.makedirs(f"{basefolder}/figures/gpe_inference", exist_ok=True)
-    plot_inference(inference=inference, savepath=f"{basefolder}/figures/gpe_inference", figname=f"gpe_inference_{y_labels[feature_idx]}")
+    os.makedirs(f"{basefolder}/figures/gpe_inference/{emulators_folder_name}", exist_ok=True)
+    plot_inference(inference=inference, savepath=f"{basefolder}/figures/gpe_inference/{emulators_folder_name}", figname=f"gpe_inference_{y_labels[feature_idx]}")
 
 def plot_inference(inference, savepath, figname):
     fig, axis = plt.subplots(1, 1, figsize=(2 * GPErks_modified.constants.WIDTH, 2 * GPErks_modified.constants.HEIGHT / 3))
@@ -217,7 +218,7 @@ def plot_inference(inference, savepath, figname):
 
 
 
-def create_pdf_with_table(ylabels_path, emulators_folder, output_pdf_path, n_train_set, bold_labels):
+def create_pdf_with_table(ylabels_path, emulators_folder, output_pdf_path, n_train_set, bold_labels, strocchi_labels):
     # Initialize PDF
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -225,7 +226,7 @@ def create_pdf_with_table(ylabels_path, emulators_folder, output_pdf_path, n_tra
     
     # Add title
     pdf.set_font("Arial", style="B", size=12)
-    title = f"Trained on {n_train_set} simulations"
+    title = f"Trained on {int(n_train_set)} simulations"
     pdf.cell(0, 10, title, ln=True, align='C')
     pdf.ln(10)  # Add some space after the title
 
@@ -293,8 +294,15 @@ def create_pdf_with_table(ylabels_path, emulators_folder, output_pdf_path, n_tra
 
        # Add row to PDF
         for idx, cell in enumerate(row):
-            if idx == 0 and cell in bold_labels:
-                pdf.set_font("Arial", style="B", size=10)
+            if idx == 0:
+                if cell in bold_labels and cell in strocchi_labels:
+                    pdf.set_font("Arial", style="BU", size=10)  # Bold and Underlined
+                elif cell in bold_labels:
+                    pdf.set_font("Arial", style="B", size=10)  # Bold
+                elif cell in strocchi_labels:
+                    pdf.set_font("Arial", style="U", size=10)  # Underlined
+                else:
+                    pdf.set_font("Arial", size=10)
             else:
                 pdf.set_font("Arial", size=10)
             pdf.cell(cell_width, 10, str(cell), border=1, align='C', fill=True)
@@ -312,17 +320,27 @@ def main(args):
     basefolder = args.basefolder
     feature_idx = int(args.feature_idx)
     output_mask_name = args.output_mask_name
+    n_train = args.n_train
+    emulators_folder_name = args.emulators_folder_name
 
     seed = 8
     GPErks_modified.utils.random.set_seed(seed)
 
-    emulators_folder_base = F"{basefolder}/output/emulators/"
+    emulators_folder_base = F"{basefolder}/output/{emulators_folder_name}/"
     X_all =  np.loadtxt(f"{basefolder}/data/X.txt", dtype=float)
     mask =  np.loadtxt(f"{basefolder}/output/{output_mask_name}", dtype=float)
     mask = mask.astype(bool)
     input_masked = X_all[:mask.shape[0]]  # Trim X_all to match the size of the mask
     X_ = input_masked[mask]
     y_all = np.loadtxt(f"{basefolder}/data/Y.txt", dtype=float)
+
+    if n_train > 0:
+        final_n_train = min(int(n_train/0.8), len(X_))
+    else:
+        final_n_train = len(X_)
+
+    X_ = X_[:final_n_train]
+    y_all = y_all[:final_n_train]
 
     with open(f"{basefolder}/data/xlabels.txt", "r") as f:
         x_labels = f.read().splitlines()
@@ -337,10 +355,12 @@ def main(args):
     else:
         feature_array = [feature_idx]
 
-    for feature_idx2 in feature_array:
-
-        if not os.path.isfile(f"{basefolder}/figures/gpe_inference/gpe_inference_{y_labels[feature_idx2]}.png"):
-
+    # Add tqdm progress bar
+    t = tqdm(feature_array, colour="blue")
+    for feature_idx2 in t:
+        
+        if not os.path.isfile(f"{basefolder}/figures/gpe_inference/{emulators_folder_name}/gpe_inference_{y_labels[feature_idx2]}.png"):
+            t.set_description(f"Training feature: {y_labels[feature_idx2]}")
             emulators_folder, X, y, X_test, y_test, max_epochs = train_gpe_kfcv(seed=seed,
                         mask=mask,
                         emulators_folder_base=emulators_folder_base, 
@@ -362,11 +382,13 @@ def main(args):
                                     y_labels=y_labels, 
                                     feature_idx=feature_idx2, 
                                     metrics=metrics, 
-                                    max_epochs=max_epochs)
+                                    max_epochs=max_epochs,
+                                    emulators_folder_name = emulators_folder_name)
         
     
-    n_train_set = int(0.8*np.shape(X_)[0])
-    create_pdf_with_table(ylabels_path=f"{basefolder}/data/ylabels.txt", emulators_folder=emulators_folder_base, output_pdf_path=f"{emulators_folder_base}/summary_metrics.pdf", n_train_set=n_train_set, bold_labels=["LVedv","LVedp","LVesv","LVpmax","LVEF","A_TAT","V_TAT"])
+    n_train_set = 0.8*np.shape(X_)[0]
+    create_pdf_with_table(ylabels_path=f"{basefolder}/data/ylabels.txt", emulators_folder=emulators_folder_base, output_pdf_path=f"{emulators_folder_base}/summary_metrics.pdf", n_train_set=n_train_set, bold_labels=["LVedv","LVedp","LVesv","LVpmax","LVEF","A_TAT","V_TAT"],
+    strocchi_labels =  ["LVedv","LVedp","LVesv","LVpmax","LVdpdtMax","LVdpdtMin","LAedv","LAesv","LApMax","LAinflV","RVedv","RVedp","RVesv","RVpmax","RVdpdtMax","RVdpdtMin","RAedv","RAesv","RApMax","RAinflV"])
 
 
 if __name__ == '__main__':
@@ -379,6 +401,8 @@ if __name__ == '__main__':
                         help='Path to the folder where the simulations, data, and figure folders are.')
     parser.add_argument('--feature_idx', default=-1)
     parser.add_argument('--output_mask_name', default="output_mask_beat_5.txt")
+    parser.add_argument('--n_train', default=-1, type=int)
+    parser.add_argument('--emulators_folder_name', default="emulators")
 
     args = parser.parse_args()
 
