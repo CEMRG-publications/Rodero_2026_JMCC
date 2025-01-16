@@ -22,3 +22,6 @@ poetry.lock
 */*/*/__pycache__/
 simulation_toolbox/snapshot/
 poetry.lock
+simulation_toolbox/GPErks_modified/log/__pycache__/
+simulation_toolbox/GPErks_modified/perks/__pycache__/
+simulation_toolbox/GPErks_modified/train/__pycache__/
