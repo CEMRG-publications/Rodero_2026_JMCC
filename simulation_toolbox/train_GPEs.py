@@ -113,7 +113,7 @@ def train_gpe_kfcv(seed, emulators_folder_base, X_, y_all, x_labels, y_labels, f
 
 
 
-def train_gpe_whole_dataset(seed, basefolder, emulators_folder, X, y, X_test, y_test, x_labels, y_labels, feature_idx, metrics, max_epochs, emulators_folder_name):
+def train_gpe_whole_dataset(seed, basefolder, emulators_folder, X, y, X_test, y_test, x_labels, y_labels, feature_idx, metrics, max_epochs, emulators_folder_name, Y_dense):
     dataset = GPErks_modified.gp.data.dataset.Dataset(
     X,
     y,
@@ -172,7 +172,15 @@ def train_gpe_whole_dataset(seed, basefolder, emulators_folder, X, y, X_test, y_
         inference.summary()
         sys.stdout = sys_out
     os.makedirs(f"{basefolder}/figures/gpe_inference/{emulators_folder_name}", exist_ok=True)
+
     plot_inference(inference=inference, savepath=f"{basefolder}/figures/gpe_inference/{emulators_folder_name}", figname=f"gpe_inference_{y_labels[feature_idx]}")
+
+
+    flag_suspicious_simulations(inference = inference, 
+                                biomarker = y_labels[feature_idx], 
+                                biomarker_index = feature_idx, 
+                                savepath = f"{basefolder}/figures/gpe_inference/{emulators_folder_name}", 
+                                filename = "problematic_simulations.txt", Y_dense = Y_dense)
 
 def plot_inference(inference, savepath, figname):
     fig, axis = plt.subplots(1, 1, figsize=(2 * GPErks_modified.constants.WIDTH, 2 * GPErks_modified.constants.HEIGHT / 3))
@@ -215,6 +223,45 @@ def plot_inference(inference, savepath, figname):
     fig.tight_layout()
     plt.savefig(f"{savepath}/{figname}.png")
     plt.close()
+
+def flag_suspicious_simulations(inference, biomarker, biomarker_index, savepath, filename, Y_dense):
+    idx_sort = np.argsort(
+        inference.y_pred_mean
+    ) 
+
+
+    simulations_means = inference.y_test[idx_sort]
+
+    emulator_means = inference.y_pred_mean[idx_sort]
+
+    ci = 1.96  # 95% confidence interval
+
+    emulator_uncertainty = ci * inference.y_pred_std[idx_sort]
+
+
+    if np.argmin(simulations_means) > 0:
+        problematic_index = np.argmin(simulations_means)
+        if simulations_means[problematic_index] < emulator_means[problematic_index] - emulator_uncertainty[problematic_index]:
+
+            problematic_sim = np.where(Y_dense[:, biomarker_index] == np.min(simulations_means))[0]
+
+            
+            string_to_write = f"Check cycle {problematic_sim} for a low value of {biomarker}."
+
+            with open(f"{savepath}/{filename}", "a") as file:
+                file.write(string_to_write + "\n")
+
+    if np.argmax(simulations_means) < len(simulations_means):
+        problematic_index = np.argmax(simulations_means)
+        if simulations_means[problematic_index] > emulator_means[problematic_index] + emulator_uncertainty[problematic_index]:
+
+            problematic_sim = np.where(Y_dense[:, biomarker_index] == np.max(simulations_means))[0]
+
+            
+            string_to_write = f"Check cycle {problematic_sim} for a high value of {biomarker}."
+
+            with open(f"{savepath}/{filename}", "a") as file:
+                file.write(string_to_write + "\n")
 
 
 
@@ -332,7 +379,7 @@ def main(args):
     mask = mask.astype(bool)
     input_masked = X_all[:mask.shape[0]]  # Trim X_all to match the size of the mask
     X_ = input_masked[mask]
-    y_all = np.loadtxt(f"{basefolder}/data/Y.txt", dtype=float)
+    Y_original = np.loadtxt(f"{basefolder}/data/Y.txt", dtype=float)
 
     if n_train > 0:
         final_n_train = min(int(n_train/0.8), len(X_))
@@ -340,7 +387,7 @@ def main(args):
         final_n_train = len(X_)
 
     X_ = X_[:final_n_train]
-    y_all = y_all[:final_n_train]
+    y_all = Y_original[:final_n_train]
 
     with open(f"{basefolder}/data/xlabels.txt", "r") as f:
         x_labels = f.read().splitlines()
@@ -354,6 +401,22 @@ def main(args):
         feature_array = [i for i in range(len(y_labels))]
     else:
         feature_array = [feature_idx]
+
+    
+
+    # Create Y by selecting the corresponding rows from Y_original
+    Y_dense = []
+    Y_index = 0
+
+    for i in range(len(mask)):
+        if mask[i] == 1:
+            Y_dense.append(Y_original[Y_index])
+            Y_index += 1
+        else:
+            Y_dense.append(np.zeros(Y_original.shape[1]))
+
+    # Convert Y to a NumPy array
+    Y_dense = np.array(Y_dense)
 
     # Add tqdm progress bar
     t = tqdm(feature_array, colour="blue")
@@ -383,7 +446,8 @@ def main(args):
                                     feature_idx=feature_idx2, 
                                     metrics=metrics, 
                                     max_epochs=max_epochs,
-                                    emulators_folder_name = emulators_folder_name)
+                                    emulators_folder_name = emulators_folder_name,
+                                    Y_dense=Y_dense)
         
     
     n_train_set = 0.8*np.shape(X_)[0]
