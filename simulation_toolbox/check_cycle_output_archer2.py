@@ -194,7 +194,7 @@ def cycle_output_free_output_mask_name(datafolder,
         pressure_pa = np.array(pa['Pressure'][last_beat])
 
         labels_computed = []
-        print(f"IV_thr is {IV_thr}")
+
         lvoutput = VV_output_free_IV_thr(time=time, volume=volume_lv,pressure=pressure_lv, IV_thr=IV_thr)
         LVSV = lvoutput[0] - lvoutput[2]
         LVEF = 100*(LVSV / lvoutput[0])
