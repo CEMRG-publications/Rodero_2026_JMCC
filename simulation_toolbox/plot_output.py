@@ -7,7 +7,7 @@ import argparse
 import tqdm
 
 
-def plot_biomarkers_VV(first_simulation,last_simulation,datafolder,mask_file,NBEATS,BCL,AVD,sims_folder,fig_path,output_file,chamber):
+def plot_biomarkers_VV(simulation_array,datafolder,mask_file,NBEATS,BCL,AVD,sims_folder,fig_path,output_file,chamber):
 
     print(f"Plotting biomarkers for the {chamber}...")
 
@@ -52,7 +52,7 @@ def plot_biomarkers_VV(first_simulation,last_simulation,datafolder,mask_file,NBE
     Y = np.array(Y)
     
 
-    t = tqdm.tqdm(range(first_simulation, last_simulation + 1), desc='Bar desc', leave=True, colour='#8B0000')
+    t = tqdm.tqdm(simulation_array, desc='Bar desc', leave=True, colour='#8B0000')
     print_message_outer = "Plotting biomarkers of cycle " 
     total_message_length_outer = len(print_message_outer) + 6
 
@@ -365,7 +365,7 @@ def plot_biomarkers_VV(first_simulation,last_simulation,datafolder,mask_file,NBE
 
     return(not_plotted)
 
-def plot_biomarkers_AA(first_simulation,last_simulation,datafolder,mask_file,NBEATS,BCL,AVD,sims_folder,fig_path,output_file,chamber):
+def plot_biomarkers_AA(simulation_array,datafolder,mask_file,NBEATS,BCL,AVD,sims_folder,fig_path,output_file,chamber):
 
     print(f"Plotting biomarkers for the {chamber}...")
 
@@ -405,7 +405,7 @@ def plot_biomarkers_AA(first_simulation,last_simulation,datafolder,mask_file,NBE
     # Convert Y to a NumPy array
     Y = np.array(Y)
 
-    t = tqdm.tqdm(range(first_simulation, last_simulation + 1), desc='Bar desc', leave=True, colour='#8B0000')
+    t = tqdm.tqdm(simulation_array, desc='Bar desc', leave=True, colour='#8B0000')
     print_message_outer = "Plotting biomarkers of cycle " 
     total_message_length_outer = len(print_message_outer) + 6
 
@@ -621,7 +621,7 @@ def plot_biomarkers_AA(first_simulation,last_simulation,datafolder,mask_file,NBE
         
     return(not_plotted)
 
-def plot_biomarkers_arteries(first_simulation,last_simulation,datafolder,mask_file,NBEATS,BCL,AVD,sims_folder,fig_path,output_file):
+def plot_biomarkers_arteries(simulation_array,datafolder,mask_file,NBEATS,BCL,AVD,sims_folder,fig_path,output_file):
 
     print(f"Plotting biomarkers for the arteries...")
 
@@ -636,9 +636,23 @@ def plot_biomarkers_arteries(first_simulation,last_simulation,datafolder,mask_fi
                    "pa_ratio": ["pulsePAP"]
                    }
     
-    Y = np.loadtxt(f"{datafolder}/{output_file}",dtype=float)
+    Y_original = np.loadtxt(f"{datafolder}/{output_file}", dtype=float)
 
-    t = tqdm.tqdm(range(first_simulation, last_simulation + 1), desc='Bar desc', leave=True, colour='#8B0000')
+    # Create Y by selecting the corresponding rows from Y_original
+    Y = []
+    Y_index = 0
+
+    for i in range(len(mask)):
+        if mask[i] == 1:
+            Y.append(Y_original[Y_index])
+            Y_index += 1
+        else:
+            Y.append(np.zeros(Y_original.shape[1]))
+
+    # Convert Y to a NumPy array
+    Y = np.array(Y)
+
+    t = tqdm.tqdm(simulation_array, desc='Bar desc', leave=True, colour='#8B0000')
     print_message_outer = "Plotting biomarkers of cycle " 
     total_message_length_outer = len(print_message_outer) + 6
 
@@ -661,8 +675,8 @@ def plot_biomarkers_arteries(first_simulation,last_simulation,datafolder,mask_fi
                             header=0, comment='#')
             
             last_beat = np.intersect1d(np.where(np.array(ao['Time'])>=start)[0],
-                                    np.where(np.array(ao['Time'])<=end)[0])
-
+                                    np.where(np.array(ao['Time'])<=end))
+            
             time = np.array(ao['Time'][last_beat])
 
             pressure_ao = np.array(ao['Pressure'][last_beat])
@@ -687,6 +701,7 @@ def plot_biomarkers_arteries(first_simulation,last_simulation,datafolder,mask_fi
             time_range = np.max(time) - np.min(time)
             ao_pressure_range = np.max(pressure_ao) - np.min(pressure_ao)
             pa_pressure_range = np.max(pressure_pa) - np.min(pressure_pa)
+
 
             ap_plt.set_ylim([np.min(pressure_ao)-0.1*ao_pressure_range,
                              np.max(pressure_ao)+0.1*ao_pressure_range])
@@ -841,11 +856,11 @@ def print_PV_loops_all_cycles(path_to_simulation, BCL, case_number):
 def plot_pvloops_all_sim_range(datafolder,
                       output_folder,
                      BCL,
-                     first_simulation,
-                     last_simulation,
+                     simulation_array,
                      basename="cycle_",
                      figname=None,
-                     mask_file=None):
+                     mask_file=None,
+                     default_sim = False):
 
     print('Plotting PV loops for successful simulations...')
 
@@ -859,29 +874,31 @@ def plot_pvloops_all_sim_range(datafolder,
     ax = plt.figure(figsize=(10,10), constrained_layout=True).subplots(2, 2)
     ax = ax.flatten()
 
-    for i in range(first_simulation, last_simulation+1):
+    for i in simulation_array:
+
+        if mask[i] == 1:
         
-        for j,c in enumerate(chambers):
+            for j,c in enumerate(chambers):
 
-            if first_simulation is None:
-                ch = read_csv(output_folder+'/'+basename+'default/cav.'+c+'.csv', delimiter=",", skipinitialspace=True,
-                                       header=0, comment='#')
-            else:
-                ch = read_csv(output_folder+'/'+basename+str(first_simulation+mask[i])+'/cav.'+c+'.csv', delimiter=",", skipinitialspace=True,
-                                       header=0, comment='#')      
-            time = np.array(ch['Time'])
+                if default_sim:
+                    ch = read_csv(output_folder+'/'+basename+'default/cav.'+c+'.csv', delimiter=",", skipinitialspace=True,
+                                        header=0, comment='#')
+                else:
+                    ch = read_csv(f"{output_folder}/{basename}{i}/cav.{c}.csv", delimiter=",", skipinitialspace=True,
+                                        header=0, comment='#')      
+                time = np.array(ch['Time'])
 
-            start = time[-1]-BCL
+                start = time[-1]-BCL
 
-            plot_time = np.where(time>=start)[0]
+                plot_time = np.where(time>=start)[0]
 
-            volume = np.array(ch['Volume'][plot_time])
-            pressure = np.array(ch['Pressure'][plot_time])
-            t = np.array(ch['Time'][plot_time])      
+                volume = np.array(ch['Volume'][plot_time])
+                pressure = np.array(ch['Pressure'][plot_time])
+                t = np.array(ch['Time'][plot_time])      
 
-            ax[j].plot(volume,pressure,color='#3489eb')
-            ax[j].set_xlabel(c+' volume [mL]')
-            ax[j].set_ylabel(c+' pressure [mmHg]')
+                ax[j].plot(volume,pressure,color='#3489eb')
+                ax[j].set_xlabel(c+' volume [mL]')
+                ax[j].set_ylabel(c+' pressure [mmHg]')
 
     if figname is not None:
         plt.savefig(figname,dpi=300)
@@ -901,6 +918,7 @@ def main(args):
     last_simulation    = args.last_simulation
     default            = args.default
     output_file        = args.output_file
+    simulation_array   = args.simulation_array
 
     with open(f"{basefolder}/json_files/clinical_data.json", "r") as clinical_data:
         clinical_json = json.load(clinical_data)
@@ -912,10 +930,15 @@ def main(args):
             xlabels = file.read().splitlines()
 
     AVD_initial = X[:, xlabels.index('AV_delay')]
-    AVD = AVD_initial[first_simulation:(last_simulation+1)]
 
-    not_plotted_LV = plot_biomarkers_VV(first_simulation = first_simulation,
-                    last_simulation = last_simulation,
+
+    if first_simulation is not None:
+        simulation_array = range(first_simulation, last_simulation+1)
+
+
+    AVD = AVD_initial[simulation_array]
+
+    not_plotted_LV = plot_biomarkers_VV(simulation_array = simulation_array,
                     datafolder = f"{basefolder}/data",
                     mask_file = f"{output_folder}/output_mask_beat_{n_beat}.txt",
                     NBEATS = n_beat,
@@ -925,8 +948,7 @@ def main(args):
                     fig_path = figures_path,
                     output_file=output_file,
                     chamber="LV")
-    not_plotted_RV = plot_biomarkers_VV(first_simulation = first_simulation,
-                    last_simulation = last_simulation,
+    not_plotted_RV = plot_biomarkers_VV(simulation_array=simulation_array,
                     datafolder = f"{basefolder}/data",
                     mask_file = f"{output_folder}/output_mask_beat_{n_beat}.txt",
                     NBEATS = n_beat,
@@ -937,8 +959,7 @@ def main(args):
                     output_file=output_file,
                     chamber="RV")
     
-    not_plotted_LA = plot_biomarkers_AA(first_simulation = first_simulation,
-                    last_simulation = last_simulation,
+    not_plotted_LA = plot_biomarkers_AA(simulation_array=simulation_array,
                     datafolder = f"{basefolder}/data",
                     mask_file = f"{output_folder}/output_mask_beat_{n_beat}.txt",
                     NBEATS = n_beat,
@@ -948,8 +969,7 @@ def main(args):
                     fig_path = figures_path,
                     output_file=output_file,
                     chamber="LA")
-    not_plotted_RA = plot_biomarkers_AA(first_simulation = first_simulation,
-                    last_simulation = last_simulation,
+    not_plotted_RA = plot_biomarkers_AA(simulation_array=simulation_array,
                     datafolder = f"{basefolder}/data",
                     mask_file = f"{output_folder}/output_mask_beat_{n_beat}.txt",
                     NBEATS = n_beat,
@@ -960,8 +980,7 @@ def main(args):
                     output_file=output_file,
                     chamber="RA")
     
-    not_plotted_arteries = plot_biomarkers_arteries(first_simulation = first_simulation,
-                    last_simulation = last_simulation,
+    not_plotted_arteries = plot_biomarkers_arteries(simulation_array=simulation_array,
                     datafolder = f"{basefolder}/data",
                     mask_file = f"{output_folder}/output_mask_beat_{n_beat}.txt",
                     NBEATS = n_beat,
@@ -982,8 +1001,7 @@ def main(args):
                                         BCL           = BCL,
                                         basename      = "cycle_",
                                         mask_file     = f"{output_folder}/output_mask_beat_{n_beat}.txt",
-                                        first_simulation=first_simulation,
-                                        last_simulation=last_simulation,
+                                        simulation_array=simulation_array,
                                         figname       = f"{figures_path}/all_pv_loops_beat_{n_beat}.png")
 
 
@@ -993,7 +1011,7 @@ def main(args):
         output_mask = np.loadtxt(f"{output_folder}/output_mask_beat_{n_beat}.txt")
 
         
-        t = tqdm.tqdm(range(first_simulation, last_simulation+1), desc='Bar desc', leave=True,colour='#80EF80')
+        t = tqdm.tqdm(simulation_array, desc='Bar desc', leave=True,colour='#80EF80')
 
         for sim_number in t:
             if output_mask[sim_number] == 1:
@@ -1005,8 +1023,6 @@ def main(args):
     else:
         print_PV_loops_all_cycles(path_to_simulation = f"{simulations_folder}/cycle_default",BCL = BCL, case_number='default')
 if __name__ == '__main__':
-
-
     parser = argparse.ArgumentParser()
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
     
@@ -1014,8 +1030,9 @@ if __name__ == '__main__':
                         default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations",
                         help='Path to the folder where the simulations, data, and figure folders are.')
     parser.add_argument('--n_beat', type=int, required=False, help="Heartbeat number to compute the output.", default=5)
-    parser.add_argument('--first_simulation', type=int)
-    parser.add_argument('--last_simulation', type=int)
+    parser.add_argument('--first_simulation', type=int, help="First simulation index.", default=None)
+    parser.add_argument('--last_simulation', type=int, help="Last simulation index.", default=None)
+    parser.add_argument('--simulation_array', type=int, nargs='*', help="Array of simulation indices.")
     parser.add_argument('--default', action='store_true')
     parser.add_argument('--output_file', default="Y.txt")
 
