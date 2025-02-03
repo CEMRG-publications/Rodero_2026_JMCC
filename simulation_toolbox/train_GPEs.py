@@ -390,67 +390,84 @@ def create_pdf_with_table(ylabels_path, emulators_folder, output_pdf_path, n_tra
     # Output the PDF
     pdf.output(output_pdf_path)
 
-def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output_pdf_path, n_train_set, bold_labels, strocchi_labels):
-    # Initialize PDF
-    pdf = FPDF(orientation='L', unit='mm', format='A3')  # Landscape orientation
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.add_page()
+# def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output_pdf_path, n_train_set, bold_labels, strocchi_labels):
+#     # Initialize PDF
+#     pdf = FPDF(orientation='L', unit='mm', format=(210, 500))  # Landscape orientation
+#     pdf.set_auto_page_break(auto=True, margin=15)
+#     pdf.add_page()
     
-    # Add title
-    pdf.set_font("Arial", style="B", size=12)
-    title = f"Trained on {int(n_train_set)} simulations"
-    pdf.cell(0, 10, title, ln=True, align='C')
-    pdf.ln(10)  # Add some space after the title
+#     # Add title
+#     pdf.set_font("Arial", style="B", size=12)
+#     title = f"Trained on {int(n_train_set)} simulations"
+#     pdf.cell(0, 10, title, ln=True, align='C')
+#     pdf.ln(10)  # Add some space after the title
 
-    # Read ylabels
-    with open(ylabels_path, "r") as f:
-        ylabels = [line.strip() for line in f.readlines()]
+#     # Read ylabels
+#     with open(ylabels_path, "r") as f:
+#         ylabels = [line.strip() for line in f.readlines()]
 
-    # Create header row
-    header_row = ["Output"]
-    first_output_folder = os.path.join(emulators_folder, ylabels[0])
-    first_summary_file = os.path.join(first_output_folder, "training_summary.txt")
+#     # Create header row
+#     header_row = ["Output"]
+#     first_output_folder = os.path.join(emulators_folder, ylabels[0])
+#     first_summary_file = os.path.join(first_output_folder, "training_summary.txt")
 
-    # Parse the first file to determine additional columns
-    with open(first_summary_file, "r") as f:
-        lines = f.readlines()
-        start_index = lines.index("Test Scores Dictionary\n") + 2
-        columns = lines[start_index].strip().split(" | ")
-    header_row.extend(columns)
+#     # Parse the first file to determine additional columns
+#     with open(first_summary_file, "r") as f:
+#         lines = f.readlines()
+#         start_index = lines.index("Test Scores Dictionary\n") + 2
+#         columns = lines[start_index].strip().split(" | ")
+#     header_row.extend(columns)
 
-    # Calculate cell width based on the number of columns
-    cell_width = 80
+#     # Calculate cell width based on the number of columns
+#     cell_width = 80
 
-    # Add header row to PDF
-    pdf.set_font("Arial", style="B", size=10)
-    for header in header_row:
-        pdf.cell(cell_width, 10, header, border=1, align='C')
-    pdf.ln()
+#     # Add header row to PDF
+#     pdf.set_font("Arial", style="B", size=10)
+#     for header in header_row:
+#         pdf.cell(cell_width, 10, header, border=1, align='C')
+#     pdf.ln()
 
-    # Parse each output
-    pdf.set_font("Arial", size=10)
-    for ylabel in ylabels:
-        output_folder = os.path.join(emulators_folder, ylabel)
-        summary_file = os.path.join(output_folder, "training_summary.txt")
+#     # Parse each output
+#     pdf.set_font("Arial", size=10)
+#     for ylabel in ylabels:
+#         output_folder = os.path.join(emulators_folder, ylabel)
+#         summary_file = os.path.join(output_folder, "training_summary.txt")
 
-        with open(summary_file, "r") as f:
-            lines = f.readlines()
-            start_index = lines.index("Median scores\n") + 1
-            scores = lines[start_index].strip().split(" | ")
+#         with open(summary_file, "r") as f:
+#             lines = f.readlines()
+#             start_index = lines.index("Median scores\n") + 1
+#             scores = lines[start_index].strip().split(" | ")
 
-        row = [ylabel] + scores
+        
 
-        # Add row to PDF
-        for idx, cell in enumerate(row):
-            if idx == 0:
-                pdf.set_font("Arial", style="B", size=10)  # Bold for the first column
-            else:
-                pdf.set_font("Arial", size=10)
-            pdf.cell(cell_width, 10, str(cell), border=1, align='C')
-        pdf.ln()
+#         row = [ylabel] + scores
 
-    # Output the PDF
-    pdf.output(output_pdf_path)
+#         # Determine row background color based on R2Score
+#         r2_score = float(scores[columns.index("R2Score")])
+#         if r2_score > 0.9:
+#             pdf.set_fill_color(204, 255, 204)  # Pastel green
+#         elif 0.7 <= r2_score <= 0.9:
+#             pdf.set_fill_color(255, 255, 204)  # Yellow
+#         else:
+#             pdf.set_fill_color(255, 204, 204)  # Red
+
+#         for idx, cell in enumerate(row):
+#             if idx == 0: # First column
+#                 if cell in bold_labels and cell in strocchi_labels:
+#                     pdf.set_font("Arial", style="BU", size=10)  # Bold and Underlined
+#                 elif cell in bold_labels:
+#                     pdf.set_font("Arial", style="B", size=10)  # Bold
+#                 elif cell in strocchi_labels:
+#                     pdf.set_font("Arial", style="U", size=10)  # Underlined
+#                 else:
+#                     pdf.set_font("Arial", size=10)
+#             else:
+#                 pdf.set_font("Arial", size=10)
+#             pdf.cell(cell_width, 10, str(cell), border=1, align='C', fill=True)
+#         pdf.ln()
+
+#     # Output the PDF
+#     pdf.output(output_pdf_path)
 
 
 def train_gpe_kfcv_second_approach(seed, emulators_folder_base, X_, y_all, x_labels, y_labels, feature_idx, metrics, mask, device, n_folds):
@@ -519,10 +536,10 @@ def train_gpe_kfcv_second_approach(seed, emulators_folder_base, X_, y_all, x_lab
         sys_out = sys.stdout
         sys.stdout = f
         
-        # Format Best Epoch
-        print("Best epoch\n")
-        for i, epoch in enumerate(best_epochs):
-            print(f"Split {i}: {epoch}")
+        # # Format Best Epoch
+        # print("Best epoch\n")
+        # for i, epoch in enumerate(best_epochs):
+        #     print(f"Split {i}: {epoch}")
         
         print("\nTest Scores Dictionary\n")
         
@@ -601,6 +618,96 @@ def train_gpe_whole_dataset_second_approach(seed, emulators_folder, X, y, x_labe
     )
 
     experiment.save_to_config_file(f"{emulators_folder}/emulator.ini")
+
+
+def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output_pdf_path, n_train_set, bold_labels, strocchi_labels, y_data_path):
+    # Load Y data
+    Y = np.loadtxt(y_data_path, dtype=float)
+    coefficients_of_variation = np.var(Y, axis=0)/np.mean(Y, axis=0)
+
+    # Initialize PDF
+    pdf = FPDF(orientation='L', unit='mm', format=(210, 600))  # Landscape orientation
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    
+    # Add title
+    pdf.set_font("Arial", style="B", size=12)
+    title = f"Trained on {int(n_train_set)} simulations"
+    pdf.cell(0, 10, title, ln=True, align='C')
+    pdf.ln(10)  # Add some space after the title
+
+    # Read ylabels
+    with open(ylabels_path, "r") as f:
+        ylabels = [line.strip() for line in f.readlines()]
+
+    # Create header row
+    header_row = ["Output"]
+    first_output_folder = os.path.join(emulators_folder, ylabels[0])
+    first_summary_file = os.path.join(first_output_folder, "training_summary.txt")
+
+    # Parse the first file to determine additional columns
+    with open(first_summary_file, "r") as f:
+        lines = f.readlines()
+        start_index = lines.index("Test Scores Dictionary\n") + 2
+        columns = lines[start_index].strip().split(" | ")
+
+    header_row.extend(columns)
+    header_row.append("Coefficient of variation")
+
+    # Calculate cell width based on the number of columns
+    cell_width = 80
+
+    # Add header row to PDF
+    pdf.set_font("Arial", style="B", size=10)
+    for header in header_row:
+        pdf.cell(cell_width, 10, header, border=1, align='C')
+    pdf.ln()
+
+    # Parse each output
+    pdf.set_font("Arial", size=10)
+    for ylabel in ylabels:
+        output_folder = os.path.join(emulators_folder, ylabel)
+        summary_file = os.path.join(output_folder, "training_summary.txt")
+
+        with open(summary_file, "r") as f:
+            lines = f.readlines()
+            start_index = lines.index("Median scores\n") + 1
+            scores = lines[start_index].strip().split(" | ")
+
+        # Get the variance for the current biomarker
+        biomarker_index = ylabels.index(ylabel)
+        coefficient_of_variation = coefficients_of_variation[biomarker_index]
+
+        row = [ylabel] + scores + [f"{coefficient_of_variation:.6f}"]
+
+        # Determine row background color based on R2Score
+        r2_score = float(scores[columns.index("R2Score")])
+        if r2_score > 0.9:
+            pdf.set_fill_color(204, 255, 204)  # Pastel green
+        elif 0.7 <= r2_score <= 0.9:
+            pdf.set_fill_color(255, 255, 204)  # Yellow
+        else:
+            pdf.set_fill_color(255, 204, 204)  # Red
+
+        # Add row to PDF
+        for idx, cell in enumerate(row):
+            if idx == 0:
+                if cell in bold_labels and cell in strocchi_labels:
+                    pdf.set_font("Arial", style="BU", size=10)  # Bold and Underlined
+                elif cell in bold_labels:
+                    pdf.set_font("Arial", style="B", size=10)  # Bold
+                elif cell in strocchi_labels:
+                    pdf.set_font("Arial", style="U", size=10)  # Underlined
+                else:
+                    pdf.set_font("Arial", size=10)
+            else:
+                pdf.set_font("Arial", size=10)
+            pdf.cell(cell_width, 10, str(cell), border=1, align='C', fill=True)
+        pdf.ln()
+
+    # Output the PDF
+    pdf.output(output_pdf_path)
+
 
 
 def main_first_approach(args):
@@ -742,7 +849,7 @@ def main_second_approach(args):
                 torchmetrics.MeanAbsolutePercentageError(), 
                 torchmetrics.SymmetricMeanAbsolutePercentageError(),
                 torchmetrics.MeanSquaredLogError(),
-                torchmetrics.MeanSquaredError()]
+                torchmetrics.R2Score()]
 
     if feature_idx == -1:
         feature_array = [i for i in range(len(y_labels))]
@@ -796,8 +903,11 @@ def main_second_approach(args):
         
 
     n_train_set = np.shape(X_)[0]
-    create_pdf_with_table_second_approach(ylabels_path=f"{basefolder}/data/ylabels.txt", emulators_folder=emulators_folder_base, output_pdf_path=f"{emulators_folder_base}/summary_metrics.pdf", n_train_set=n_train_set, bold_labels=["LVedv","LVedp","LVesv","LVpmax","LVEF","A_TAT","V_TAT"],
-    strocchi_labels =  ["LVedv","LVedp","LVesv","LVpmax","LVdpdtMax","LVdpdtMin","LAedv","LAesv","LApMax","LAinflV","RVedv","RVedp","RVesv","RVpmax","RVdpdtMax","RVdpdtMin","RAedv","RAesv","RApMax","RAinflV"])
+    create_pdf_with_table_second_approach(ylabels_path=f"{basefolder}/data/ylabels.txt", 
+                                          emulators_folder=emulators_folder_base, 
+                                          output_pdf_path=f"{emulators_folder_base}/summary_metrics.pdf",
+                                           n_train_set=n_train_set, 
+                                           bold_labels=["LVedv","LVedp","LVesv","LVpmax","LVEF","A_TAT","V_TAT"],strocchi_labels =  ["LVedv","LVedp","LVesv","LVpmax","LVdpdtMax","LVdpdtMin","LAedv","LAesv","LApMax","LAinflV","RVedv","RVedp","RVesv","RVpmax","RVdpdtMax","RVdpdtMin","RAedv","RAesv","RApMax","RAinflV"],y_data_path=f"{basefolder}/data/Y.txt")
 
 
 if __name__ == '__main__':
@@ -819,3 +929,4 @@ if __name__ == '__main__':
 
     # main_first_approach(args)
     main_second_approach(args)
+
