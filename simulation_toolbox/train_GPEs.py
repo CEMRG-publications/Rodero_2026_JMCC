@@ -469,6 +469,61 @@ def create_pdf_with_table(ylabels_path, emulators_folder, output_pdf_path, n_tra
 #     # Output the PDF
 #     pdf.output(output_pdf_path)
 
+def histogram_mode(data):
+    data = np.array(data)  # Ensure input is a NumPy array
+    num_cols = data.shape[1]  # Number of columns
+    bin_widths = [1.0,1e-3,1e-3,1e-3,1e-2]  
+    
+    mode_values = []
+
+
+    
+    for col in range(num_cols):  # Process each column separately
+        col_data = data[:, col]  # Extract column
+
+        if np.isnan(col_data).any():
+            mode_values.append(np.nan)  # Append NaN for consistency
+            continue
+
+        # Compute the bin edges explicitly with sufficient precision
+        min_val = min(col_data)
+        max_val = max(col_data)
+        bin_edges = np.arange(min_val, max_val + bin_widths[col], bin_widths[col])
+
+        # Compute histogram
+        hist, _ = np.histogram(col_data, bins=bin_edges)
+        
+        mode_bin_index = np.where(hist == np.max(hist))[0][-1]  # Index of most frequent bin
+        
+        mode_value = bin_edges[mode_bin_index]  # Start of the most populated bin
+        
+        mode_values.append(mode_value)
+    
+    return np.array(mode_values)  # Return mode per column
+
+def histogram_mode_single_array(data, bin_width):
+    data = np.array(data)  # Ensure input is a NumPy array
+
+    col_data = data 
+
+    if np.isnan(col_data).any():
+        return np.nan, [np.nan]  # Append NaN for consistency
+
+    # Compute the bin edges explicitly with sufficient precision
+    min_val = min(col_data)
+    max_val = max(col_data)
+    bin_edges = np.arange(min_val, max_val + bin_width, bin_width)
+
+    # Compute histogram
+    hist, _ = np.histogram(col_data, bins=bin_edges)
+    
+    mode_bin_index = np.where(hist == np.max(hist))[0][-1]
+  # Index of most frequent bin
+    
+    mode_value = bin_edges[mode_bin_index]  # Start of the most populated bin
+        
+    return mode_value, bin_edges
+
 
 def train_gpe_kfcv_second_approach(seed, emulators_folder_base, X_, y_all, x_labels, y_labels, feature_idx, metrics, mask, device, n_folds, max_workers):
     y_feature = y_all[:,feature_idx]
@@ -555,37 +610,6 @@ def train_gpe_kfcv_second_approach(seed, emulators_folder_base, X_, y_all, x_lab
             formatted_scores = " | ".join(f"{score:.6f}" for score in scores)
             print(f"Split {i}: {formatted_scores}")
 
-        def histogram_mode(data):
-            data = np.array(data)  # Ensure input is a NumPy array
-            num_cols = data.shape[1]  # Number of columns
-            bin_widths = [1.0,1e-3,1e-3,1e-3,1e-2]  
-            
-            mode_values = []
-
-
-            
-            for col in range(num_cols):  # Process each column separately
-                col_data = data[:, col]  # Extract column
-
-                if np.isnan(col_data).any():
-                    mode_values.append(np.nan)  # Append NaN for consistency
-                    continue
-
-                # Compute the bin edges explicitly with sufficient precision
-                min_val = min(col_data)
-                max_val = max(col_data)
-                bin_edges = np.arange(min_val, max_val + bin_widths[col], bin_widths[col])
-
-                # Compute histogram
-                hist, _ = np.histogram(col_data, bins=bin_edges)
-                
-                mode_bin_index = np.argmax(hist)  # Index of most frequent bin
-                
-                mode_value = bin_edges[mode_bin_index]  # Start of the most populated bin
-                
-                mode_values.append(mode_value)
-            
-            return np.array(mode_values)  # Return mode per column
 
         median_score = np.median(scores_per_split, axis=0)
         mode_score = histogram_mode(scores_per_split)
@@ -650,10 +674,6 @@ def train_gpe_whole_dataset_second_approach(seed, emulators_folder, X, y, x_labe
 
 
 def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output_pdf_path, n_train_set, bold_labels, strocchi_labels, y_data_path):
-    # Load Y data
-    Y = np.loadtxt(y_data_path, dtype=float)
-    coefficients_of_variation = np.var(Y, axis=0)/np.mean(Y, axis=0)
-
     # Initialize PDF
     pdf = FPDF(orientation='L', unit='mm', format=(210, 600))  # Landscape orientation
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -663,7 +683,7 @@ def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output
     pdf.set_font("Arial", style="B", size=12)
     title = f"Trained on {int(n_train_set)} simulations"
     pdf.cell(0, 10, title, ln=True, align='C')
-    pdf.ln(10)  # Add some space after the title
+    pdf.ln(10)  # Space after the title
 
     # Read ylabels
     with open(ylabels_path, "r") as f:
@@ -674,25 +694,31 @@ def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output
     first_output_folder = os.path.join(emulators_folder, ylabels[0])
     first_summary_file = os.path.join(first_output_folder, "training_summary.txt")
 
-    # Parse the first file to determine additional columns
     with open(first_summary_file, "r") as f:
         lines = f.readlines()
         start_index = lines.index("Test Scores Dictionary\n") + 2
         columns = lines[start_index].strip().split(" | ")
 
     header_row.extend(columns)
-    header_row.append("Coefficient of variation")
-
-    # Calculate cell width based on the number of columns
-    cell_width = 80
+    
+    # Adjust cell width
+    cell_width = 80 / 3  # Split each column into 3 sections
 
     # Add header row to PDF
     pdf.set_font("Arial", style="B", size=10)
     for header in header_row:
-        pdf.cell(cell_width, 10, header, border=1, align='C')
+        pdf.cell(cell_width * 3, 10, header, border=1, align='C')
     pdf.ln()
 
-    # Parse each output
+    # Add sub-header row for mean, median, mode labels
+    pdf.set_font("Arial", style="I", size=8)
+    pdf.cell(cell_width * 3, 10, "", border=1, align='C')
+    for _ in columns:
+        pdf.cell(cell_width, 10, "Mean", border=1, align='C')
+        pdf.cell(cell_width, 10, "Median", border=1, align='C')
+        pdf.cell(cell_width, 10, "Mode", border=1, align='C')
+    pdf.ln()
+
     pdf.set_font("Arial", size=10)
     for ylabel in ylabels:
         output_folder = os.path.join(emulators_folder, ylabel)
@@ -700,44 +726,112 @@ def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output
 
         with open(summary_file, "r") as f:
             lines = f.readlines()
-            start_index = lines.index("Mode scores\n") + 1
-            scores = lines[start_index].strip().split(" | ")
 
-        # Get the variance for the current biomarker
-        biomarker_index = ylabels.index(ylabel)
-        coefficient_of_variation = coefficients_of_variation[biomarker_index]
+        scores_dict = {metric: [] for metric in columns}
+        for line in lines:
+            if line.startswith("Split "):
+                scores_raw = line.split(":")[1].strip().split(" | ")
+                for metric, score in zip(columns, scores_raw):
+                    scores_dict[metric].append(float(score))
 
-        row = [ylabel] + scores + [f"{coefficient_of_variation:.6f}"]
+        bin_widths = {
+            "IndependentStandardErrorMetric": 1.0,
+            "MeanAbsolutePercentageError": 1e-3,
+            "SymmetricMeanAbsolutePercentageError": 1e-3,
+            "MeanSquaredLogError": 1e-3,
+            "R2Score": 5e-2
+        }
+        
+        scores = []
+        for metric in columns:
+            bin_width = bin_widths.get(metric, 1.0)
+            scores_array = scores_dict[metric]
+            mode, _ = histogram_mode_single_array(scores_array, bin_width)
+            median = np.median(scores_array)
+            mean = np.mean(scores_array)
+            scores.append((mean, median, mode))  # Store as a tuple
 
-        # Determine row background color based on R2Score
-        r2_score = float(scores[columns.index("R2Score")])
+        # Determine row color based on R2Score
+        r2_score = scores[columns.index("R2Score")][2]  # Use mode of R2Score
         if r2_score > 0.9:
-            pdf.set_fill_color(204, 255, 204)  # Pastel green
+            pdf.set_fill_color(204, 255, 204)
         elif 0.7 <= r2_score <= 0.9:
-            pdf.set_fill_color(255, 255, 204)  # Yellow
+            pdf.set_fill_color(255, 255, 204)
         else:
-            pdf.set_fill_color(255, 204, 204)  # Red
+            pdf.set_fill_color(255, 204, 204)
 
         # Add row to PDF
-        for idx, cell in enumerate(row):
-            if idx == 0:
-                if cell in bold_labels and cell in strocchi_labels:
-                    pdf.set_font("Arial", style="BU", size=10)  # Bold and Underlined
-                elif cell in bold_labels:
-                    pdf.set_font("Arial", style="B", size=10)  # Bold
-                elif cell in strocchi_labels:
-                    pdf.set_font("Arial", style="U", size=10)  # Underlined
-                else:
-                    pdf.set_font("Arial", size=10)
-            else:
-                pdf.set_font("Arial", size=10)
-            pdf.cell(cell_width, 10, str(cell), border=1, align='C', fill=True)
+        pdf.cell(cell_width * 3, 10, ylabel, border=1, align='C', fill=True)
+        for mean, median, mode in scores:
+            pdf.cell(cell_width, 10, f"{mean:.4f}", border=1, align='C', fill=True)
+            pdf.cell(cell_width, 10, f"{median:.4f}", border=1, align='C', fill=True)
+            pdf.cell(cell_width, 10, f"{mode:.4f}", border=1, align='C', fill=True)
         pdf.ln()
-
+    
     # Output the PDF
     pdf.output(output_pdf_path)
 
 
+def plot_kfcv_distributions(emulator_folder, output_folder, y_label):
+    ## Function to plot histograms of the scores from the KFold Cross Validation for a single emulator.
+
+    os.makedirs(output_folder, exist_ok=True)
+
+    # Read the training summary file
+    with open(f"{emulator_folder}/training_summary.txt", "r") as f:
+        lines = f.readlines()
+
+    # Find the start of the scores section
+    start_index = lines.index("Test Scores Dictionary\n") + 2
+    metrics = lines[start_index].strip().split(" | ")
+
+    # Initialize dictionaries to store scores
+    scores_dict = {metric: [] for metric in metrics}
+
+    # Define bin widths for each metric
+    bin_widths = {
+        "IndependentStandardErrorMetric": 1.0,
+        "MeanAbsolutePercentageError": 1e-3,
+        "SymmetricMeanAbsolutePercentageError": 1e-3,
+        "MeanSquaredLogError": 1e-3,
+        "R2Score": 5e-2
+    }
+
+    # Read the scores
+    for line in lines:
+        if line.startswith("Split "):
+            scores = line.split(":")[1].strip().split(" | ")
+            for metric, score in zip(metrics, scores):
+                scores_dict[metric].append(float(score))
+    
+    # Plot histograms for each score
+    for metric, scores in scores_dict.items():
+        scores_array = np.array(scores)
+
+         # Skip if all values are NaN
+        if np.all(np.isnan(scores_array)):
+            print(f"Skipping {metric} because all values are NaN.")
+            continue
+
+
+        median = np.median(scores_array)
+        mean = np.mean(scores_array)
+        bin_width = bin_widths.get(metric, 1.0)  # Default bin width if not specified
+
+        mode, bin_edges = histogram_mode_single_array(scores_array, bin_width)
+
+        plt.figure(figsize=(10, 6))
+        plt.hist(scores_array, bins=bin_edges, alpha=0.7, color='blue', edgecolor='black')
+        plt.axvline(median, color='red', linestyle='dashed', linewidth=1, label=f'Median: {median:.6f}')
+        plt.axvline(mean, color='green', linestyle='dashed', linewidth=1, label=f'Mean: {mean:.6f}')
+        plt.axvline(mode, color='orange', linestyle='dashed', linewidth=1, label=f'Mode: {mode:.6f}')
+        plt.title(f'Distribution of {metric} for {y_label}')
+        plt.xlabel(metric)
+        plt.legend()
+        plt.tight_layout()
+
+        plt.savefig(f"{output_folder}/{metric}_{y_label}_distribution.png")
+        plt.close()
 
 def main_first_approach(args):
 
@@ -842,6 +936,15 @@ def main_second_approach(args):
     n_train = args.n_train
     emulators_folder_name = args.emulators_folder_name
 
+    summary_pdf = args.summary_pdf
+    plot_score_distribution = args.plot_score_distribution
+    train_emulator = args.train_emulator
+
+
+    if train_emulator:
+        summary_pdf = True
+        plot_score_distribution = True
+
     seed = 8
     GPErks_modified.utils.random.set_seed(seed)
 
@@ -905,9 +1008,8 @@ def main_second_approach(args):
     t = tqdm(feature_array, colour="blue")
     for feature_idx2 in t:
         
-        if not os.path.isfile(f"{basefolder}/figures/gpe_inference/{emulators_folder_name}/gpe_inference_{y_labels[feature_idx2]}.png"):
+        if train_emulator:
             t.set_description(f"Training feature: {y_labels[feature_idx2]}")
-
             emulators_folder = train_gpe_kfcv_second_approach(seed=seed,
                         mask=mask,
                         emulators_folder_base=emulators_folder_base, 
@@ -930,10 +1032,16 @@ def main_second_approach(args):
                                     feature_idx=feature_idx2, 
                                     metrics=metrics, 
                                     device=args.device)
-        
 
-    n_train_set = np.shape(X_)[0]
-    create_pdf_with_table_second_approach(ylabels_path=f"{basefolder}/data/ylabels.txt", 
+        if plot_score_distribution:        
+            plot_kfcv_distributions(emulator_folder = f"{basefolder}/output/{emulators_folder_name}/{y_labels[feature_idx2]}",
+            output_folder = f"{basefolder}/figures/gpe_inference/{emulators_folder_name}",
+            y_label = y_labels[feature_idx2])
+
+
+    if summary_pdf:
+        n_train_set = np.shape(X_)[0]
+        create_pdf_with_table_second_approach(ylabels_path=f"{basefolder}/data/ylabels.txt", 
                                           emulators_folder=emulators_folder_base, 
                                           output_pdf_path=f"{emulators_folder_base}/summary_metrics.pdf",
                                            n_train_set=n_train_set, 
@@ -955,6 +1063,9 @@ if __name__ == '__main__':
     parser.add_argument('--emulators_folder_name', default="emulators")
     parser.add_argument('--device', choices=["cpu", "cuda"], default="cpu")
     parser.add_argument('--max_workers', default=1, type=int)
+    parser.add_argument('--summary_pdf', action='store_true')
+    parser.add_argument('--plot_score_distribution', action='store_true')
+    parser.add_argument('--train_emulator', action='store_true')
 
     args = parser.parse_args()
 
