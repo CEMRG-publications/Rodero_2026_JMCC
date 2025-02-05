@@ -706,7 +706,11 @@ def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output
 
     # Add header row to PDF
     pdf.set_font("Arial", style="B", size=10)
-    for header in header_row:
+    for idx, header in enumerate(header_row):
+        if idx == 0:
+            pdf.set_font("Arial", style="B", size=10)  # Bold for first column
+        else:
+            pdf.set_font("Arial", size=10)
         pdf.cell(cell_width * 3, 10, header, border=1, align='C')
     pdf.ln()
 
@@ -760,8 +764,19 @@ def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output
         else:
             pdf.set_fill_color(255, 204, 204)
 
-        # Add row to PDF
+        # Add first column with bold/underlined formatting
+        if ylabel in bold_labels and ylabel in strocchi_labels:
+            pdf.set_font("Arial", style="BU", size=10)  # Bold and Underlined
+        elif ylabel in bold_labels:
+            pdf.set_font("Arial", style="B", size=10)  # Bold
+        elif ylabel in strocchi_labels:
+            pdf.set_font("Arial", style="U", size=10)  # Underlined
+        else:
+            pdf.set_font("Arial", size=10)
         pdf.cell(cell_width * 3, 10, ylabel, border=1, align='C', fill=True)
+
+        # Add the remaining columns with normal font
+        pdf.set_font("Arial", size=10)
         for mean, median, mode in scores:
             pdf.cell(cell_width, 10, f"{mean:.4f}", border=1, align='C', fill=True)
             pdf.cell(cell_width, 10, f"{median:.4f}", border=1, align='C', fill=True)
@@ -770,8 +785,6 @@ def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output
     
     # Output the PDF
     pdf.output(output_pdf_path)
-
-
 def plot_kfcv_distributions(emulator_folder, output_folder, y_label):
     ## Function to plot histograms of the scores from the KFold Cross Validation for a single emulator.
 
