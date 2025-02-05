@@ -470,7 +470,7 @@ def create_pdf_with_table(ylabels_path, emulators_folder, output_pdf_path, n_tra
 #     pdf.output(output_pdf_path)
 
 
-def train_gpe_kfcv_second_approach(seed, emulators_folder_base, X_, y_all, x_labels, y_labels, feature_idx, metrics, mask, device, n_folds):
+def train_gpe_kfcv_second_approach(seed, emulators_folder_base, X_, y_all, x_labels, y_labels, feature_idx, metrics, mask, device, n_folds, max_workers):
     y_feature = y_all[:,feature_idx]
 
     if len(mask) <= len(y_feature):
@@ -513,7 +513,7 @@ def train_gpe_kfcv_second_approach(seed, emulators_folder_base, X_, y_all, x_lab
     )
 
     devices = [device]
-    kfcv = GPErks_modified.perks.cross_validation.KFoldCrossValidation(experiment, devices, n_splits=n_folds, max_workers=1)
+    kfcv = GPErks_modified.perks.cross_validation.KFoldCrossValidation(experiment, devices, n_splits=n_folds, max_workers=max_workers)
 
     optimizer = torch.optim.Adam(experiment.model.parameters(), lr=0.1)
     esc = GPErks_modified.train.early_stop.GLEarlyStoppingCriterion(
@@ -555,16 +555,45 @@ def train_gpe_kfcv_second_approach(seed, emulators_folder_base, X_, y_all, x_lab
             formatted_scores = " | ".join(f"{score:.6f}" for score in scores)
             print(f"Split {i}: {formatted_scores}")
 
-        # Print the median of the test scores
+        def histogram_mode(data):
+            data = np.array(data)  # Ensure input is a NumPy array
+            num_cols = data.shape[1]  # Number of columns
+            bin_widths = [1.0,1e-3,1e-3,1e-3,1e-2]  
+            
+            mode_values = []
+
+
+            
+            for col in range(num_cols):  # Process each column separately
+                col_data = data[:, col]  # Extract column
+
+                if np.isnan(col_data).any():
+                    mode_values.append(np.nan)  # Append NaN for consistency
+                    continue
+
+                # Compute the bin edges explicitly with sufficient precision
+                min_val = min(col_data)
+                max_val = max(col_data)
+                bin_edges = np.arange(min_val, max_val + bin_widths[col], bin_widths[col])
+
+                # Compute histogram
+                hist, _ = np.histogram(col_data, bins=bin_edges)
+                
+                mode_bin_index = np.argmax(hist)  # Index of most frequent bin
+                
+                mode_value = bin_edges[mode_bin_index]  # Start of the most populated bin
+                
+                mode_values.append(mode_value)
+            
+            return np.array(mode_values)  # Return mode per column
 
         median_score = np.median(scores_per_split, axis=0)
+        mode_score = histogram_mode(scores_per_split)
 
         print(f"\nMedian scores\n {' | '.join([f'{score:.6f}' for score in median_score])}")
+        print(f"\nMode scores\n {' | '.join([f'{score:.6f}' for score in mode_score])}")
         
         sys.stdout = sys_out
-
-
-    max_epochs = int( np.mean(best_epochs) )  # making use of cross-validation knowledge
 
     return emulators_folder
 
@@ -671,7 +700,7 @@ def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output
 
         with open(summary_file, "r") as f:
             lines = f.readlines()
-            start_index = lines.index("Median scores\n") + 1
+            start_index = lines.index("Mode scores\n") + 1
             scores = lines[start_index].strip().split(" | ")
 
         # Get the variance for the current biomarker
@@ -889,7 +918,8 @@ def main_second_approach(args):
                         feature_idx=feature_idx2, 
                         metrics=metrics,
                         device=args.device,
-                        n_folds=n_folds)
+                        n_folds=n_folds,
+                        max_workers=args.max_workers)
 
             train_gpe_whole_dataset_second_approach(seed=seed, 
                                     emulators_folder=emulators_folder, 
@@ -924,6 +954,7 @@ if __name__ == '__main__':
     parser.add_argument('--n_folds', default=5, type=int)
     parser.add_argument('--emulators_folder_name', default="emulators")
     parser.add_argument('--device', choices=["cpu", "cuda"], default="cpu")
+    parser.add_argument('--max_workers', default=1, type=int)
 
     args = parser.parse_args()
 
