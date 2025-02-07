@@ -469,37 +469,6 @@ def create_pdf_with_table(ylabels_path, emulators_folder, output_pdf_path, n_tra
 #     # Output the PDF
 #     pdf.output(output_pdf_path)
 
-def histogram_mode(data):
-    data = np.array(data)  # Ensure input is a NumPy array
-    num_cols = data.shape[1]  # Number of columns
-    bin_widths = [1.0,1e-3,1e-3,1e-3,1e-2]  
-    
-    mode_values = []
-
-
-    
-    for col in range(num_cols):  # Process each column separately
-        col_data = data[:, col]  # Extract column
-
-        if np.isnan(col_data).any():
-            mode_values.append(np.nan)  # Append NaN for consistency
-            continue
-
-        # Compute the bin edges explicitly with sufficient precision
-        min_val = min(col_data)
-        max_val = max(col_data)
-        bin_edges = np.arange(min_val, max_val + bin_widths[col], bin_widths[col])
-
-        # Compute histogram
-        hist, _ = np.histogram(col_data, bins=bin_edges)
-        
-        mode_bin_index = np.where(hist == np.max(hist))[0][-1]  # Index of most frequent bin
-        
-        mode_value = bin_edges[mode_bin_index]  # Start of the most populated bin
-        
-        mode_values.append(mode_value)
-    
-    return np.array(mode_values)  # Return mode per column
 
 def histogram_mode_single_array(data, bin_width):
     data = np.array(data)  # Ensure input is a NumPy array
@@ -517,10 +486,13 @@ def histogram_mode_single_array(data, bin_width):
     # Compute histogram
     hist, _ = np.histogram(col_data, bins=bin_edges)
     
-    mode_bin_index = np.where(hist == np.max(hist))[0][-1]
-  # Index of most frequent bin
-    
-    mode_value = bin_edges[mode_bin_index]  # Start of the most populated bin
+    if min_val == max_val:
+        mode_value = min_val
+    else:
+        mode_bin_index = np.where(hist == np.max(hist))[0][-1]
+    # Index of most frequent bin
+        
+        mode_value = bin_edges[mode_bin_index]  # Start of the most populated bin
         
     return mode_value, bin_edges
 
@@ -609,13 +581,6 @@ def train_gpe_kfcv_second_approach(seed, emulators_folder_base, X_, y_all, x_lab
         for i, scores in enumerate(scores_per_split):
             formatted_scores = " | ".join(f"{score:.6f}" for score in scores)
             print(f"Split {i}: {formatted_scores}")
-
-
-        median_score = np.median(scores_per_split, axis=0)
-        mode_score = histogram_mode(scores_per_split)
-
-        print(f"\nMedian scores\n {' | '.join([f'{score:.6f}' for score in median_score])}")
-        print(f"\nMode scores\n {' | '.join([f'{score:.6f}' for score in mode_score])}")
         
         sys.stdout = sys_out
 
@@ -743,16 +708,20 @@ def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output
             "MeanAbsolutePercentageError": 1e-3,
             "SymmetricMeanAbsolutePercentageError": 1e-3,
             "MeanSquaredLogError": 1e-3,
+            "MeanSquaredError": 1,
             "R2Score": 5e-2
         }
         
         scores = []
         for metric in columns:
-            bin_width = bin_widths.get(metric, 1.0)
+            
             scores_array = scores_dict[metric]
-            mode, _ = histogram_mode_single_array(scores_array, bin_width)
             median = np.median(scores_array)
             mean = np.mean(scores_array)
+            if metric == "MeanSquaredError":
+                bin_widths["MeanSquaredError"] = 0.01*mean
+            bin_width = bin_widths.get(metric, 1.0)
+            mode, _ = histogram_mode_single_array(scores_array, bin_width)
             scores.append((mean, median, mode))  # Store as a tuple
 
         # Determine row color based on R2Score
@@ -807,6 +776,7 @@ def plot_kfcv_distributions(emulator_folder, output_folder, y_label):
         "MeanAbsolutePercentageError": 1e-3,
         "SymmetricMeanAbsolutePercentageError": 1e-3,
         "MeanSquaredLogError": 1e-3,
+        "MeanSquaredError": 1,
         "R2Score": 5e-2
     }
 
@@ -831,6 +801,9 @@ def plot_kfcv_distributions(emulator_folder, output_folder, y_label):
         mean = np.mean(scores_array)
         bin_width = bin_widths.get(metric, 1.0)  # Default bin width if not specified
 
+        if metric == "MeanSquaredError":
+            bin_width = 0.01*mean
+        
         mode, bin_edges = histogram_mode_single_array(scores_array, bin_width)
 
         plt.figure(figsize=(10, 6))
@@ -994,6 +967,7 @@ def main_second_approach(args):
                 torchmetrics.MeanAbsolutePercentageError(), 
                 torchmetrics.SymmetricMeanAbsolutePercentageError(),
                 torchmetrics.MeanSquaredLogError(),
+                torchmetrics.MeanSquaredError(),
                 torchmetrics.R2Score()]
 
     if feature_idx == -1:
