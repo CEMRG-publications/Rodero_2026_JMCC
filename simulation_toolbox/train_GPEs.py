@@ -638,7 +638,7 @@ def train_gpe_whole_dataset_second_approach(seed, emulators_folder, X, y, x_labe
     experiment.save_to_config_file(f"{emulators_folder}/emulator.ini")
 
 
-def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output_pdf_path, n_train_set, bold_labels, strocchi_labels, y_data_path):
+def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output_pdf_path, n_train_set, bold_labels, strocchi_labels, y_data_path, colour_rule):
     # Initialize PDF
     pdf = FPDF(orientation='L', unit='mm', format=(210, 600))  # Landscape orientation
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -725,7 +725,14 @@ def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output
             scores.append((mean, median, mode))  # Store as a tuple
 
         # Determine row color based on R2Score
-        r2_score = scores[columns.index("R2Score")][2]  # Use mode of R2Score
+        if colour_rule == "mean":
+            colour_idx = 0
+        elif colour_rule == "median":
+            colour_rule = 1
+        elif colour_rule == "mode":
+            colour_rule = 2
+
+        r2_score = scores[columns.index("R2Score")][colour_rule]  
         if r2_score > 0.9:
             pdf.set_fill_color(204, 255, 204)
         elif 0.7 <= r2_score <= 0.9:
@@ -813,7 +820,7 @@ def plot_kfcv_distributions(emulator_folder, output_folder, y_label):
         plt.axvline(mode, color='orange', linestyle='dashed', linewidth=1, label=f'Mode: {mode:.6f}')
         plt.title(f'Distribution of {metric} for {y_label}')
         plt.xlabel(metric)
-        plt.legend()
+        plt.legend(loc='upper right')
         plt.tight_layout()
 
         plt.savefig(f"{output_folder}/{metric}_{y_label}_distribution.png")
@@ -926,6 +933,8 @@ def main_second_approach(args):
     plot_score_distribution = args.plot_score_distribution
     train_emulator = args.train_emulator
 
+    colour_rule = args.colour_rule
+
 
     if train_emulator:
         summary_pdf = True
@@ -1032,7 +1041,8 @@ def main_second_approach(args):
                                           emulators_folder=emulators_folder_base, 
                                           output_pdf_path=f"{emulators_folder_base}/summary_metrics.pdf",
                                            n_train_set=n_train_set, 
-                                           bold_labels=["LVedv","LVedp","LVesv","LVpmax","LVEF","A_TAT","V_TAT"],strocchi_labels =  ["LVedv","LVedp","LVesv","LVpmax","LVdpdtMax","LVdpdtMin","LAedv","LAesv","LApMax","LAinflV","RVedv","RVedp","RVesv","RVpmax","RVdpdtMax","RVdpdtMin","RAedv","RAesv","RApMax","RAinflV"],y_data_path=f"{basefolder}/data/Y.txt")
+                                           bold_labels=["LVedv","LVedp","LVesv","LVpmax","LVEF","A_TAT","V_TAT"],strocchi_labels =  ["LVedv","LVedp","LVesv","LVpmax","LVdpdtMax","LVdpdtMin","LAedv","LAesv","LApMax","LAinflV","RVedv","RVedp","RVesv","RVpmax","RVdpdtMax","RVdpdtMin","RAedv","RAesv","RApMax","RAinflV"],y_data_path=f"{basefolder}/data/Y.txt",
+                                           colour_rule=colour_rule)
 
 
 if __name__ == '__main__':
@@ -1053,6 +1063,7 @@ if __name__ == '__main__':
     parser.add_argument('--summary_pdf', action='store_true')
     parser.add_argument('--plot_score_distribution', action='store_true')
     parser.add_argument('--train_emulator', action='store_true')
+    parser.add_argument('--colour_rule', choices=["mean", "median", "mode"], default="median")
 
     args = parser.parse_args()
 
