@@ -709,7 +709,7 @@ def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output
             "SymmetricMeanAbsolutePercentageError": 1e-3,
             "MeanSquaredLogError": 1e-3,
             "MeanSquaredError": 1,
-            "R2Score": 5e-2
+            "R2Score": 5e-2 # I want 40 bins, assuming R2Score is between -1 and 1
         }
         
         scores = []
@@ -720,6 +720,9 @@ def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output
             mean = np.mean(scores_array)
             if metric == "MeanSquaredError":
                 bin_widths["MeanSquaredError"] = 0.01*mean
+            if metric == "R2Score":
+                if np.min(scores_array) < -2:
+                    bin_widths["R2Score"] = (np.max(scores_array) - np.min(scores_array))/100
             bin_width = bin_widths.get(metric, 1.0)
             mode, _ = histogram_mode_single_array(scores_array, bin_width)
             scores.append((mean, median, mode))  # Store as a tuple
@@ -762,6 +765,7 @@ def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output
     # Output the PDF
     pdf.output(output_pdf_path)
 def plot_kfcv_distributions(emulator_folder, output_folder, y_label):
+
     ## Function to plot histograms of the scores from the KFold Cross Validation for a single emulator.
 
     os.makedirs(output_folder, exist_ok=True)
@@ -793,9 +797,10 @@ def plot_kfcv_distributions(emulator_folder, output_folder, y_label):
             scores = line.split(":")[1].strip().split(" | ")
             for metric, score in zip(metrics, scores):
                 scores_dict[metric].append(float(score))
-    
+
     # Plot histograms for each score
     for metric, scores in scores_dict.items():
+
         scores_array = np.array(scores)
 
          # Skip if all values are NaN
@@ -810,9 +815,11 @@ def plot_kfcv_distributions(emulator_folder, output_folder, y_label):
 
         if metric == "MeanSquaredError":
             bin_width = 0.01*mean
-        
-        mode, bin_edges = histogram_mode_single_array(scores_array, bin_width)
+        if metric == "R2Score":
+            if np.min(scores_array) < -2:
+                bin_width = (np.max(scores_array) - np.min(scores_array))/100
 
+        mode, bin_edges = histogram_mode_single_array(scores_array, bin_width)
         plt.figure(figsize=(10, 6))
         plt.hist(scores_array, bins=bin_edges, alpha=0.7, color='blue', edgecolor='black')
         plt.axvline(median, color='red', linestyle='dashed', linewidth=1, label=f'Median: {median:.6f}')
@@ -822,9 +829,9 @@ def plot_kfcv_distributions(emulator_folder, output_folder, y_label):
         plt.xlabel(metric)
         plt.legend(loc='upper right')
         plt.tight_layout()
-
         plt.savefig(f"{output_folder}/{metric}_{y_label}_distribution.png")
         plt.close()
+
 
 def main_first_approach(args):
 
@@ -1003,7 +1010,6 @@ def main_second_approach(args):
     # Add tqdm progress bar
     t = tqdm(feature_array, colour="blue")
     for feature_idx2 in t:
-        
         if train_emulator:
             t.set_description(f"Training feature: {y_labels[feature_idx2]}")
             emulators_folder = train_gpe_kfcv_second_approach(seed=seed,
@@ -1028,7 +1034,6 @@ def main_second_approach(args):
                                     feature_idx=feature_idx2, 
                                     metrics=metrics, 
                                     device=args.device)
-
         if plot_score_distribution:        
             plot_kfcv_distributions(emulator_folder = f"{basefolder}/output/{emulators_folder_name}/{y_labels[feature_idx2]}",
             output_folder = f"{basefolder}/figures/gpe_inference/{emulators_folder_name}",
