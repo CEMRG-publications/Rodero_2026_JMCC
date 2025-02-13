@@ -475,12 +475,13 @@ def histogram_mode_single_array(data, bin_width):
 
     col_data = data 
 
-    if np.isnan(col_data).any():
+    if np.isnan(col_data).all():
         return np.nan, [np.nan]  # Append NaN for consistency
 
     # Compute the bin edges explicitly with sufficient precision
-    min_val = min(col_data)
-    max_val = max(col_data)
+    min_val = np.nanmin(col_data)
+    max_val = np.nanmax(col_data)
+    
     bin_edges = np.arange(min_val, max_val + bin_width, bin_width)
 
     # Compute histogram
@@ -638,9 +639,9 @@ def train_gpe_whole_dataset_second_approach(seed, emulators_folder, X, y, x_labe
     experiment.save_to_config_file(f"{emulators_folder}/emulator.ini")
 
 
-def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output_pdf_path, n_train_set, bold_labels, strocchi_labels, y_data_path, colour_rule):
+def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output_pdf_path, n_train_set, bold_labels, strocchi_labels, y_data_path, colour_rule, trim_percentage):
     # Initialize PDF
-    pdf = FPDF(orientation='L', unit='mm', format=(210, 600))  # Landscape orientation
+    pdf = FPDF(orientation='L', unit='mm', format=(210, 700))
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
     
@@ -648,11 +649,15 @@ def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output
     pdf.set_font("Arial", style="B", size=12)
     title = f"Trained on {int(n_train_set)} simulations"
     pdf.cell(0, 10, title, ln=True, align='C')
-    pdf.ln(10)  # Space after the title
+    pdf.ln(10)
 
     # Read ylabels
     with open(ylabels_path, "r") as f:
         ylabels = [line.strip() for line in f.readlines()]
+
+    # Read y data
+    Y_data = np.loadtxt(y_data_path)
+    y_averages = np.mean(Y_data, axis=0)
 
     # Create header row
     header_row = ["Output"]
@@ -665,31 +670,32 @@ def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output
         columns = lines[start_index].strip().split(" | ")
 
     header_row.extend(columns)
+    header_row.append("MSE interpretation")
     
     # Adjust cell width
-    cell_width = 80 / 3  # Split each column into 3 sections
-
+    cell_width = 80 / 3  
+    
     # Add header row to PDF
     pdf.set_font("Arial", style="B", size=10)
     for idx, header in enumerate(header_row):
-        if idx == 0:
-            pdf.set_font("Arial", style="B", size=10)  # Bold for first column
-        else:
-            pdf.set_font("Arial", size=10)
+        pdf.set_font("Arial", size=10)
         pdf.cell(cell_width * 3, 10, header, border=1, align='C')
     pdf.ln()
 
-    # Add sub-header row for mean, median, mode labels
+    # Add sub-header row
     pdf.set_font("Arial", style="I", size=8)
     pdf.cell(cell_width * 3, 10, "", border=1, align='C')
     for _ in columns:
         pdf.cell(cell_width, 10, "Mean", border=1, align='C')
         pdf.cell(cell_width, 10, "Median", border=1, align='C')
         pdf.cell(cell_width, 10, "Mode", border=1, align='C')
+    pdf.cell(cell_width, 10, "Mean", border=1, align='C')
+    pdf.cell(cell_width, 10, "Median", border=1, align='C')
+    pdf.cell(cell_width, 10, "Mode", border=1, align='C')
     pdf.ln()
 
     pdf.set_font("Arial", size=10)
-    for ylabel in ylabels:
+    for i, ylabel in enumerate(ylabels):
         output_folder = os.path.join(emulators_folder, ylabel)
         summary_file = os.path.join(output_folder, "training_summary.txt")
 
@@ -702,72 +708,86 @@ def create_pdf_with_table_second_approach(ylabels_path, emulators_folder, output
                 scores_raw = line.split(":")[1].strip().split(" | ")
                 for metric, score in zip(columns, scores_raw):
                     scores_dict[metric].append(float(score))
-
-        bin_widths = {
-            "IndependentStandardErrorMetric": 1.0,
-            "MeanAbsolutePercentageError": 1e-3,
-            "SymmetricMeanAbsolutePercentageError": 1e-3,
-            "MeanSquaredLogError": 1e-3,
-            "MeanSquaredError": 1,
-            "R2Score": 5e-2 # I want 40 bins, assuming R2Score is between -1 and 1
-        }
+        
+        # Apply trimming if needed
+        if trim_percentage > 0:
+            r2_scores = np.array(scores_dict["R2Score"])
+            num_to_trim = int(len(r2_scores) * trim_percentage / 100)
+            trim_indices = np.argsort(r2_scores)[:num_to_trim]
+            for metric in columns:
+                scores_dict[metric] = np.array(scores_dict[metric])
+                scores_dict[metric][trim_indices] = np.nan
         
         scores = []
+
+        bin_widths = {
+        "IndependentStandardErrorMetric": 1.0,
+        "MeanAbsolutePercentageError": 1e-3,
+        "SymmetricMeanAbsolutePercentageError": 1e-3,
+        "MeanSquaredLogError": 1e-3,
+        "MeanSquaredError": 1,
+        "R2Score": 5e-2
+    }
+        
         for metric in columns:
-            
-            scores_array = scores_dict[metric]
-            median = np.median(scores_array)
-            mean = np.mean(scores_array)
+            scores_array = np.array(scores_dict[metric])
+            median = np.nanmedian(scores_array)
+            mean = np.nanmean(scores_array)
+
+            bin_width = bin_widths.get(metric, 1.0)  # Default bin width if not specified
+
             if metric == "MeanSquaredError":
-                bin_widths["MeanSquaredError"] = 0.01*mean
+                bin_width = 0.01 * mean
             if metric == "R2Score":
                 if np.min(scores_array) < -2:
-                    bin_widths["R2Score"] = (np.max(scores_array) - np.min(scores_array))/100
-            bin_width = bin_widths.get(metric, 1.0)
+                    bin_width = (np.nanmax(scores_array) - np.nanmin(scores_array)) / 100
+
             mode, _ = histogram_mode_single_array(scores_array, bin_width)
-            scores.append((mean, median, mode))  # Store as a tuple
-
-        # Determine row color based on R2Score
-        if colour_rule == "mean":
-            colour_idx = 0
-        elif colour_rule == "median":
-            colour_rule = 1
-        elif colour_rule == "mode":
-            colour_rule = 2
-
-        r2_score = scores[columns.index("R2Score")][colour_rule]  
-        if r2_score > 0.9:
+            scores.append((mean, median, mode))
+        
+        mse_mean, mse_median, mse_mode = scores[columns.index("MeanSquaredError")]
+        y_mean = y_averages[i]
+        mse_interp_mean = np.sqrt(mse_mean) / y_mean
+        mse_interp_median = np.sqrt(mse_median) / y_mean
+        mse_interp_mode = np.sqrt(mse_mode) / y_mean
+        
+        # Determine row color based on new criteria
+        r2_median = scores[columns.index("R2Score")][1]
+        r2_mode = scores[columns.index("R2Score")][2]
+        mape_median = scores[columns.index("MeanAbsolutePercentageError")][1]
+        
+        if r2_median > 0.7:
             pdf.set_fill_color(204, 255, 204)
-        elif 0.7 <= r2_score <= 0.9:
+        elif r2_median < 0.7 and r2_mode > 0.7 and mape_median < 0.1 and mse_interp_median < 0.1:
             pdf.set_fill_color(255, 255, 204)
         else:
             pdf.set_fill_color(255, 204, 204)
-
-        # Add first column with bold/underlined formatting
+        
+        # Apply label formatting
         if ylabel in bold_labels and ylabel in strocchi_labels:
-            pdf.set_font("Arial", style="BU", size=10)  # Bold and Underlined
+            pdf.set_font("Arial", style="BU", size=10)
         elif ylabel in bold_labels:
-            pdf.set_font("Arial", style="B", size=10)  # Bold
+            pdf.set_font("Arial", style="B", size=10)
         elif ylabel in strocchi_labels:
-            pdf.set_font("Arial", style="U", size=10)  # Underlined
+            pdf.set_font("Arial", style="U", size=10)
         else:
             pdf.set_font("Arial", size=10)
+        
         pdf.cell(cell_width * 3, 10, ylabel, border=1, align='C', fill=True)
-
-        # Add the remaining columns with normal font
         pdf.set_font("Arial", size=10)
         for mean, median, mode in scores:
             pdf.cell(cell_width, 10, f"{mean:.4f}", border=1, align='C', fill=True)
             pdf.cell(cell_width, 10, f"{median:.4f}", border=1, align='C', fill=True)
             pdf.cell(cell_width, 10, f"{mode:.4f}", border=1, align='C', fill=True)
+        pdf.cell(cell_width, 10, f"{mse_interp_mean:.4f}", border=1, align='C', fill=True)
+        pdf.cell(cell_width, 10, f"{mse_interp_median:.4f}", border=1, align='C', fill=True)
+        pdf.cell(cell_width, 10, f"{mse_interp_mode:.4f}", border=1, align='C', fill=True)
+        
         pdf.ln()
     
-    # Output the PDF
     pdf.output(output_pdf_path)
-def plot_kfcv_distributions(emulator_folder, output_folder, y_label):
-
-    ## Function to plot histograms of the scores from the KFold Cross Validation for a single emulator.
-
+def plot_kfcv_distributions(emulator_folder, output_folder, y_label, trim_percentage):
+    # Create output directory if it doesn't exist
     os.makedirs(output_folder, exist_ok=True)
 
     # Read the training summary file
@@ -798,38 +818,65 @@ def plot_kfcv_distributions(emulator_folder, output_folder, y_label):
             for metric, score in zip(metrics, scores):
                 scores_dict[metric].append(float(score))
 
+    # If trimming is required, calculate the trim amount
+    if trim_percentage > 0:
+        r2_scores = np.array(scores_dict["R2Score"])
+        num_to_trim = int(len(r2_scores) * trim_percentage / 100)
+        trim_indices = np.argsort(r2_scores)[:num_to_trim]  # Get indices of the lowest R2 scores to trim
+        trimmed_r2_scores = r2_scores[trim_indices]  # These are the scores that will be marked as red
+
     # Plot histograms for each score
     for metric, scores in scores_dict.items():
 
         scores_array = np.array(scores)
 
-         # Skip if all values are NaN
+        # Skip if all values are NaN
         if np.all(np.isnan(scores_array)):
             print(f"Skipping {metric} because all values are NaN.")
             continue
 
+        # Trim the data if needed
+        if trim_percentage > 0:
+            scores_array[trim_indices] = np.nan  # Mark the trimmed values as NaN
 
-        median = np.median(scores_array)
-        mean = np.mean(scores_array)
+        median = np.nanmedian(scores_array)
+        mean = np.nanmean(scores_array)
         bin_width = bin_widths.get(metric, 1.0)  # Default bin width if not specified
 
         if metric == "MeanSquaredError":
-            bin_width = 0.01*mean
+            bin_width = 0.01 * mean
         if metric == "R2Score":
             if np.min(scores_array) < -2:
-                bin_width = (np.max(scores_array) - np.min(scores_array))/100
+                bin_width = (np.nanmax(scores_array) - np.nanmin(scores_array)) / 100
 
         mode, bin_edges = histogram_mode_single_array(scores_array, bin_width)
+        
+        # Create a figure for the histogram
         plt.figure(figsize=(10, 6))
-        plt.hist(scores_array, bins=bin_edges, alpha=0.7, color='blue', edgecolor='black')
+        
+        # Plot histogram for non-trimmed points
+        plt.hist(scores_array[~np.isnan(scores_array)], bins=bin_edges, alpha=0.7, color='blue', edgecolor='black')
+
+        if trim_percentage > 0:
+        # Plot the trimmed points in red
+            plt.scatter(trimmed_r2_scores, np.zeros_like(trimmed_r2_scores), color='red', label='Trimmed Points', zorder=5)
+
+        # Add lines for median, mean, and mode
         plt.axvline(median, color='red', linestyle='dashed', linewidth=1, label=f'Median: {median:.6f}')
         plt.axvline(mean, color='green', linestyle='dashed', linewidth=1, label=f'Mean: {mean:.6f}')
         plt.axvline(mode, color='orange', linestyle='dashed', linewidth=1, label=f'Mode: {mode:.6f}')
+        
+        # Add title and labels
         plt.title(f'Distribution of {metric} for {y_label}')
         plt.xlabel(metric)
         plt.legend(loc='upper right')
         plt.tight_layout()
-        plt.savefig(f"{output_folder}/{metric}_{y_label}_distribution.png")
+        
+        # Save the plot
+        if trim_percentage > 0:
+            plt.savefig(f"{output_folder}/{metric}_{y_label}_distribution_trimmed_{trim_percentage}.png")
+        else:
+            plt.savefig(f"{output_folder}/{metric}_{y_label}_distribution.png")
         plt.close()
 
 
@@ -941,6 +988,7 @@ def main_second_approach(args):
     train_emulator = args.train_emulator
 
     colour_rule = args.colour_rule
+    trim_percentage = args.trim_percentage
 
 
     if train_emulator:
@@ -1037,17 +1085,23 @@ def main_second_approach(args):
         if plot_score_distribution:        
             plot_kfcv_distributions(emulator_folder = f"{basefolder}/output/{emulators_folder_name}/{y_labels[feature_idx2]}",
             output_folder = f"{basefolder}/figures/gpe_inference/{emulators_folder_name}",
-            y_label = y_labels[feature_idx2])
+            y_label = y_labels[feature_idx2],
+            trim_percentage=trim_percentage)
 
 
     if summary_pdf:
         n_train_set = np.shape(X_)[0]
+        if trim_percentage > 0:
+            pdf_path = f"{emulators_folder_base}/summary_metrics_trim_{trim_percentage}.pdf"
+        else:
+            pdf_path = f"{emulators_folder_base}/summary_metrics.pdf"
         create_pdf_with_table_second_approach(ylabels_path=f"{basefolder}/data/ylabels.txt", 
                                           emulators_folder=emulators_folder_base, 
-                                          output_pdf_path=f"{emulators_folder_base}/summary_metrics.pdf",
+                                          output_pdf_path=pdf_path,
                                            n_train_set=n_train_set, 
                                            bold_labels=["LVedv","LVedp","LVesv","LVpmax","LVEF","A_TAT","V_TAT"],strocchi_labels =  ["LVedv","LVedp","LVesv","LVpmax","LVdpdtMax","LVdpdtMin","LAedv","LAesv","LApMax","LAinflV","RVedv","RVedp","RVesv","RVpmax","RVdpdtMax","RVdpdtMin","RAedv","RAesv","RApMax","RAinflV"],y_data_path=f"{basefolder}/data/Y.txt",
-                                           colour_rule=colour_rule)
+                                           colour_rule=colour_rule,
+                                           trim_percentage=trim_percentage)
 
 
 if __name__ == '__main__':
@@ -1069,6 +1123,7 @@ if __name__ == '__main__':
     parser.add_argument('--plot_score_distribution', action='store_true')
     parser.add_argument('--train_emulator', action='store_true')
     parser.add_argument('--colour_rule', choices=["mean", "median", "mode"], default="median")
+    parser.add_argument('--trim_percentage', default=0, type=float)
 
     args = parser.parse_args()
 
