@@ -81,6 +81,14 @@ def check_fourchamber_unloading(basefolder,
         t = tqdm.tqdm(range(start_sample,last_sample+1), desc='Bar desc', leave=True)
         for i in t:   
             worked = True 
+
+            with open(f"{basefolder}/unloading_{i}.out", "r") as file:
+                last_lines = file.readlines()[-3:]  # Read last 3 lines
+
+            if any("TIME LIMIT" in line for line in last_lines):
+                print(f"Unloading {i} reached wall time")
+
+
             if os.path.exists(f"{basefolder}/unloading_{i}/unloading.log"):
                 output = check_fourchamber_unloading_(basefolder+'/unloading_'+str(i)+'/',
                                                     chambers,t)

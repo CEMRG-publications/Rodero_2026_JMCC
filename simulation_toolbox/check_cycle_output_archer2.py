@@ -43,16 +43,96 @@ def artery_cycle_output_free_output_mask_name(pressure):
     return([diast_pressure, syst_pressure, pulse_pressure, mean_pressure])
 
 
+def VV_output_free_IV_thr(time,volume,pressure,IV_thr):
+
+	time_pmax = time[0]+np.where(pressure==np.max(pressure))[0][0]
+	
+	dv = np.gradient(volume)
+
+	ind_IVC_ = np.intersect1d(np.where(np.abs(dv)<=IV_thr)[0],np.where(time<=time_pmax)[0])
+	
+	jump = np.where(np.gradient(ind_IVC_)>1)[0]	
+
+	if len(jump) == 0:
+		ind_IVC = ind_IVC_
+	else:
+		ind_IVC = ind_IVC_[jump[-1]:-1]	
+
+	ind_IVR_ = np.intersect1d(np.where(np.abs(dv)<=IV_thr)[0],np.where(time>=time_pmax)[0])
+	jump = np.where(np.gradient(ind_IVR_)>1)[0]	
+
+	if len(jump) == 0:
+		ind_IVR = ind_IVR_
+	else:
+		ind_IVR = ind_IVR_[0:jump[0]]	
+
+	ind_ED = ind_IVC[0]	
+
+	EDV = volume[ind_ED]
+	EDP = pressure[ind_ED]	
+
+	# max P
+	pMax = np.max(pressure)
+	pMax_idx = np.where(pressure==pMax)[0][0]	
+
+	ESV = np.min(volume)	
+
+	dpdt_idx = np.where(pressure>EDP)[0]
+	ind_IVR = np.intersect1d(dpdt_idx,ind_IVR)
+	if not len(ind_IVR):
+		ind_IVR = np.intersect1d(dpdt_idx,np.where(time>=time_pmax)[0])	
+
+	ind_IVC = np.intersect1d(dpdt_idx,ind_IVC)
+
+	if ind_IVC.size:	
+		dpdt_ = np.diff(pressure)/np.diff(time)*1000.0
+		dpdt = np.zeros((pressure.shape[0],),dtype=float)
+		dpdt[0] = dpdt_[0]
+		dpdt[1:] = dpdt_
+		# dpdt = np.gradient(pressure)*1000.0	
+
+		# to detect oscillations: during IVC the derivative should always be positive
+		# if it's not it means that there are oscillations (normally due to the valves)
+		# so if we find anywehere the dpdt is negative, we discard whatever happens after
+		# because that derivative will be wrong
+		wrong_IVC = np.where(dpdt[ind_IVC]<=-50.0)[0]
+		if len(wrong_IVC)>0:
+			print('Found oscillations during IVC... Removing indices after oscillation...')
+			ind_IVC = ind_IVC[:wrong_IVC[0]]
+		dpdtMax = np.max(dpdt[:pMax_idx])	
+
+		# to detect oscillations: during IVR the derivative should always be negative
+		# if it's not it means that there are oscillations (normally due to the valves)
+		# so if we find anywehere the dpdt is positive, we discard whatever happens after
+		# because that derivative will be wrong
+		wrong_IVR = np.where(dpdt[ind_IVR]>=50.0)[0]
+		if len(wrong_IVR)>0:
+			print('Found oscillations during IVR... Removing indices after oscillation...')
+			ind_IVR = ind_IVR[:wrong_IVR[0]]
+		if ind_IVR.size:
+			dpdtMin = np.min(dpdt[pMax_idx:])		
+			output = [EDV,EDP,ESV,pMax,dpdtMax,dpdtMin]
+		else:
+			output = [0,0,0,0,0,0]
+
+	else:
+		output = [0,0,0,0,0,0]
+
+	return output
+
+
 def cycle_output_free_output_mask_name(datafolder,
                  output_folder,
                  BCL,
                  NBEATS,
                  AVD,
+                 IV_thr,
                  first_simulation = 0,
                  basename="cycle_",
                  output_file="Y.txt",
                  visualise=True,
-                 output_mask="output_mask.txt"):
+                 output_mask="output_mask.txt"
+                 ):
 
     print('WARNING: remember that the AVD is needed to compute the last cycle, as the simulation starts @ -AVD ms')
 
@@ -115,13 +195,13 @@ def cycle_output_free_output_mask_name(datafolder,
 
         labels_computed = []
 
-        lvoutput = fourchamber_output.VV_output(time,volume_lv,pressure_lv,BCL)
+        lvoutput = VV_output_free_IV_thr(time=time, volume=volume_lv,pressure=pressure_lv, IV_thr=IV_thr)
         LVSV = lvoutput[0] - lvoutput[2]
         LVEF = 100*(LVSV / lvoutput[0])
         labels_computed.extend(["LVedv","LVedp","LVesv","LVpMax","LVdpdtMax","LVdpdtMin","LVSV","LVEF"])
         lvoutput.extend([LVSV,LVEF])
 
-        rvoutput = fourchamber_output.VV_output(time,volume_rv,pressure_rv,BCL)
+        rvoutput = VV_output_free_IV_thr(time=time,volume=volume_rv,pressure=pressure_rv, IV_thr=IV_thr)
         labels_computed.extend(["RVedv","RVedp","RVesv","RVpMax","RVdpdtMax","RVdpdtMin","RVSV","RVEF"])
         RVSV = rvoutput[0] - rvoutput[2]
         RVEF = 100*(RVSV / rvoutput[0])
@@ -166,10 +246,12 @@ def timings_output(datafolder,
                  BCL,
                  NBEATS,
                  AVD,
+                 IV_thr,
                  first_simulation = 0,
                  basename="cycle_",
                  output_file="Y_timings.txt",
-                 output_mask="output_mask.txt"):
+                 output_mask="output_mask.txt"
+                 ):
 
     print('Computing only output for successful simulations...')
 
@@ -211,7 +293,7 @@ def timings_output(datafolder,
         dv_lv = np.gradient(volume_lv)
 
 
-        ind_IVC_lv_ = np.intersect1d(np.where(np.abs(dv_lv)<=0.01)[0],np.where(time<=time_pmax_lv-10.)[0])
+        ind_IVC_lv_ = np.intersect1d(np.where(np.abs(dv_lv)<=IV_thr)[0],np.where(time<=time_pmax_lv)[0])
 
         jump_ivc_lv = np.where(np.gradient(ind_IVC_lv_)>1)[0]	
 
@@ -220,7 +302,7 @@ def timings_output(datafolder,
         else:
             ind_IVC_lv = ind_IVC_lv_[jump_ivc_lv[-1]:-1]	
 
-        ind_IVR_lv_ = np.intersect1d(np.where(np.abs(dv_lv)<=0.01)[0],np.where(time>time_pmax_lv-10.)[0])
+        ind_IVR_lv_ = np.intersect1d(np.where(np.abs(dv_lv)<=IV_thr)[0],np.where(time>time_pmax_lv)[0])
 
         jump_ivr_lv = np.where(np.gradient(ind_IVR_lv_)>1)[0]	
 
@@ -233,6 +315,7 @@ def timings_output(datafolder,
         timings_output_lv = []
 
         labels_computed.extend(["LVivc","LVeje","LVivr","LVfil"])
+
         timings_output_lv.extend([time[ind_IVC_lv[0]],
                                time[ind_IVC_lv[-1]],
                                time[ind_IVR_lv[0]],
@@ -245,7 +328,7 @@ def timings_output(datafolder,
 	
         dv_rv = np.gradient(volume_rv)
 
-        ind_IVC_rv_ = np.intersect1d(np.where(np.abs(dv_rv)<=0.01)[0],np.where(time<=time_pmax_rv-10.)[0])
+        ind_IVC_rv_ = np.intersect1d(np.where(np.abs(dv_rv)<=IV_thr)[0],np.where(time<=time_pmax_rv)[0])
 
         jump_ivc_rv = np.where(np.gradient(ind_IVC_rv_)>1)[0]	
 
@@ -254,7 +337,7 @@ def timings_output(datafolder,
         else:
             ind_IVC_rv = ind_IVC_rv_[jump_ivc_rv[-1]:-1]	
 
-        ind_IVR_rv_ = np.intersect1d(np.where(np.abs(dv_rv)<=0.01)[0],np.where(time>time_pmax_rv-10.)[0])
+        ind_IVR_rv_ = np.intersect1d(np.where(np.abs(dv_rv)<=IV_thr)[0],np.where(time>time_pmax_rv)[0])
 
         jump_ivr_rv = np.where(np.gradient(ind_IVR_rv_)>1)[0]	
 
@@ -382,12 +465,14 @@ def     cycle_simulation_summary(output_folder,
                              NBEATS,
                              start_sample,
                              last_sample,
+                             IV_thr,
                              basename="cycle",
                              maskoutput="output_mask.txt",
                              output_file="simulation_summary.pdf",
                              unloaded_volumes=None,
                              include_last_AVD=False,
-                             sims_folder=None):
+                             sims_folder=None
+                             ):
     
     if start_sample is not None:
         output = np.zeros((last_sample-start_sample+1,),dtype=int)
@@ -473,8 +558,15 @@ def     cycle_simulation_summary(output_folder,
 
                 if len(lv)>0 and max(time) == int(check_tend):
 
-                    LV_suitable = check_suitable_VV_output(time[last_beat],volume_last_beat,pressure_lv,t)
-                    RV_suitable = check_suitable_VV_output(time[last_beat],volume_rv,pressure_rv,t)
+                    LV_suitable = check_suitable_VV_output(time = time[last_beat],
+                                                           volume = volume_last_beat,pressure = pressure_lv,
+                                                           t=t,
+                                                           IV_thr=IV_thr)
+                    RV_suitable = check_suitable_VV_output(time=time[last_beat],
+                                                           volume=volume_rv,
+                                                           pressure=pressure_rv,
+                                                           t=t,
+                                                           IV_thr=IV_thr)
 
                     if LV_suitable and RV_suitable and (SV>5.0):
 
@@ -484,7 +576,7 @@ def     cycle_simulation_summary(output_folder,
                         count_OK += 1
                     else:
                         # print(f"Sim index: {sim_index}, Before {output[:(sim_index+1)]}")
-                        output[sim_index] = -1
+                        output[sim_index] = 0
                         tab.append(list([basename+str(sim_number),'NA',]))
                         count_NA += 1
                         # print(f"Usable simulations: {np.count_nonzero(output==1)}, countok: {count_OK}, count na: {np.count_nonzero(output==-5)}")
@@ -519,7 +611,7 @@ def     cycle_simulation_summary(output_folder,
                     tab.append(list([basename+str(sim_number),'N',"Unloading failed"]))
                     count_notOK += 1
                 else:
-                    output[sim_index] = -1
+                    output[sim_index] = 0
                     tab.append(list([basename+str(sim_number),'PD',]))
                     count_PD += 1
 
@@ -558,8 +650,8 @@ def     cycle_simulation_summary(output_folder,
                 # Checking that there's an IVR phase:
                 dv = np.gradient(volume_last_beat)
                 time_pmax = time[0]+np.where(pressure_lv==np.max(pressure_lv))[0][0]
-                ind_IVC = np.intersect1d(np.where(np.abs(dv)<=0.01)[0],np.where(time<=time_pmax-10.)[0])
-                ind_IVR = np.intersect1d(np.where(np.abs(dv)<=0.01)[0],np.where(time>=time_pmax+10.)[0])
+                ind_IVC = np.intersect1d(np.where(np.abs(dv)<=IV_thr)[0],np.where(time<=time_pmax)[0])
+                ind_IVR = np.intersect1d(np.where(np.abs(dv)<=IV_thr)[0],np.where(time>=time_pmax)[0])
                 ind_ED = ind_IVC[0]
                 EDP = pressure_lv[ind_ED]
                 dpdt_idx = np.where(pressure_lv>EDP)[0]
@@ -626,7 +718,7 @@ def     cycle_simulation_summary(output_folder,
                 tab.append(list([basename+'default','N',"Unloading failed"]))
                 count_notOK += 1
             else:
-                output[0] = -1
+                output[0] = 0
                 tab.append(list([basename+'default','PD',]))
                 count_PD += 1
 
@@ -672,13 +764,13 @@ def file_exists(full_file_path):
     if not os.path.isfile(full_file_path):
         raise Exception(f"You need to have the file {os.path.abspath(os.path.normpath(full_file_path))}")
 
-def check_suitable_VV_output(time,volume,pressure,t):
+def check_suitable_VV_output(time,volume,pressure,t,IV_thr):
 
     time_pmax = time[0]+np.where(pressure==np.max(pressure))[0][0]
     
     dv = np.gradient(volume)
 
-    ind_IVC_ = np.intersect1d(np.where(np.abs(dv)<=0.01)[0],np.where(time<=time_pmax-10.)[0])
+    ind_IVC_ = np.intersect1d(np.where(np.abs(dv)<=IV_thr)[0],np.where(time<=time_pmax)[0])
     jump = np.where(np.gradient(ind_IVC_)>1)[0]
 
     if len(jump) == 0:
@@ -686,12 +778,12 @@ def check_suitable_VV_output(time,volume,pressure,t):
     else:
         ind_IVC = ind_IVC_[jump[-1]:-1]
 
-    if len(ind_IVC) < 1:
+    if len(ind_IVC) <= 5:
         return False
 
-    ind_IVR_ = np.intersect1d(np.where(np.abs(dv)<=0.01)[0],np.where(time>=time_pmax+10.)[0])
+    ind_IVR_ = np.intersect1d(np.where(np.abs(dv)<=IV_thr)[0],np.where(time>=time_pmax)[0])
 
-    if(len(ind_IVR_)) <= 1:
+    if(len(ind_IVR_)) <= 5:
         return False
 
     jump = np.where(np.gradient(ind_IVR_)>1)[0]
@@ -701,7 +793,7 @@ def check_suitable_VV_output(time,volume,pressure,t):
     else:
         ind_IVR = ind_IVR_[0:jump[0]]
 
-    if(len(ind_IVR)) == 0:
+    if(len(ind_IVR)) <= 5:
         return False
 
     ind_ED = ind_IVC[0]
@@ -713,7 +805,7 @@ def check_suitable_VV_output(time,volume,pressure,t):
     dpdt_idx = np.where(pressure>EDP)[0]
     ind_IVR = np.intersect1d(dpdt_idx,ind_IVR)
     if not len(ind_IVR):
-        ind_IVR = np.intersect1d(dpdt_idx,np.where(time>=time_pmax+10)[0])
+        ind_IVR = np.intersect1d(dpdt_idx,np.where(time>=time_pmax)[0])
 
     ind_IVC = np.intersect1d(dpdt_idx,ind_IVC)
     
@@ -761,6 +853,8 @@ def main(args):
     first_simulation   = args.first_simulation
     last_simulation    = args.last_simulation
     default            = args.default
+
+    IV_thr = 0.1 # Max difference in volume for the isovolumic phases
 
     # file_exists(f'{basefolder}/data/ylabels.txt')
     # file_exists(f'{elem_file}')
@@ -818,7 +912,8 @@ def main(args):
                                                 maskoutput       = f"{output_folder}/output_mask_beat_{n_beat}.txt",
                                                 output_file      = f"{output_folder}/simulation_summary_beat_{n_beat}.pdf",
                                                 include_last_AVD=True,
-                                                sims_folder=simulations_folder
+                                                sims_folder=simulations_folder,
+                                                IV_thr=IV_thr
                                             )
     
     labels_computed = cycle_output_free_output_mask_name(datafolder    = output_folder,
@@ -830,7 +925,8 @@ def main(args):
                                     basename      = "cycle_",
                                     output_file   = f"{data_folder}/Y_mechanics_beat_{n_beat}.txt",
                                     visualise     = False,
-                                    output_mask=f"output_mask_beat_{n_beat}.txt")
+                                    output_mask=f"output_mask_beat_{n_beat}.txt",
+                                    IV_thr=IV_thr)
     
     labels_timings = timings_output(datafolder    = output_folder,
                                     output_folder = simulations_folder,
@@ -840,7 +936,8 @@ def main(args):
                                     first_simulation=first_simulation,
                                     basename      = "cycle_",
                                     output_file   = f"{data_folder}/Y_timings_beat_{n_beat}.txt",
-                                    output_mask=f"output_mask_beat_{n_beat}.txt")
+                                    output_mask=f"output_mask_beat_{n_beat}.txt",
+                                    IV_thr=IV_thr)
 
     with open(f"{basefolder}/json_files/tags_lvrv_fch.json","r") as f:
         tags = json.load(f)

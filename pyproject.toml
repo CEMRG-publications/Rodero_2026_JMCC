@@ -11,7 +11,6 @@ simulation-library = {git = "ssh://git@github.com/MarinaStrocchi/SIMULATION_libr
 requests = "^2.31.0"
 unloading-library = {git = "ssh://git@github.com/MarinaStrocchi/UNLOADING_library.git", rev = "master"}
 tqdm = "^4.67.0"
-gpyem = {git = "https://github.com/cwlanyon/GPyEm.git"}
 
 
 [build-system]

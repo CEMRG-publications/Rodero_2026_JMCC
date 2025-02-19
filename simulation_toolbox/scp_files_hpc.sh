@@ -1,24 +1,22 @@
 # Paths
 
 
-folder_experiment_name=HCM/4/scenarios/49
-base_folder_local=/media/croderog/Elements/$folder_experiment_name
+folder_experiment_name=HCM/1/scenarios/53_more_samples
+base_folder_local=/media/croderog/SeagateExpansionDrive/$folder_experiment_name
 
 # Parameters
 hpc="archer2"
-first_simulation=0
-last_simulation=599
-first_simulation=0
-last_simulation=599
+first_simulation=800
+last_simulation=1499
 
 if [ "$hpc" == "imperial" ]; then
     username="croderog"
     hpc_address="login.hpc.imperial.ac.uk"
     hpc_root_path="/rds/general/user/croderog/home"
 elif [ "$hpc" == "archer2" ]; then
-    username="crg17"
+    username="jsolisle"
     hpc_address="login.archer2.ac.uk"
-    hpc_root_path="/work/e348/e348/crg17"
+    hpc_root_path="/scratch-nvme/e348/e348/"$username
 fi
 
 mkdir -p $base_folder_local/files_to_transfer/slrm
@@ -27,6 +25,7 @@ mkdir -p $base_folder_local/files_to_transfer/states
 ##### SLRM files
 
 for ((i=$first_simulation; i<=$last_simulation; i++)); do
+    cp $base_folder_local/slrm/unloading_$i.slrm $base_folder_local/files_to_transfer/slrm/.
     cp $base_folder_local/slrm/cycle_$i.slrm $base_folder_local/files_to_transfer/slrm/.
 done
 

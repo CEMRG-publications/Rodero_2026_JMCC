@@ -131,7 +131,7 @@ class KFoldCrossValidation(Trainable):
         X_leftout,
         y_leftout,
     ):
-        log.info(f"Running K-fold split {i}...")
+        log.warning(f"Running K-fold split {i}...")
 
         if self.leftout_is_val:
             dataset = Dataset(
