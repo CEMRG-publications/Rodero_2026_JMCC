@@ -79,22 +79,27 @@ def check_fourchamber_unloading(basefolder,
         failure_bar_format = "{l_bar}\033[91m{bar}\033[0m{r_bar}"  # Red bar
 
         t = tqdm.tqdm(range(start_sample,last_sample+1), desc='Bar desc', leave=True)
-        for i in t:    
+        for i in t:   
+            worked = True 
+            if os.path.exists(f"{basefolder}/unloading_{i}/unloading.log"):
+                output = check_fourchamber_unloading_(basefolder+'/unloading_'+str(i)+'/',
+                                                    chambers,t)
 
-            output = check_fourchamber_unloading_(basefolder+'/unloading_'+str(i)+'/',
-                                                chambers,t)
+                if output[0]:
+                    n_sim_work+=1
+                    t.bar_format = success_bar_format
+                    t.set_description('unloading_'+str(i)+' successful...')
 
-            if output[0]:
-                n_sim_work+=1
-                t.bar_format = success_bar_format
-                t.set_description('unloading_'+str(i)+' successful...')
+                    for j in range(len(chambers)):
+                        # vol_unloaded[count,j] = output[1+j]
 
-                for j in range(len(chambers)):
-                    # vol_unloaded[count,j] = output[1+j]
-
-                    vol_unloaded[i,j] = output[1+j]
-
+                        vol_unloaded[i,j] = output[1+j]
+                else:
+                    worked = False
             else:
+                worked = False
+
+            if not worked:
                 n_sim_not_work+=1
                 t.bar_format = failure_bar_format
                 t.set_description('unloading_'+str(i)+' crashed...')
