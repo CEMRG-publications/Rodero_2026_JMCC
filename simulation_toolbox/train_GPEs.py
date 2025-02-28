@@ -1074,7 +1074,7 @@ def main_second_approach(args):
                         max_workers=args.max_workers)
 
             train_gpe_whole_dataset_second_approach(seed=seed, 
-                                    emulators_folder=emulators_folder, 
+                                    emulators_folder=f"{emulators_folder_base}/final_emulators", 
                                     X=X_, 
                                     y=y_all,
                                     x_labels=x_labels, 
@@ -1099,7 +1099,8 @@ def main_second_approach(args):
                                           emulators_folder=emulators_folder_base, 
                                           output_pdf_path=pdf_path,
                                            n_train_set=n_train_set, 
-                                           bold_labels=["LVedv","LVedp","LVesv","LVpmax","LVEF","A_TAT","V_TAT"],strocchi_labels =  ["LVedv","LVedp","LVesv","LVpmax","LVdpdtMax","LVdpdtMin","LAedv","LAesv","LApMax","LAinflV","RVedv","RVedp","RVesv","RVpmax","RVdpdtMax","RVdpdtMin","RAedv","RAesv","RApMax","RAinflV"],y_data_path=f"{basefolder}/data/Y.txt",
+                                           bold_labels=["LVedv","LVedp","LVesv","LVpmax","LVEF","A_TAT","V_TAT"],
+                                           strocchi_labels =  ["LVedv","LVedp","LVesv","LVpmax","LVdpdtMax","LVdpdtMin","LAedv","LAesv","LApMax","LAinflV","RVedv","RVedp","RVesv","RVpmax","RVdpdtMax","RVdpdtMin","RAedv","RAesv","RApMax","RAinflV"],y_data_path=f"{basefolder}/data/Y.txt",
                                            colour_rule=colour_rule,
                                            trim_percentage=trim_percentage)
 
