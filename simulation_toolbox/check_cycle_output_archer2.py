@@ -556,7 +556,7 @@ def     cycle_simulation_summary(output_folder,
 
                     
 
-                if len(lv)>0 and max(time) == int(check_tend):
+                if len(lv)>0 and max(time) == int(check_tend) and len(last_beat) > 0:
 
                     LV_suitable = check_suitable_VV_output(time = time[last_beat],
                                                            volume = volume_last_beat,pressure = pressure_lv,
