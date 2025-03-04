@@ -597,6 +597,7 @@ def     cycle_simulation_summary(output_folder,
                             if "CANCELLED" in line:
                                 error_message += " / CANCELLED"
                                 warning_flag = True
+                                break
 
 
                     if warning_flag or error_message == "New error":
