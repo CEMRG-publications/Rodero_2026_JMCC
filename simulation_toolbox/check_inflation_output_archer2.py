@@ -170,64 +170,122 @@ def plot_passive_output_X_Y(mask_output_file_path,X_file_path,Y_file_path,xlabel
 
 def main(args):
 
-    basefolder         = args.basefolder
-    simulations_folder      = f"{basefolder}/simulations"
-    output_folder      = f"{basefolder}/output"
-    figures_path       = f"{basefolder}/figures"
-    elem_file          = args.elem_file
-    first_simulation   = args.first_simulation
-    last_simulation    = args.last_simulation
-    tend=args.tend
-    last_frame=args.last_frame
+    basefolder = args.basefolder
+    simulations_folder = f"{basefolder}/simulations"
+    output_folder = f"{basefolder}/output"
+    figures_path = f"{basefolder}/figures"
+    elem_file = args.elem_file
+    tend = args.tend
+    last_frame = args.last_frame
     only_X_Y = args.only_X_Y
-    with open(f"{basefolder}/json_files/tags.json","r") as f:
+
+    # Handle default flag
+    if args.default:
+        first_simulation = 0
+        last_simulation = 0
+        print("Default mode enabled. Only processing default simulation.")
+    else:
+        first_simulation = args.first_simulation
+        last_simulation = args.last_simulation
+
+    with open(f"{basefolder}/json_files/tags.json", "r") as f:
         tags = json.load(f)
 
-    os.makedirs(output_folder,exist_ok=True)
-    os.makedirs(figures_path,exist_ok=True)
+    os.makedirs(output_folder, exist_ok=True)
+    os.makedirs(figures_path, exist_ok=True)
 
     if not only_X_Y:
-        passive_output_per_chamber(output_folder = simulations_folder,
-                    elem_file = elem_file,
-                    tags = tags,
-                    start_sample=first_simulation,
-                    last_sample=last_simulation,
-                    basename="inflation_",
-                    tend=tend,
-                    output_file=f"{output_folder}/Y.txt",
-                    mask_output_file=f"{output_folder}/output_mask.txt",
-                    last_frame=last_frame)
-        
-        plot_passive_output_avoid_crashes(output_folder=simulations_folder,
-                        start_sample=first_simulation,
-                        last_sample=last_simulation,
-                        basename="inflation_",
-                        figname=f"{figures_path}/PV_traces.png",
-                        mask_output_file=f"{output_folder}/output_mask.txt")
-    
-    plot_passive_output_X_Y(mask_output_file_path = f"{output_folder}/output_mask.txt",
-                            X_file_path = f"{basefolder}/data/X.txt",
-                            Y_file_path = f"{output_folder}/Y.txt",
-                            xlabels_path = f"{basefolder}/data/xlabels.txt",ylabels_path = f"{basefolder}/data/ylabels.txt",start_simulation=first_simulation,
-                            last_simulation=last_simulation,
-                            savepath=f"{figures_path}/X_vs_Y.png",figsize=(10,20))
+        passive_output_per_chamber(
+            output_folder=simulations_folder,
+            elem_file=elem_file,
+            tags=tags,
+            start_sample=first_simulation,
+            last_sample=last_simulation,
+            basename="inflation_",
+            tend=tend,
+            output_file=f"{output_folder}/Y.txt",
+            mask_output_file=f"{output_folder}/output_mask.txt",
+            last_frame=last_frame,
+        )
+
+        plot_passive_output_avoid_crashes(
+            output_folder=simulations_folder,
+            start_sample=first_simulation,
+            last_sample=last_simulation,
+            basename="inflation_",
+            figname=f"{figures_path}/PV_traces.png",
+            mask_output_file=f"{output_folder}/output_mask.txt",
+        )
+
+    plot_passive_output_X_Y(
+        mask_output_file_path=f"{output_folder}/output_mask.txt",
+        X_file_path=f"{basefolder}/data/X.txt",
+        Y_file_path=f"{output_folder}/Y.txt",
+        xlabels_path=f"{basefolder}/data/xlabels.txt",
+        ylabels_path=f"{basefolder}/data/ylabels.txt",
+        start_simulation=first_simulation,
+        last_simulation=last_simulation,
+        savepath=f"{figures_path}/X_vs_Y.png",
+        figsize=(10, 20),
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
 
-    parser.add_argument('--basefolder', type=str, required=True,
-                        default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations",
-                        help='Path to the folder where the simulations, data, and figure folders are.')
-    parser.add_argument('--elem_file', type=str, help="Path to the elem file of the mesh without the bachmann bundle.", required=True)
-    parser.add_argument('--first_simulation', type=int)
-    parser.add_argument('--last_simulation', type=int)
-    parser.add_argument('--tend', type=int, default=50)
-    parser.add_argument('--last_frame', type=int, default=5)
-    parser.add_argument('--only_X_Y', action='store_true')
+    parser.add_argument(
+        "--basefolder",
+        type=str,
+        required=True,
+        default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations",
+        help="Path to the folder where the simulations, data, and figure folders are located.",
+    )
+    parser.add_argument(
+        "--elem_file",
+        type=str,
+        required=True,
+        help="Path to the elem file of the mesh without the Bachmann bundle.",
+    )
+    parser.add_argument(
+        "--first_simulation",
+        type=int,
+        help="Index of the first simulation to process. Required unless --default is set.",
+    )
+    parser.add_argument(
+        "--last_simulation",
+        type=int,
+        help="Index of the last simulation to process. Required unless --default is set.",
+    )
+    parser.add_argument(
+        "--tend",
+        type=int,
+        default=50,
+        help="Number of timesteps in the simulation. Default is 50.",
+    )
+    parser.add_argument(
+        "--last_frame",
+        type=int,
+        default=5,
+        help="Index of the last frame to extract strains. Default is 5.",
+    )
+    parser.add_argument(
+        "--only_X_Y",
+        action="store_true",
+        help="If set, only plots X vs Y without processing simulation outputs.",
+    )
+    parser.add_argument(
+        "--default",
+        action="store_true",
+        help="If set, processes only the default simulation and ignores --first_simulation and --last_simulation.",
+    )
 
     args = parser.parse_args()
+
+    # Validate arguments based on the presence of --default
+    if not args.default:
+        if args.first_simulation is None or args.last_simulation is None:
+            parser.error("--first_simulation and --last_simulation are required unless --default is set.")
 
     main(args)
