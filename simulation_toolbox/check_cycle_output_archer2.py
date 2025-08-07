@@ -6,6 +6,8 @@ from pandas import read_csv
 import json
 import sys
 import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
+
 
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
@@ -367,7 +369,99 @@ def timings_output(datafolder,
 
     return(labels_computed)
 
+
+# Top-level function for multiprocessing
+def process_simulation(i, idx_ok, output_folder, basename, first_simulation, A_VTX, V_VTX):
+    sim_num = 'default' if first_simulation is None else first_simulation + idx_ok[i]
+    folder = os.path.join(output_folder, f"{basename}{sim_num}")
+    filepath = os.path.join(folder, "vm_act_seq.dat")
+
+    try:
+        AT = np.loadtxt(filepath, dtype=float)
+    except Exception as e:
+        return (i, None, None, f"Read error: {e}")
+
+    AT_A = AT[A_VTX]
+    AT_V = AT[V_VTX]
+
+    if np.any(AT_V < 0):
+        return (i, None, None, "Negative ventricular AT")
+    if np.any(AT_A < 0):
+        return (i, None, None, "Negative atrial AT")
+
+    A_TAT = AT_A.max() - AT_A.min()
+    V_TAT = AT_V.max() - AT_V.min()
+    return (i, A_TAT, V_TAT, None)
+
+
 def electrophysiology_cycle_output_output_mask_free(datafolder,
+                                                    output_folder,
+                                                    elem_file,
+                                                    tags,
+                                                    first_simulation=0,
+                                                    basename="cycle_",
+                                                    output_file="Y_EP.txt",
+                                                    output_mask="output_mask.txt"):
+    print('Computing only output for successful simulations...')
+
+    mask = np.loadtxt(os.path.join(datafolder, output_mask), dtype=int)
+    idx_ok = np.where(mask == 1)[0]
+
+    print('Reading mesh elem file...')
+    elem = mesh_utils.read_tets(elem_file)
+    print('Done.')
+
+    if "ventricles" in tags:
+        if any(t in tags for t in ["lv", "rv"]):
+            raise Exception('Cannot combine "ventricles" with "lv"/"rv" tags.')
+        ventricle_tags = tags["ventricles"]
+    elif all(t in tags for t in ["lv", "rv"]):
+        ventricle_tags = tags["lv"] + tags["rv"]
+    else:
+        raise Exception("Ventricle tags not specified correctly.")
+
+    if "fast_endo" in tags:
+        if any(t in tags for t in ["fast_endo_lv", "fast_endo_rv", "fast_endo_sv"]):
+            raise Exception('Cannot combine "fast_endo" with its sub-tags.')
+        fec_tags = tags["fast_endo"]
+    elif all(t in tags for t in ["fast_endo_lv", "fast_endo_rv", "fast_endo_sv"]):
+        fec_tags = tags["fast_endo_lv"] + tags["fast_endo_rv"] + tags["fast_endo_sv"]
+    else:
+        raise Exception("Fast endocardial conduction (FEC) tags not set correctly.")
+
+    ventricle_tags += fec_tags
+    atria_tags = tags["atria"] + tags["bachmann_bundle"]
+
+    V_EIDX = np.where(np.isin(elem[:, -1], ventricle_tags))[0]
+    A_EIDX = np.where(np.isin(elem[:, -1], atria_tags))[0]
+
+    V_VTX = np.unique(elem[V_EIDX, :4].flatten())
+    A_VTX = np.unique(elem[A_EIDX, :4].flatten())
+
+    output = np.zeros((idx_ok.shape[0], 2))
+
+    print(f"Processing {idx_ok.shape[0]} simulations in parallel...")
+    with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
+        futures = [
+            executor.submit(process_simulation, i, idx_ok, output_folder, basename, first_simulation, A_VTX, V_VTX)
+            for i in range(idx_ok.shape[0])
+        ]
+
+        for future in tqdm.tqdm(as_completed(futures), total=len(futures), desc="Simulations", colour='#FDFD96'):
+            i, a_tat, v_tat, error = future.result()
+            if error:
+                print(f"[Warning] Sim {idx_ok[i]} skipped due to error: {error}")
+                continue
+            output[i, 0] = a_tat
+            output[i, 1] = v_tat
+
+    np.savetxt(output_file, output, fmt="%g")
+    print(f"Output saved to {output_file}")
+
+    return ["A_TAT", "V_TAT"]
+
+
+def electrophysiology_cycle_output_output_mask_free_no_parallel(datafolder,
                                    output_folder,
                                    elem_file,
                                    tags,

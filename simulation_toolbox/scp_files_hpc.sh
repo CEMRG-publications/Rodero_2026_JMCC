@@ -1,20 +1,20 @@
 # Paths
 
 
-folder_experiment_name=HCM/1/scenarios/53_more_samples
-base_folder_local=/media/croderog/SeagateExpansionDrive/$folder_experiment_name
+folder_experiment_name=HCM/5/scenarios/50_more_samples
+base_folder_local=/data/$folder_experiment_name
 
 # Parameters
 hpc="archer2"
-first_simulation=800
-last_simulation=1499
+first_simulation=4000
+last_simulation=6999
 
 if [ "$hpc" == "imperial" ]; then
     username="croderog"
     hpc_address="login.hpc.imperial.ac.uk"
     hpc_root_path="/rds/general/user/croderog/home"
 elif [ "$hpc" == "archer2" ]; then
-    username="jsolisle"
+    username="charlessillett"
     hpc_address="login.archer2.ac.uk"
     hpc_root_path="/scratch-nvme/e348/e348/"$username
 fi

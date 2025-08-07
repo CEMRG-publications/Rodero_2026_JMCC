@@ -129,7 +129,7 @@ def rotate_mesh(plt_msh,
 	elem = np.reshape(elem,(int(plt_msh.cells.shape[0]/5),5))
 	elem = elem[:,1:]
 
-	tags = plt_msh.cell_data["ID"]
+	tags = plt_msh.cell_data["elemTag"]
 	eidx_lv = np.where(tags==lv_tag)[0]
 	vtx_lv = np.unique(elem[eidx_lv,:].flatten())
 	eidx_mv = np.where(tags==mv_tag)[0]

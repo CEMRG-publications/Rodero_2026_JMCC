@@ -7,6 +7,7 @@ import math
 import numpy as np
 import os
 import tqdm
+import pyvista as pv
 
 
 def make_activation_video(meshname,
@@ -19,7 +20,9 @@ def make_activation_video(meshname,
 	
 	camera_settings = load_json(camera_file)
 
-	plt_msh = carp_to_pyvista(meshname)
+	# plt_msh = carp_to_pyvista(meshname)
+	plt_msh = pv.read(meshname)
+
 	
 	act = np.loadtxt(activation_file,dtype=float)
 	
@@ -59,10 +62,14 @@ def visualise_activation(meshname,
 
 	# plt_msh = carp_to_pyvista(meshname)
 	
-    pts  = read_pts(meshname+'.pts')
-    elem = read_elem(meshname+'.elem',el_type='Tt',tags=True)
+    # pts  = read_pts(meshname+'.pts')
+    # elem = read_elem(meshname+'.elem',el_type='Tt',tags=True)
 
-    plt_msh = pts_elem_to_pyvista(pts=pts, elem=elem, add_tags=True)
+    # plt_msh = pts_elem_to_pyvista(pts=pts, elem=elem, add_tags=True)
+
+
+    plt_msh = pv.read(meshname + ".vtk")  # meshname should now be path to the `.vtk` file
+
 
     plt_msh = rotate_mesh(plt_msh, target_direction=[0,-1,0])
 	

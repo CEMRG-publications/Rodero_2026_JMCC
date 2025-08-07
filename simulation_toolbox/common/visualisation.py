@@ -62,13 +62,13 @@ def print_activation_times(plt_msh,
     plotter.background_color = 'white'
 
     # Extract tag IDs from the mesh cell data
-    tag_array = plt_msh.cell_data["ID"]
+    tag_array = plt_msh.cell_data["elemTag"]
     plt_msh.point_data["Activation"] = act_times  # Assign activation times to point data for gradient coloring
 
     # Create masks for the different tag groups
-    inactive_mask = tag_array == 0
-    blue_mask = np.isin(tag_array, [1, 2])
-    orange_mask = np.isin(tag_array, [3, 4])
+    inactive_mask =  np.isin(tag_array, [5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24]) 
+    blue_mask = np.isin(tag_array, [1, 2, 25, 28])
+    orange_mask = np.isin(tag_array, [3, 4, 26])
 
     # Plot inactive cells with solid inactive color
     plotter.add_mesh(plt_msh.extract_cells(inactive_mask), 

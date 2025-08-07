@@ -184,6 +184,8 @@ def visualise_motion(displacement_file: str,
     pressure_dict = {}
     volume_dict = {}
 
+    print("Hello")
+
     for chamber in chambers:
         p, v = extract_pressure_volumes(path_to_simulation=path_to_simulation,
                                                chamber=chamber,
@@ -300,6 +302,7 @@ def main(args):
         # Create the output directory if it doesn't exist
     output_directory_pvloop = os.path.join(disp_directory, "delete", "PV_loops")
     os.makedirs(output_directory_pvloop, exist_ok=True)
+    os.makedirs(output_directory_motion, exist_ok=True)
 
     # Generate the full path for the output_name in the 'motion' subfolder
     basename_pvloop = os.path.join(output_directory_pvloop, "pvloop_")
