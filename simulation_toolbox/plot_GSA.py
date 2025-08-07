@@ -12,6 +12,7 @@ from collections import defaultdict
 from matplotlib.colors import LinearSegmentedColormap, to_rgba
 from matplotlib.collections import LineCollection
 import json
+from matplotlib.lines import Line2D
 
 def format_title_with_bold_latex(title):
     parts = title.split('$$')
@@ -130,7 +131,7 @@ def plot_GSA_radar_chart(scenarios, xlabels, ylabels, savepath, fontsize, fignam
         # Close the figure to free memory
         plt.close(fig)
 
-def plot_GSA_radar_chart_feature(scenarios, xlabels, ylabels_latex_all, ylabels_raw_all, savepath, fontsize, figname_preffix, legend=[], 
+def plot_GSA_radar_chart_feature(scenarios, xlabels_plain_all, xlabels_dict_all, ylabels_latex_all, ylabels_raw_all, savepath, fontsize, figname_preffix, legend=[], 
                                  colors=[], threshold=0, feature_idx=0, loop_idx=0):
     
 
@@ -141,7 +142,8 @@ def plot_GSA_radar_chart_feature(scenarios, xlabels, ylabels_latex_all, ylabels_
     # sanitized_ylabel_name = sanitize_filename(ylabel_name)
     # figname = f"{figname_preffix}_{sanitized_ylabel_name}"
 
-    theta = xlabels
+    theta = [xlabels_dict_all[i]['latex'] for i in xlabels_plain_all]
+
 
     r = np.zeros((len(scenarios), len(theta)))
 
@@ -229,7 +231,9 @@ def plot_rank_GSA_free_th_color(datapath,
                                 fontsize=14,
                                 separate_colors=False,
                                 color_important=None,
-                                color_all="#ff8000"):
+                                color_all="#ff8000",
+                                title=None,
+                                top_n=100):
     """
     Plots the parameter ranking for a GSA.
 
@@ -248,6 +252,7 @@ def plot_rank_GSA_free_th_color(datapath,
         - fontsize: size of figure font
         - separate_colors: if you want a different colour for important and unimportant parameters
         - color_important: what colour you want the important parameter bars to be
+        - top_n: number of top-ranked parameters to show
     """
 
     color = [color_all]
@@ -284,20 +289,32 @@ def plot_rank_GSA_free_th_color(datapath,
         bars.append(r_dct[l])
     idx_sorted = np.argsort(np.array(bars))
 
-    r = [xx + barWidth for xx in x]
+    bars_sorted = [100*bars[idx] for idx in idx_sorted]
+    bars_sorted = bars_sorted[::-1]
     
+    index_i_sorted = [index_i[idx] for idx in idx_sorted]
+    index_i_sorted = index_i_sorted[::-1]
+
+    # Limit to top_n parameters
+    bars_sorted = bars_sorted[:top_n]
+    index_i_sorted = index_i_sorted[:top_n]
+    
+    # Update x-axis and figure width based on top_n
+    x = np.arange(len(index_i_sorted))
+    width = max(15, len(index_i_sorted)-15) 
+
+    longest_label = max(len(label) for label in index_i_sorted)
+    height = max(7, longest_label/10 + 3)  # Adjust height based on label length
+
+    figsize = (width, height)
+    fig.set_size_inches(figsize)
+    
+    r = [xx + barWidth for xx in x]
     
     ax.set_xlim(min(r) - barWidth, max(r) + barWidth)
 
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-
-
-    bars_sorted = [bars[idx] for idx in idx_sorted]
-    bars_sorted = bars_sorted[::-1]
-    
-    index_i_sorted = [index_i[idx] for idx in idx_sorted]
-    index_i_sorted = index_i_sorted[::-1]
 
     bars_sorted_norm = list(np.array(bars_sorted) / sum(bars_sorted))
 
@@ -310,12 +327,12 @@ def plot_rank_GSA_free_th_color(datapath,
     else:
         barplot = bars_sorted
 
-    plt.xticks(x + barWidth, index_i_sorted, rotation=90, fontsize=fontsize)
+    plt.xticks(x + barWidth, index_i_sorted, rotation=45, fontsize=fontsize, ha='right')
     ax.tick_params(axis='both', labelsize=fontsize)
 
-    cutoff_param = np.where(np.array(bars_sorted_sum) > acc_var_th)[0][0]
+    cutoff_param = np.where(np.array(bars_sorted_sum) > acc_var_th)[0][0] if len(np.where(np.array(bars_sorted_sum) > acc_var_th)[0]) > 0 else len(bars_sorted_sum) - 1
     if color_important is None:
-        color_important = "#387339"
+        color_important = "#c08978"
     color_unimportant = "lightgray"
     colors = [color_important] * (cutoff_param + 1) + [color_unimportant] * (len(bars_sorted_sum) - cutoff_param - 1)
 
@@ -325,7 +342,7 @@ def plot_rank_GSA_free_th_color(datapath,
         bars = ax.bar(r, barplot, color=color, width=barWidth, edgecolor='white')
 
     if criterion == 'Si_total':
-        ax.set_ylabel('Total-order effects', fontsize=fontsize)
+        ax.set_ylabel('Maximum variance explained (%)', fontsize=fontsize)
     else:
         ax.set_ylabel('First-order effects', fontsize=fontsize)
     
@@ -336,7 +353,10 @@ def plot_rank_GSA_free_th_color(datapath,
 
     meshname = loadpath.split("/")[-6]
 
-    ax.set_title(f"Parameter ranking for mesh #{meshname}", fontsize=fontsize + 5, fontweight="bold")
+    if title is None:
+        title = f"Parameter ranking for mesh #{meshname} (Top {top_n})"
+
+    ax.set_title(title, fontsize=fontsize + 5, fontweight="bold")
 
     # y_max = np.ceil(np.max(np.array(barplot)) * 10) / 10
 
@@ -353,8 +373,6 @@ def plot_rank_GSA_free_th_color(datapath,
 
     # Close the figure to free memory
     plt.close(fig)
-
-
 
 def gsa_parameters_ranking_S_free_pathfile(loadpath,
                                            loadpath_sobol,
@@ -450,7 +468,7 @@ def gsa_parameters_ranking_S_free_pathfile(loadpath,
     # -----------------------------------------------
     print('Ranking parameters individually for each ylabel...')
 
-    print(f"{S=}")
+    # print(f"{S=}")
 
     S = S[:, features]  # Filter S to only include the features we are interested in
 
@@ -488,7 +506,7 @@ def gsa_parameters_ranking_S_free_pathfile(loadpath,
 
     print("Ranking completed for all labels.")
 
-def plot_gsa_ranking_multiple_scenarios(scenarios,ylabels_raw_all,features_idx_list, xlabels, ylabels, savepath, fontsize, plot_barchart, figname_preffix, legend=[], colors=[], threshold=0):
+def plot_gsa_ranking_multiple_scenarios(scenarios,ylabels_raw_all,features_idx_list, xlabels, ylabels, savepath, fontsize, plot_barchart, figname_preffix, legend=[], colors=[], threshold=0, top_n=100):
 
     """
     Plots the GSA ranking for multiple scenarios.
@@ -553,10 +571,13 @@ def plot_gsa_ranking_multiple_scenarios(scenarios,ylabels_raw_all,features_idx_l
                     mode="max",
                     figname=f"{savepath}/rank_max_{meshname}_all_features.png",
                     normalise=False,
-                    annotate=True,
+                    annotate=False,
                     fontsize=fontsize,
                     separate_colors=True,
                     color_important=None,
+                    title = f"Parameter ranking for {legend[i]} branch",
+                    top_n=top_n,
+                    acc_var_th=0.95
                 )
             
 
@@ -576,6 +597,8 @@ def plot_gsa_ranking_multiple_scenarios(scenarios,ylabels_raw_all,features_idx_l
                     fontsize=fontsize,
                     separate_colors=True,
                     color_important=None,
+                    top_n=top_n,
+                    acc_var_th=0.95
                 )
 
         # if plot_barchart:
@@ -637,7 +660,9 @@ def generate_gsa_visualizations(
     legend=None,
     colors=None,
     threshold=0.0,
-    plot_radar_chart=False
+    plot_radar_chart=False,
+    top_n=10,
+    plot_bump_chart=False
 ):
     """
     Wrapper function to generate both GSA ranking and radar chart visualizations.
@@ -669,9 +694,12 @@ def generate_gsa_visualizations(
 
     print(f"Will process a total of {len(features_idx_list)} features.")
 
+    xlabels_plain_all, xlabels_dict_all = read_xlabels_dict(xlabels_dict, xlabels)
+
+
     plot_gsa_ranking_multiple_scenarios(
         scenarios=scenarios,
-        xlabels=xlabels,
+        xlabels=[xlabels_dict_all[i]['latex'] if i in xlabels_dict_all else i for i in xlabels_plain_all],
         ylabels=ylabels_raw_all,
         savepath=savepath,
         fontsize=fontsize,
@@ -681,37 +709,40 @@ def generate_gsa_visualizations(
         threshold=threshold,
         plot_barchart = plot_barchart,
         features_idx_list=features_idx_list,
-        ylabels_raw_all= ylabels_raw_all
+        ylabels_raw_all= ylabels_raw_all,
+        top_n=top_n
     )
 
-    xlabels_latex_all, xlabels_dict = read_xlabels_dict(xlabels_dict, xlabels)
+
+    if plot_bump_chart:
+        plot_bump_chart_from_rankings_color_specific(
+            scenarios=scenarios,
+            savepath=savepath,
+            legend=legend,
+            xlabels_dict=xlabels_dict_all,
+            fontsize=fontsize,
+            gsa_mode="Si_total",
+            mode="max",
+            figname=f"{figname_preffix}_bump_chart_colored.png",
+            rank_file=None,  # Use default rank file
+            title="Bump chart of parameter rankings in different patients for all functional outputs",
+            top_n=top_n
+            )
+
+        
+        plot_bump_chart_from_rankings(
+            scenarios=scenarios,
+            savepath=savepath,
+            fontsize=fontsize,
+            gsa_mode="Si_total",
+            mode="max",
+            figname=f"{figname_preffix}_bump_chart.png",
+            title="Bump chart of parameter rankings in different patients for all functional outputs",
+            legend=legend,
+            xlabels_to_plot=xlabels_dict_all,
+            top_n=top_n
+            )
     
-    plot_bump_chart_from_rankings_color_specific(
-        scenarios=scenarios,
-        savepath=savepath,
-        legend=legend,
-        xlabels_dict=xlabels_dict,
-        fontsize=fontsize,
-        gsa_mode="Si_total",
-        mode="max",
-        figname=f"{figname_preffix}_bump_chart_colored.png",
-        rank_file=None,  # Use default rank file
-        title="Bump chart of parameter rankings in different patients for all functional outputs",
-    )
-
-    """
-    plot_bump_chart_from_rankings(
-        scenarios=scenarios,
-        savepath=savepath,
-        fontsize=fontsize,
-        gsa_mode="Si_total",
-        mode="max",
-        figname=f"{figname_preffix}_bump_chart.png",
-        title="Bump chart of parameter rankings in different patients for all functional outputs",
-        legend=legend,
-        xlabels_latex_all=xlabels_latex_all
-    )
-    """
     # features_idx_list = np.loadtxt(f"{scenarios[0]}/data/features_idx_list_gsa.txt", dtype=int)
     # if len(features_idx_list.shape) == 0:
     #     features_idx_list = [features_idx_list]
@@ -724,38 +755,42 @@ def generate_gsa_visualizations(
 
     for loop_idx, feature_idx in enumerate(features_idx_list):
 
-        plot_bump_chart_from_rankings_color_specific(
-            scenarios=scenarios,
-            savepath=savepath,
-            legend=legend,
-            xlabels_dict=xlabels_dict,
-            fontsize=fontsize,
-            gsa_mode="Si_total",
-            mode="max",
-            figname=f"{figname_preffix}_bump_chart_{ylabels_raw_all[feature_idx]}_colored.png",
-            rank_file=f"Rank_Si_total_max_{ylabels_raw_all[feature_idx]}.txt",
-            title=f"Bump chart of parameter rankings in different patients for {ylabels_latex_all[feature_idx]}",
-        )
+        if plot_bump_chart:
+            plot_bump_chart_from_rankings_color_specific(
+                scenarios=scenarios,
+                savepath=savepath,
+                legend=legend,
+                xlabels_dict=xlabels_dict_all,
+                fontsize=fontsize,
+                gsa_mode="Si_total",
+                mode="max",
+                figname=f"{figname_preffix}_bump_chart_{ylabels_raw_all[feature_idx]}_colored.png",
+                rank_file=f"Rank_Si_total_max_{ylabels_raw_all[feature_idx]}.txt",
+                title=f"Bump chart of parameter rankings in different patients for {ylabels_latex_all[feature_idx]}",
+                top_n=top_n
+            )
 
-        """ 
-        plot_bump_chart_from_rankings(
-            scenarios=scenarios,
-            savepath=savepath,
-            fontsize=fontsize,
-            gsa_mode="Si_total",
-            mode="max",
-            figname=f"{figname_preffix}_bump_chart_{ylabels_raw_all[feature_idx]}.png",
-            rank_file=f"Rank_Si_total_max_{ylabels_raw_all[feature_idx]}.txt",
-            title=f"Bump chart of parameter rankings in different patients for {ylabels_latex_all[feature_idx]}",
-            legend=legend,
-            xlabels_latex_all=xlabels_latex_all
-        )
+            
+            plot_bump_chart_from_rankings(
+                scenarios=scenarios,
+                savepath=savepath,
+                fontsize=fontsize,
+                gsa_mode="Si_total",
+                mode="max",
+                figname=f"{figname_preffix}_bump_chart_{ylabels_raw_all[feature_idx]}.png",
+                rank_file=f"Rank_Si_total_max_{ylabels_raw_all[feature_idx]}.txt",
+                title=f"Bump chart of parameter rankings in different patients for {ylabels_latex_all[feature_idx]}",
+                legend=legend,
+                xlabels_to_plot=xlabels_dict_all,
+                top_n=top_n
+            )
 
-    """
+    
         if plot_radar_chart:
             plot_GSA_radar_chart_feature(
                 scenarios=scenarios,
-                xlabels=xlabels,
+                xlabels_plain_all=xlabels_plain_all,
+                xlabels_dict_all=xlabels_dict_all,
                 savepath=savepath,
                 fontsize=fontsize,
                 figname_preffix=figname_preffix,
@@ -800,25 +835,34 @@ def read_xlabels_dict(xlabels_dict_file, xlabels_all):
 
     return xlabels_all, xlabels_dict
     
-
 def plot_bump_chart_from_rankings_color_specific(
-    scenarios, savepath, legend, xlabels_dict,
-    fontsize=12, gsa_mode="Si_total", mode="max",
-    figname="bump_chart.png", rank_file=None, title=None
+    scenarios,
+    savepath,
+    legend,
+    xlabels_dict,
+    fontsize=12,
+    gsa_mode="Si_total",
+    mode="max",
+    figname="bump_chart.png",
+    rank_file=None,
+    title=None,
+    top_n=40
 ):
     """
-    Generates a bump chart from multiple scenario rankings with parameter-based color coding.
+    Generates a bump chart showing parameter rankings with parameter-specific colors.
 
-    Args:
-        - scenarios: list of scenario paths (each must have a rank file inside output/)
-        - savepath: directory to save the output chart
-        - legend: list of x-axis labels (e.g., scenario names)
-        - xlabels_dict: dict mapping param names to {"latex": ..., "color": ...}
-        - fontsize: font size for plot labels
-        - gsa_mode: "Si_total" or "Si", depending on which ranking file was generated
-        - mode: ranking strategy: "max", "mean", or "sum"
-        - figname: filename of the output bump chart
+    - Top_n parameters in scenario 1 have continuous lines and points.
+    - Parameters outside top_n in scenario 1 but in top_n later appear with unique markers.
+    - Colors are assigned per parameter using xlabels_dict[param]["color"].
+    - Low-importance parameters (effect < 0.05) are shown with transparent colors.
+    - Parameters outside top_n are shown in a legend if they appear in top_n of any scenario.
     """
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+    from matplotlib.colors import to_rgba
+    from collections import defaultdict
 
     param_ranks = defaultdict(dict)
     param_effects = defaultdict(dict)
@@ -828,10 +872,12 @@ def plot_bump_chart_from_rankings_color_specific(
     if rank_file is None:
         rank_file = f"Rank_{gsa_mode}_{mode}.txt"
 
-    # Step 1: Read rankings and effects
+    # ------------------------
+    # Load rankings and effects
+    # ------------------------
     for scenario in scenarios:
         rank_file_full_path = os.path.join(scenario, "output", rank_file)
-        scenario_name = scenario.rstrip("/").split("/")[-3]  # Adjust if needed
+        scenario_name = scenario.rstrip("/").split("/")[-3]
 
         with open(rank_file_full_path, "r") as f:
             params_in_this_scenario = []
@@ -843,124 +889,9 @@ def plot_bump_chart_from_rankings_color_specific(
                 params_in_this_scenario.append(param)
             param_names_per_scenario.append(params_in_this_scenario)
 
-    # Check consistency across scenarios
-    base_set = set(param_names_per_scenario[0])
-    for idx, param_list in enumerate(param_names_per_scenario[1:], start=1):
-        this_set = set(param_list)
-        missing = base_set - this_set
-        extra = this_set - base_set
-        if missing or extra:
-            raise ValueError(f"Parameter mismatch in scenario {idx + 1}")
-
-    all_params = sorted(all_params)
-    all_scenarios = [s.rstrip("/").split("/")[-3] for s in scenarios]
-
-    # Step 2: Convert to rank matrix
-    rank_matrix = []
-    for param in all_params:
-        rank_matrix.append([
-            param_ranks[param].get(scen, len(all_params) + 1)
-            for scen in all_scenarios
-        ])
-
-    # Step 3: Plot
-    plt.figure(figsize=(12, max(6, len(all_params) * 0.25)))
-    ax = plt.gca()
-
-    for idx, (param, ranks) in enumerate(zip(all_params, rank_matrix)):
-        effects = [param_effects[param].get(scen, 0.0) for scen in all_scenarios]
-        rank_range = max(ranks) - min(ranks)
-
-        x = np.arange(len(all_scenarios))
-        y = np.array(ranks)
-        points = np.array([x, y]).T.reshape(-1, 1, 2)
-        segments = np.concatenate([points[:-1], points[1:]], axis=1)
-
-        # Match param to the correct xlabels_dict entry by comparing latex strings
-        base_color = "#8F8F8F"  # default light grey
-        for entry in xlabels_dict.values():
-            if entry.get("latex") == param:
-                c = entry.get("color", "").strip()
-                if c:
-                    base_color = c
-                break
-
-        # Draw line segments
-        for i in range(len(segments)):
-            e1, e2 = effects[i], effects[i+1]
-            segment_color = to_rgba(base_color, alpha=0.25 if e1 < 0.05 and e2 < 0.05 else 1.0)
-            lc = LineCollection([segments[i]], colors=[segment_color], linewidths=2)
-            ax.add_collection(lc)
-
-        # Draw individual points
-        for xi, yi, ei in zip(x, y, effects):
-            point_color = to_rgba(base_color, alpha=0.25 if ei < 0.05 else 1.0)
-            ax.scatter(xi, yi, color=point_color, zorder=3)
-
-        # Add label to the left
-        ax.text(
-            -0.1, y[0], param,
-            fontsize=fontsize - 3,
-            va='center',
-            ha='right'
-        )
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
-    ax.invert_yaxis()
-    ax.axes.yaxis.set_visible(False)
-
-    if title is None:
-        title = "Bump Chart of Parameter Rankings in Different Meshes"
-    plt.title(title, fontsize=fontsize + 2, fontweight='bold')
-    plt.xticks(ticks=np.arange(len(all_scenarios)), labels=legend, fontsize=fontsize, rotation=30)
-    plt.tight_layout()
-
-    os.makedirs(savepath, exist_ok=True)
-    output_path = os.path.join(savepath, figname)
-    plt.savefig(output_path, dpi=300)
-    plt.close()
-    print(f"Bump chart saved to: {output_path}")
-        
-
-def plot_bump_chart_from_rankings(scenarios, savepath, legend, fontsize=12, gsa_mode="Si_total", mode="max", figname="bump_chart.png", rank_file=None, title=None):
-    """
-    Generates a bump chart from multiple scenario rankings to show how parameter importance changes.
-
-    Args:
-        - scenarios: list of scenario paths (each must have a rank file inside output/)
-        - savepath: directory to save the output chart
-        - fontsize: font size for plot labels
-        - gsa_mode: "Si_total" or "Si", depending on which ranking file was generated
-        - mode: ranking strategy: "max", "mean", or "sum"
-        - figname: filename of the output bump chart
-    """
-
-    param_ranks = defaultdict(dict)
-    param_effects = defaultdict(dict)
-    all_params = set()
-    param_names_per_scenario = []
-
-    if rank_file is None:
-        rank_file = f"Rank_{gsa_mode}_{mode}.txt"
-
-    # Step 1: Collect all ranks and effects from each scenario
-    for scenario in scenarios:
-        rank_file_full_path = os.path.join(scenario, "output", rank_file)
-        scenario_name = scenario.rstrip("/").split("/")[-3]  # Adjust this if needed
-
-        with open(rank_file_full_path, "r") as f:
-            params_in_this_scenario = []
-            for i, line in enumerate(f.readlines()):
-                param, value = line.strip().split("\t")
-                param_ranks[param][scenario_name] = i + 1  # 1-based rank
-                param_effects[param][scenario_name] = float(value)
-                all_params.add(param)
-                params_in_this_scenario.append(param)
-            param_names_per_scenario.append(params_in_this_scenario)
-
-    # Consistency check for parameter names across scenarios
+    # ------------------------
+    # Consistency check
+    # ------------------------
     first_param_set = set(param_names_per_scenario[0])
     first_rank_file = os.path.join(scenarios[0], "output", rank_file)
     for idx, param_list in enumerate(param_names_per_scenario[1:], start=1):
@@ -978,127 +909,460 @@ def plot_bump_chart_from_rankings(scenarios, savepath, legend, fontsize=12, gsa_
                 print(f"Extra parameters in scenario {idx+1}: {sorted(extra)}")
             raise ValueError("Parameter names mismatch between scenarios.")
 
-    all_params = sorted(all_params)
+    if len(all_params) != len(param_names_per_scenario[0]):
+        raise ValueError("Possible repeated parameter names in the xlabels file.")
+
     all_scenarios = [s.rstrip("/").split("/")[-3] for s in scenarios]
+    scenario1, last_scenario = all_scenarios[0], all_scenarios[-1]
 
-    # Step 2: Convert to 2D matrix of ranks
-    rank_matrix = []
-    for param in all_params:
-        ranks = []
-        for scen in all_scenarios:
-            rank = param_ranks[param].get(scen, len(all_params) + 1)  # Unranked params to bottom
-            ranks.append(rank)
-        rank_matrix.append(ranks)
+    # ------------------------
+    # Identify top_n parameters for first and last scenario
+    # ------------------------
+    top_n_params = sorted(first_param_set, key=lambda p: param_ranks[p][scenario1])[:top_n]
+    top_n_last_params = sorted(first_param_set, key=lambda p: param_ranks[p][last_scenario])[:top_n]
+    outside_top_n_params = sorted(all_params - set(top_n_params))
 
-    # Step 3: Plot
-    plt.figure(figsize=(12, max(6, len(all_params) * 0.25)))
-    ax = plt.gca()
+    # ------------------------
+    # Assign markers to outside params
+    # ------------------------
+    special_markers = ['s', 'D', '^', 'v', 'P', '*', 'X', 'h', '<', '>']
+    param_to_marker = {
+        param: special_markers[i % len(special_markers)]
+        for i, param in enumerate(outside_top_n_params)
+    }
 
-    for idx, (param, ranks) in enumerate(zip(all_params, rank_matrix)):
-        effects = [param_effects[param].get(scen, 0.0) for scen in all_scenarios]
-        rank_range = max(ranks) - min(ranks)
+    # ------------------------
+    # Initialize plot
+    # ------------------------
+    fig_width = 10
+    fig_height = max(6, len(top_n_params) * 0.25)
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height), constrained_layout=False)
+    plt.subplots_adjust(left=0.15, right=0.85, top=0.9, bottom=0.2)
 
-        x = np.arange(len(all_scenarios))
-        y = np.array(ranks)
-        points = np.array([x, y]).T.reshape(-1, 1, 2)
-        segments = np.concatenate([points[:-1], points[1:]], axis=1)
+    outside_params_plotted = set()
 
-        segment_colors = []
-        for i in range(len(segments)):
-            e1, e2 = effects[i], effects[i+1]
-            # Colors
-            very_light_grey = "#8888887A"  # low importance
-            grey = '#888888'             # high importance
-            red = '#FF6961'
-            # Both points low importance
-            if e1 < 0.05 and e2 < 0.05:
-                segment_colors.append(very_light_grey)
-            # Both points high importance
-            elif e1 >= 0.05 and e2 >= 0.05:
-                if rank_range >= 10:
-                    segment_colors.append(red)
-                else:
-                    segment_colors.append(grey)
-            # Gradient for red-to-grey or grey-to-red
-            elif rank_range >= 10 and (e1 >= 0.05 or e2 >= 0.05):
-                # Only apply gradient if one of the points is red and rank_range >= 10
-                if e1 >= 0.05 and e2 < 0.05:
-                    c0 = to_rgba(red)
-                    c1 = to_rgba(very_light_grey)
-                elif e1 < 0.05 and e2 >= 0.05:
-                    c0 = to_rgba(very_light_grey)
-                    c1 = to_rgba(red)
-                else:
-                    c0 = to_rgba(grey)
-                    c1 = to_rgba(grey)
-                cmap = LinearSegmentedColormap.from_list('custom_gradient', [c0, c1])
-                n_steps = 100
-                grad_colors = [cmap(j / (n_steps - 1)) for j in range(n_steps)]
-                seg_x = np.linspace(segments[i][0][0], segments[i][1][0], n_steps)
-                seg_y = np.linspace(segments[i][0][1], segments[i][1][1], n_steps)
-                for j in range(n_steps - 1):
-                    ax.plot([seg_x[j], seg_x[j+1]], [seg_y[j], seg_y[j+1]], color=grad_colors[j], linewidth=2, zorder=2)
-                continue  # Skip adding to LineCollection for this segment
-            # Gradient for grey to very light grey or vice versa (not red)
-            elif (e1 >= 0.05 and e2 < 0.05) or (e1 < 0.05 and e2 >= 0.05):
-                c0 = to_rgba(grey) if e1 >= 0.05 else to_rgba(very_light_grey)
-                c1 = to_rgba(very_light_grey) if e1 >= 0.05 else to_rgba(grey)
-                cmap = LinearSegmentedColormap.from_list('custom_gradient_grey', [c0, c1])
-                n_steps = 100
-                grad_colors = [cmap(j / (n_steps - 1)) for j in range(n_steps)]
-                seg_x = np.linspace(segments[i][0][0], segments[i][1][0], n_steps)
-                seg_y = np.linspace(segments[i][0][1], segments[i][1][1], n_steps)
-                for j in range(n_steps - 1):
-                    ax.plot([seg_x[j], seg_x[j+1]], [seg_y[j], seg_y[j+1]], color=grad_colors[j], linewidth=2, zorder=2)
-                continue  # Skip adding to LineCollection for this segment
-            else:
-                # Default to high importance grey if not caught above
-                segment_colors.append(grey)
-        # For non-gradient segments, add to LineCollection
-            lc = LineCollection([segments[i]], colors=[segment_colors[-1]], linewidths=2)
-            ax.add_collection(lc)
+    # ------------------------
+    # Helper functions
+    # ------------------------
+    def appears_in_top_n_any_scenario(param):
+        return any(param_ranks[param].get(s, len(all_params)+1) <= top_n for s in all_scenarios)
 
-        # Plot points individually
-        for i, (xi, yi, ei) in enumerate(zip(x, y, effects)):
-            if ei >= 0.05 and rank_range >= 10:
-                color = red
-            elif ei < 0.05:
-                color = very_light_grey
-            else:
-                color = grey
-            ax.scatter(xi, yi, color=color, zorder=3)
+    def get_color_for_param(param):
+        for k, v in xlabels_dict.items():
+            if v.get("latex") == param:
+                return v.get("color", "#8F8F8F")
+        return "#8F8F8F"
 
-        # Add label to the left of the first point
-        ax.text(
-            -0.1,
-            y[0],
-            f"{param}",
-            fontsize=fontsize - 3,
-            va='center',
-            ha='right'
-        )
+    def get_color_with_alpha(base_color, effect):
+        alpha = 0.3 if effect < 0.05 else 1.0
+        return to_rgba(base_color, alpha)
 
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
+    # ------------------------
+    # Plot top_n parameters
+    # ------------------------
+    for param in top_n_params:
+        ranks = [param_ranks[param].get(s, len(all_params)+1) for s in all_scenarios]
+        effects = [param_effects[param].get(s, 0.0) for s in all_scenarios]
+        ranks_clipped = [r if r <= top_n else np.nan for r in ranks]
+        base_color = get_color_for_param(param)
+
+        for i in range(len(all_scenarios)-1):
+            r1, r2 = ranks_clipped[i], ranks_clipped[i+1]
+            if np.isnan(r1) or np.isnan(r2):
+                continue
+            effect = max(effects[i], effects[i+1])
+            color = get_color_with_alpha(base_color, effect)
+            ax.plot([i, i+1], [r1, r2], color=color, linewidth=2, zorder=1)
+
+        for ix, (rank, effect) in enumerate(zip(ranks_clipped, effects)):
+            if np.isnan(rank):
+                continue
+            color = get_color_with_alpha(base_color, effect)
+            ax.scatter(ix, rank, s=200, marker='.', color=color, zorder=3)
+
+    # ------------------------
+    # Plot outside_top_n parameters
+    # ------------------------
+    for param in outside_top_n_params:
+        ranks_all = [param_ranks[param].get(s, len(all_params)+1) for s in all_scenarios]
+        effects_all = [param_effects[param].get(s, 0.0) for s in all_scenarios]
+        marker = param_to_marker[param]
+        base_color = get_color_for_param(param)
+        prev_rank, prev_ix = None, None
+        appeared_in_top_n = False
+
+        for ix, (rank, effect) in enumerate(zip(ranks_all, effects_all)):
+            color = get_color_with_alpha(base_color, effect)
+            if rank <= top_n:
+                appeared_in_top_n = True
+                ax.scatter(ix, rank, s=100, marker=marker,
+                           facecolors='white', edgecolors=color,
+                           linewidths=1.5, zorder=3)
+
+                if prev_rank is not None and prev_rank <= top_n:
+                    ax.plot([prev_ix, ix], [prev_rank, rank],
+                            color=color, linewidth=1.5, zorder=2)
+
+            prev_rank, prev_ix = rank, ix
+
+        if appeared_in_top_n:
+            outside_params_plotted.add(param)
+
+    # ------------------------
+    # Label parameters
+    # ------------------------
+    for param in top_n_params:
+        rank1 = param_ranks[param][scenario1]
+        label = xlabels_dict.get(param, {}).get("latex", param)
+        ax.text(-0.3, rank1, label, fontsize=fontsize-2, va='center', ha='right')
+
+    for param in top_n_last_params:
+        rank_last = param_ranks[param][last_scenario]
+        label = xlabels_dict.get(param, {}).get("latex", param)
+        ax.text(len(all_scenarios)-0.7, rank_last, label, fontsize=fontsize-2, va='center', ha='left')
+
+    # ------------------------
+    # Axis and title formatting
+    # ------------------------
     ax.invert_yaxis()
+    ax.set_ylim(top_n+0.5, 0.5)
+    ax.set_xticks(np.arange(len(all_scenarios)))
+    ax.set_xticklabels(legend, fontsize=fontsize, rotation=30)
     ax.axes.yaxis.set_visible(False)
-
-    # plt.xlabel("Mesh", fontsize=fontsize)
+    ax.spines[:].set_visible(False)
 
     if title is None:
-        title = f"Bump Chart of Parameter Rankings in Different Meshes"
-    # title = format_title_with_bold_latex(title)
-    plt.title(title, fontsize=fontsize + 2, fontweight='bold')
-    plt.xticks(ticks=np.arange(len(all_scenarios)), labels=legend, fontsize=fontsize, rotation=30)
-    plt.tight_layout()
+        title = "Bump Chart of Parameter Rankings in Different Meshes"
+    ax.set_title(title, fontsize=fontsize+2, fontweight='bold')
 
+    # ------------------------
+    # Legend for parameter categories
+    # ------------------------
+    legend_mapping = {
+        "Rsys": "Left side parameter",
+        "Rpulm": "Right side parameter",
+        "a_ventricles": "Either side parameter"
+    }
+
+    legend_handles = []
+    for param, label in legend_mapping.items():
+        color = xlabels_dict.get(param, {}).get("color", "#8F8F8F")
+        handle = Line2D([0], [0], color=color, lw=3, label=label)
+        legend_handles.append(handle)
+
+    ax.legend(
+        handles=legend_handles,
+        loc='upper center',
+        fontsize=fontsize-1,
+        frameon=False,
+        bbox_to_anchor=(0.5, -0.4),
+        ncol=3
+    )
+
+    # ------------------------
+    # Legend for outside top_n parameters
+    # ------------------------
+    outside_legend_params = (outside_params_plotted - set(top_n_last_params))
+    if outside_legend_params:
+        special_legend_handles = []
+        for param in sorted(outside_legend_params):
+            marker = param_to_marker[param]
+            base_color = get_color_for_param(param)
+            effects = [param_effects[param].get(s, 0.0) for s in all_scenarios]
+            avg_effect = np.mean(effects)
+            color = get_color_with_alpha(base_color, avg_effect)
+            label = xlabels_dict.get(param, {}).get("latex", param)
+
+            handle = Line2D(
+                [0], [0],
+                marker=marker,
+                color='black',
+                label=label,
+                markerfacecolor='white',
+                markeredgecolor=color,
+                markersize=10,
+                linestyle='None',
+                markeredgewidth=1.5
+            )
+            special_legend_handles.append(handle)
+
+        ax.figure.legend(
+            handles=special_legend_handles,
+            loc='lower center',
+            bbox_to_anchor=(0.5, -0.2),
+            fontsize=fontsize-2,
+            frameon=False,
+            ncol=min(len(special_legend_handles), 5)
+        )
+
+    # ------------------------
+    # Save
+    # ------------------------
     os.makedirs(savepath, exist_ok=True)
     output_path = os.path.join(savepath, figname)
-    plt.savefig(output_path, dpi=300)
+    plt.savefig(output_path, dpi=300, bbox_inches='tight', pad_inches=0.2)
     plt.close()
     print(f"Bump chart saved to: {output_path}")
+
+def plot_bump_chart_from_rankings(
+    scenarios,
+    savepath,
+    legend,
+    fontsize=12,
+    gsa_mode="Si_total",
+    mode="max",
+    figname="bump_chart.png",
+    rank_file=None,
+    title=None,
+    top_n=40,
+    xlabels_to_plot=None
+):
+    """
+    Generates a bump chart showing parameter rankings with simplified coloring.
+    Coloring logic:
+        - Low importance: effect < 0.05
+        - High importance & stable: effect ≥ 0.05 and small variability
+        - High importance & highly variable: effect ≥ 0.05 and rank_range ≥ 10
+    """
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+    from collections import defaultdict
+
+    if xlabels_to_plot is None:
+        xlabels_to_plot = {}
+
+    param_ranks = defaultdict(dict)
+    param_effects = defaultdict(dict)
+    all_params = set()
+    param_names_per_scenario = []
+
+    if rank_file is None:
+        rank_file = f"Rank_{gsa_mode}_{mode}.txt"
+
+    # ------------------------
+    # Load rankings and effects
+    # ------------------------
+    for scenario in scenarios:
+        rank_file_full_path = os.path.join(scenario, "output", rank_file)
+        scenario_name = scenario.rstrip("/").split("/")[-3]
+
+        with open(rank_file_full_path, "r") as f:
+            params_in_this_scenario = []
+            for i, line in enumerate(f.readlines()):
+                param, value = line.strip().split("\t")
+                param_ranks[param][scenario_name] = i + 1  # 1-based rank
+                param_effects[param][scenario_name] = float(value)
+                all_params.add(param)
+                params_in_this_scenario.append(param)
+            param_names_per_scenario.append(params_in_this_scenario)
+
+    # ------------------------
+    # Consistency check
+    # ------------------------
+    first_param_set = set(param_names_per_scenario[0])
+    first_rank_file = os.path.join(scenarios[0], "output", rank_file)
+    for idx, param_list in enumerate(param_names_per_scenario[1:], start=1):
+        this_param_set = set(param_list)
+        this_rank_file = os.path.join(scenarios[idx], "output", rank_file)
+        missing = first_param_set - this_param_set
+        extra = this_param_set - first_param_set
+        if missing or extra:
+            print(f"\nParameter names mismatch detected!")
+            print(f"First scenario rank file: {first_rank_file}")
+            print(f"Current scenario rank file: {this_rank_file}")
+            if missing:
+                print(f"Parameters missing in scenario {idx+1}: {sorted(missing)}")
+            if extra:
+                print(f"Extra parameters in scenario {idx+1}: {sorted(extra)}")
+            raise ValueError("Parameter names mismatch between scenarios.")
+
+    if len(all_params) != len(param_names_per_scenario[0]):
+        raise ValueError("Possible repeated parameter names in the xlabels file.")
+
+    all_scenarios = [s.rstrip("/").split("/")[-3] for s in scenarios]
+    scenario1, last_scenario = all_scenarios[0], all_scenarios[-1]
+
+    # ------------------------
+    # Identify top_n parameters for first and last scenario
+    # ------------------------
+    top_n_params = sorted(first_param_set, key=lambda p: param_ranks[p][scenario1])[:top_n]
+    top_n_last_params = sorted(first_param_set, key=lambda p: param_ranks[p][last_scenario])[:top_n]
+    outside_top_n_params = sorted(all_params - set(top_n_params))
+
+    # ------------------------
+    # Assign markers to outside params
+    # ------------------------
+    special_markers = ['s', 'D', '^', 'v', 'P', '*', 'X', 'h', '<', '>']
+    param_to_marker = {
+        param: special_markers[i % len(special_markers)]
+        for i, param in enumerate(outside_top_n_params)
+    }
+
+    # ------------------------
+    # Initialize plot
+    # ------------------------
+    fig, ax = plt.subplots(figsize=(12, max(6, len(top_n_params) * 0.25)), constrained_layout=True)
+    very_light_grey = "#8888887A"
+    grey = "#888888"
+    high_variability = "#c08978"
+    colors_used_top_n, outside_params_plotted = set(), set()
+
+    # Helper function: determine color
+    def get_color(effect, rank_range):
+        if effect < 0.05:
+            return very_light_grey, 'low_importance'
+        elif rank_range >= 10:
+            return high_variability, 'high_variability'
+        else:
+            return grey, 'high_importance'
+
+    # ------------------------
+    # Track high variability parameters across all parameters (not just top_n)
+    # ------------------------
+    high_var_params_all = set()
+    for param in all_params:
+        ranks = [param_ranks[param].get(s, len(all_params)+1) for s in all_scenarios]
+        effects = [param_effects[param].get(s, 0.0) for s in all_scenarios]
+        rank_range = max(ranks) - min(ranks)
+        if max(effects) >= 0.05 and rank_range >= 10:
+            high_var_params_all.add(param)
+
+    # ------------------------
+    # Plot top_n parameters (from first scenario)
+    # ------------------------
+    for param in top_n_params:
+        ranks = [param_ranks[param].get(s, len(all_params)+1) for s in all_scenarios]
+        effects = [param_effects[param].get(s, 0.0) for s in all_scenarios]
+        ranks_clipped = [r if r <= top_n else np.nan for r in ranks]
+        rank_range = max(ranks) - min(ranks)
+
+        # Lines
+        for i in range(len(all_scenarios)-1):
+            r1, r2 = ranks_clipped[i], ranks_clipped[i+1]
+            if np.isnan(r1) or np.isnan(r2):
+                continue
+            color, color_label = get_color(max(effects[i], effects[i+1]), rank_range)
+            colors_used_top_n.add(color_label)  # Track colors used for legend
+            ax.plot([i, i+1], [r1, r2], color=color, linewidth=2, zorder=1)
+
+        # Points
+        for ix, (rank, effect) in enumerate(zip(ranks_clipped, effects)):
+            if np.isnan(rank):
+                continue
+            color, color_label = get_color(effect, rank_range)
+            colors_used_top_n.add(color_label)  # Track colors used for legend
+            ax.scatter(ix, rank, s=200, marker='.', color=color, zorder=3)
+
+    # ------------------------
+    # Helper: check if param appears in top_n of any scenario
+    # ------------------------
+    def appears_in_top_n_any_scenario(param):
+        for s in all_scenarios:
+            if param_ranks[param].get(s, len(all_params)+1) <= top_n:
+                return True
+        return False
+
+    # ------------------------
+    # Plot outside_top_n parameters and track those for legend
+    # ------------------------
+    high_var_params_for_legend = set()
+
+    for param in outside_top_n_params:
+        ranks_all = [param_ranks[param].get(s, len(all_params)+1) for s in all_scenarios]
+        effects_all = [param_effects[param].get(s, 0.0) for s in all_scenarios]
+        rank_range = max(ranks_all) - min(ranks_all)
+        marker = param_to_marker[param]
+        color, _ = get_color(max(effects_all), rank_range)
+
+        prev_ix, prev_rank = None, None
+        appeared_in_top_n = False
+        for ix, rank in enumerate(ranks_all):
+            if rank <= top_n:
+                appeared_in_top_n = True
+                ax.scatter(ix, rank, s=100, marker=marker, facecolors='white',
+                           edgecolors=color, linewidths=1.5, zorder=3)
+                if prev_ix is not None:
+                    ax.plot([prev_ix, ix], [prev_rank, rank], color=color,
+                            linewidth=1.5, zorder=1, linestyle='-')
+                prev_ix, prev_rank = ix, rank
+                outside_params_plotted.add(param)
+            else:
+                prev_ix, prev_rank = None, None
+
+        # Add to legend if highly variable AND appears in top_n of any scenario
+        if param in high_var_params_all and appears_in_top_n_any_scenario(param):
+            high_var_params_for_legend.add(param)
+
+    # ------------------------
+    # Label parameters on left (first scenario) and right (last scenario)
+    # ------------------------
+    for param in top_n_params:
+        rank1 = param_ranks[param][scenario1]
+        label = xlabels_to_plot.get(param, {}).get("latex", param)
+        ax.text(-0.3, rank1, label, fontsize=fontsize-2, va='center', ha='right')
+
+    for param in top_n_last_params:
+        rank_last = param_ranks[param][last_scenario]
+        label = xlabels_to_plot.get(param, {}).get("latex", param)
+        ax.text(len(all_scenarios)-0.7, rank_last, label, fontsize=fontsize-2, va='center', ha='left')
+
+    # ------------------------
+    # Axis & title formatting
+    # ------------------------
+    ax.invert_yaxis()
+    ax.set_ylim(top_n+0.5, 0.5)
+    ax.set_xticks(np.arange(len(all_scenarios)))
+    ax.set_xticklabels(legend, fontsize=fontsize, rotation=30)
+    ax.axes.yaxis.set_visible(False)
+    ax.spines[:].set_visible(False)
+    ax.set_title(title or "Bump Chart of Parameter Rankings in Different Meshes",
+                 fontsize=fontsize+2, fontweight='bold')
+
+    # ------------------------
+    # Legends
+    # ------------------------
+    legend_elements = []
+    if 'low_importance' in colors_used_top_n:
+        legend_elements.append(Line2D([0], [0], color=very_light_grey, lw=2, label='Low importance'))
+    if 'high_importance' in colors_used_top_n and 'low_importance' in colors_used_top_n:
+        legend_elements.append(Line2D([0], [0], color=grey, lw=2, label='High importance'))
+    # Show high variability legend if any high variability parameter exists in the plot
+    if high_var_params_all and 'low_importance' in colors_used_top_n:
+        legend_elements.append(Line2D([0], [0], color=high_variability, lw=2,
+                                      label='High importance & highly variable'))
+    if high_var_params_all and 'low_importance' not in colors_used_top_n:
+        legend_elements.append(Line2D([0], [0], color=high_variability, lw=2,
+                                      label='Highly variable'))
+
+    if legend_elements:
+        ax.legend(handles=legend_elements, loc='upper center',
+                  bbox_to_anchor=(0.5, -0.4), fontsize=fontsize-2, frameon=False, ncol=3)
+
+    # Combine outside params that were plotted + high variability params to show in legend,
+    # excluding those already labeled on right side in last scenario top_n
+    outside_legend_params = (outside_params_plotted | high_var_params_for_legend) - set(top_n_last_params)
+    if outside_legend_params:
+        special_legend_handles = [
+            Line2D([0], [0], marker=param_to_marker[param], color='black',
+                   label=xlabels_to_plot.get(param, {}).get("latex", param),
+                   markerfacecolor='white', markersize=10, linestyle='None', markeredgewidth=1.5)
+            for param in sorted(outside_legend_params)
+        ]
+        ax.figure.legend(handles=special_legend_handles, loc='lower center',
+                         bbox_to_anchor=(0.5, -0.2), fontsize=fontsize-2,
+                         frameon=False, ncol=min(len(special_legend_handles), 5))
+
+    # ------------------------
+    # Save
+    # ------------------------
+    os.makedirs(savepath, exist_ok=True)
+    output_path = os.path.join(savepath, figname)
+    plt.savefig(output_path, dpi=300, bbox_inches='tight', pad_inches=0.2)
+    plt.close()
+    print(f"Bump chart saved to: {output_path}")
+
 
 def main():
     parser = argparse.ArgumentParser(description="Plot GSA Visualizations")
@@ -1113,8 +1377,10 @@ def main():
     parser.add_argument('--threshold', type=float, default=0, help='Threshold for displaying xlabels')
     parser.add_argument('--plot_barchart', action='store_true', help='Whether to plot the GSA ranking as a bar chart')
     parser.add_argument('--plot_radar_chart', action='store_true', help='Whether to plot the GSA ranking as a radar chart')
+    parser.add_argument('--plot_bump_chart', action='store_true', help='Whether to plot the GSA ranking as a bump chart')
     parser.add_argument('--ylabels_dict', type=str, required=True, help='Path to the ylabels dictionary file (optional)')
     parser.add_argument('--xlabels_dict', type=str, required=True, help='Path to the xlabels dictionary file (optional)')
+    parser.add_argument('--top_n', type=int, default=100, help='Number of top parameters to display in the bump chart')
     args = parser.parse_args()
 
 
@@ -1129,9 +1395,11 @@ def main():
         colors=args.colors,
         threshold=args.threshold,
         plot_barchart=args.plot_barchart,
+        plot_radar_chart=args.plot_radar_chart,
+        plot_bump_chart=args.plot_bump_chart,
         ylabels_dict=args.ylabels_dict,
         xlabels_dict=args.xlabels_dict,
-        plot_radar_chart=args.plot_radar_chart
+        top_n=args.top_n
     )
 
 if __name__ == "__main__":
