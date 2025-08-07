@@ -25,3 +25,14 @@ poetry.lock
 simulation_toolbox/GPErks_modified/log/__pycache__/
 simulation_toolbox/GPErks_modified/perks/__pycache__/
 simulation_toolbox/GPErks_modified/train/__pycache__/
+simulation_toolbox/GPErks_modified/log/__pycache__/logger.cpython-39.pyc
+simulation_toolbox/GPErks_modified/log/__pycache__/logger.cpython-39.pyc
+simulation_toolbox/GPErks_modified/perks/__pycache__/cross_validation.cpython-39.pyc
+simulation_toolbox/GPErks_modified/perks/__pycache__/cross_validation.cpython-39.pyc
+simulation_toolbox/GPErks_modified/perks/__pycache__/gsa.cpython-39.pyc
+simulation_toolbox/GPErks_modified/perks/__pycache__/inference.cpython-39.pyc
+simulation_toolbox/GPErks_modified/plot/__pycache__/gsa.cpython-39.pyc
+simulation_toolbox/GPErks_modified/serialization/__pycache__/labels.cpython-39.pyc
+simulation_toolbox/GPErks_modified/train/__pycache__/emulator.cpython-39.pyc
+simulation_toolbox/GPErks_modified/utils/__pycache__/indices.cpython-39.pyc
+simulation_toolbox/GPErks_modified/utils/__pycache__/plotting.cpython-39.pyc
