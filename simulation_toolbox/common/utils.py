@@ -295,8 +295,6 @@ def generate_gsa_ranking_files(xlabels_file,
 	ylabels_all = np.loadtxt(ylabels_file, dtype=str)
 	ylabels_raw_all, ylabels_latex_all, features_idx_list = read_ylabels_dict(ylabels_dict, ylabels_all)
 	
-	print(f"{xlabels=}")
-
 	print(f"Will process a total of {len(features_idx_list)} features.")
 
 	### Process the files read
@@ -346,7 +344,6 @@ def generate_gsa_ranking_files(xlabels_file,
 			for i in range(len(xlabels)):
 				f.write(xlabels[ranked[i]] + "\t" + str(ranked_S[i]) + "\n")
 
-		print(f"{xlabels=} saved to {output_file} for scenario {scenario}")
 
 		print('Normalising ranked sensitivity to compute explained variance...')
 		ranked_S_norm = list(np.array(ranked_S) / sum(ranked_S))
