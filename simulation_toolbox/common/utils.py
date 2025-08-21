@@ -1,9 +1,11 @@
 import copy
+import csv
 import json
 import math
 import numpy as np
 import os
 import pyvista as pv
+import re
 import vtk
 import tqdm
 
@@ -43,7 +45,7 @@ def read_elem(filename,el_type='Tt',tags=True):
 							filtered_lines.append(columns[1:5])
 						else:
 							break
-    
+	
 			# Convert the filtered lines to a numpy array
 			# Skipping the first row (header) and using specific columns
 			data = np.array(filtered_lines, dtype=int)
@@ -63,8 +65,8 @@ def read_elem(filename,el_type='Tt',tags=True):
 		raise Exception('element type not recognised. Accepted: Tt, Tr, Ln')
 
 def read_pts(filename):
-    print(f'Reading: {filename}')
-    return np.loadtxt(filename, dtype=float, skiprows=1)
+	print(f'Reading: {filename}')
+	return np.loadtxt(filename, dtype=float, skiprows=1)
 
 def carp_to_pyvista(meshname):
 
@@ -95,24 +97,24 @@ def load_json(filename):
 
 def pts_elem_to_pyvista(pts,elem,add_tags=False,el_type='Tt'):
 
-    tmp_elem = elem
+	tmp_elem = elem
 
-    if el_type == 'Tt':
-        final_elem = tmp_elem[:,:4]  
-        tets = np.column_stack((np.ones((final_elem.shape[0],),dtype=int)*4,final_elem)).flatten() 
-        cell_type = np.ones((final_elem.shape[0],),dtype=int)*vtk.VTK_TETRA
-    elif el_type == 'Tr':
-        final_elem = tmp_elem[:,:3]
-        tets = np.column_stack((np.ones((final_elem.shape[0],),dtype=int)*3,final_elem)).flatten() 
-        cell_type = np.ones((final_elem.shape[0],),dtype=int)*vtk.VTK_TRIANGLE
+	if el_type == 'Tt':
+		final_elem = tmp_elem[:,:4]  
+		tets = np.column_stack((np.ones((final_elem.shape[0],),dtype=int)*4,final_elem)).flatten() 
+		cell_type = np.ones((final_elem.shape[0],),dtype=int)*vtk.VTK_TETRA
+	elif el_type == 'Tr':
+		final_elem = tmp_elem[:,:3]
+		tets = np.column_stack((np.ones((final_elem.shape[0],),dtype=int)*3,final_elem)).flatten() 
+		cell_type = np.ones((final_elem.shape[0],),dtype=int)*vtk.VTK_TRIANGLE
 
-    
-    plt_msh = pv.UnstructuredGrid(tets,cell_type,pts)
-    if add_tags:
-        tags = tmp_elem[:,-1]
-        plt_msh.cell_data["ID"] = tags
+	
+	plt_msh = pv.UnstructuredGrid(tets,cell_type,pts)
+	if add_tags:
+		tags = tmp_elem[:,-1]
+		plt_msh.cell_data["ID"] = tags
 
-    return plt_msh
+	return plt_msh
 
 
 def rotate_mesh(plt_msh,
@@ -237,3 +239,179 @@ def rotation_matrix(u: np.ndarray, theta: float) -> np.ndarray:
 	R[2,2] = u[2]**2 +math.cos(theta) * (1 - u[2]**2)
 
 	return R
+
+
+def read_ylabels_dict(ylabels_dict_file, ylabels_all):
+
+	print(f"Reading {ylabels_dict_file}")
+	with open(ylabels_dict_file, 'r') as f:
+		ylabels_dict = json.load(f)
+
+	features_idx_list = []
+	ylabels_raw_all = []
+	ylabels_latex_all = []
+
+	for label in ylabels_dict.keys():
+		ylabels_latex_all.append(ylabels_dict[label]["latex"])
+		ylabels_raw_all.append(label)
+		if ylabels_dict[label]["run"] == 1:
+			# We find where in ylabels_all is label:
+			if label in ylabels_all:
+				idx = np.where(ylabels_all == label)[0][0]
+				features_idx_list.append(idx)
+			else:
+				raise ValueError(f"Label '{label}' not found in ylabels_all. {ylabels_all=}")
+			
+	return ylabels_raw_all, ylabels_latex_all, features_idx_list
+
+
+def read_xlabels_dict(xlabels_dict_file, xlabels_all):
+	
+	with open(xlabels_dict_file, 'r') as f:
+		xlabels_dict = json.load(f)
+
+	return xlabels_all, xlabels_dict
+
+def sanitize_filename(filename):
+	"""
+	Sanitize the filename by removing or replacing invalid characters.
+	Replace multiple consecutive underscores with a single underscore.
+	"""
+	# Replace LaTeX special characters with underscores or remove them
+	sanitized = re.sub(r'[^\w\-_\. ]', '_', filename)
+	# Replace multiple underscores with a single underscore
+	sanitized = re.sub(r'_+', '_', sanitized)
+	return sanitized
+
+
+def generate_gsa_ranking_files(xlabels_file,
+							   ylabels_file,
+							   ylabels_dict,
+							   scenarios):
+
+	## We read all the files needed
+
+	xlabels = np.loadtxt(xlabels_file, dtype=str)
+	ylabels_all = np.loadtxt(ylabels_file, dtype=str)
+	ylabels_raw_all, ylabels_latex_all, features_idx_list = read_ylabels_dict(ylabels_dict, ylabels_all)
+	
+	print(f"{xlabels=}")
+
+	print(f"Will process a total of {len(features_idx_list)} features.")
+
+	### Process the files read
+
+	features_idx_list = list(np.array(features_idx_list, dtype=int))
+	ylabels = ylabels_raw_all
+
+
+	### Constant variables before the loop
+	features = features_idx_list
+	gsa_mode="Si_total"
+	mode="max"
+	threshold_cutoff=0
+	important_params_idx_file=None
+
+	for i, scenario in enumerate(scenarios):
+
+		ylabels = [ylabels_raw_all[i] for i in features]
+		loadpath_sobol=f"{scenario}/output/"
+
+		# Load the sensitivity index data (S) from the Sobol analysis file
+		with open(f"{loadpath_sobol}/{gsa_mode}.csv", 'r') as f:
+			csv_reader = csv.reader(f)
+			S = np.array([list(map(float, row)) for row in csv_reader])
+
+		# Rank parameters based on the global effect (max across all labels)
+		S_total = np.zeros((len(xlabels), 1), dtype=float)
+		print('Ranking parameters according to their ' + mode + ' effect...')
+
+		if mode == "mean":
+			S_total = np.mean(S, axis=1)
+		elif mode == "sum":
+			S_total = np.sum(S, axis=1)
+		elif mode == "max":
+			S_total = np.max(S, axis=1)
+		else:
+			print("mode not recognised: please choose between mean, max and sum")
+
+		ranked = np.argsort(S_total)
+		ranked = ranked[::-1]  # Reverse to get highest to lowest
+		ranked_S = S_total[ranked]
+
+		# Output the global ranking to a file
+		output_file = loadpath_sobol + "Rank_" + gsa_mode + "_" + mode + ".txt"
+		
+		with open(output_file, "w") as f:
+			for i in range(len(xlabels)):
+				f.write(xlabels[ranked[i]] + "\t" + str(ranked_S[i]) + "\n")
+
+		print(f"{xlabels=} saved to {output_file} for scenario {scenario}")
+
+		print('Normalising ranked sensitivity to compute explained variance...')
+		ranked_S_norm = list(np.array(ranked_S) / sum(ranked_S))
+
+		ranked_S_norm_cumulative = []
+		for i in range(len(xlabels)):
+			ranked_S_norm_cumulative.append(sum(ranked_S_norm[0:i + 1]))
+
+		# Output the cumulative variance
+		output_file = loadpath_sobol + "Rank_" + gsa_mode + "_" + mode + "_ExpVariance.txt"
+
+		with open(output_file, "w") as f:
+			for i in range(len(xlabels)):
+				f.write(xlabels[ranked[i]] + "\t" + str(ranked_S_norm[i]) + "\t" + str(ranked_S_norm_cumulative[i]) + "\n")
+
+		# Identify important parameters based on the cutoff threshold
+		if important_params_idx_file is not None:
+			idx_cutoff = np.where(np.array(ranked_S_norm_cumulative) > threshold_cutoff)[0][0]
+			idx_param = ranked[range(idx_cutoff + 1)]
+			np.savetxt(important_params_idx_file, idx_param, fmt="%g") 
+
+		# -----------------------------------------------
+		# Now repeat the process for each individual ylabel:
+		# -----------------------------------------------
+		print('Ranking parameters individually for each ylabel...')
+
+		# print(f"{S=}")
+
+		S = S[:, features]  # Filter S to only include the features we are interested in
+
+		for ylabel_idx in range(S.shape[1]):  # Loop over each ylabel
+			# print(f"Processing ylabel {ylabel_idx + 1}/{S.shape[1]}...")
+
+			# Get the sensitivity indices for the current ylabel
+			S_label_total = S[:, ylabel_idx]
+			
+			ranked_label = np.argsort(S_label_total)
+			ranked_label = ranked_label[::-1]  # Reverse to get highest to lowest
+			ranked_S_label = S_label_total[ranked_label]
+
+			# Sanitize ylabel for use in the filename
+			sanitized_ylabel = sanitize_filename(ylabels[ylabel_idx])
+
+			# Output the ranking for this label
+			label_output_file = f"{loadpath_sobol}/Rank_{gsa_mode}_{mode}_{sanitized_ylabel}.txt"
+
+			with open(label_output_file, "w") as f:
+				for i in range(len(xlabels)):
+					f.write(xlabels[ranked_label[i]] + "\t" + str(ranked_S_label[i]) + "\n")
+			
+			# Also compute and save cumulative variance for this ylabel
+			ranked_S_label_norm = list(np.array(ranked_S_label) / sum(ranked_S_label))
+			ranked_S_label_norm_cumulative = []
+			for i in range(len(xlabels)):
+				ranked_S_label_norm_cumulative.append(sum(ranked_S_label_norm[0:i + 1]))
+
+			label_output_variance_file = label_output_file[:-4] + "_ExpVariance.txt"
+			
+			with open(label_output_variance_file, "w") as f:
+				for i in range(len(xlabels)):
+					f.write(xlabels[ranked_label[i]] + "\t" + str(ranked_S_label_norm[i]) + "\t" + str(ranked_S_label_norm_cumulative[i]) + "\n")
+
+
+	return features_idx_list, ylabels_raw_all, ylabels_latex_all
+
+
+
+
