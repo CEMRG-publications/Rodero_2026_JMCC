@@ -393,6 +393,8 @@ def generate_gsa_ranking_files(xlabels_file,
 			with open(label_output_file, "w") as f:
 				for i in range(len(xlabels)):
 					f.write(xlabels[ranked_label[i]] + "\t" + str(ranked_S_label[i]) + "\n")
+
+			# print(f"Saved ranking for ylabel '{ylabels[ylabel_idx]}' to '{label_output_file}'")
 			
 			# Also compute and save cumulative variance for this ylabel
 			ranked_S_label_norm = list(np.array(ranked_S_label) / sum(ranked_S_label))
