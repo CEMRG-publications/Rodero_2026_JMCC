@@ -5,6 +5,8 @@ import numpy as np
 import os
 import seaborn as sns
 from matplotlib.colors import LinearSegmentedColormap
+import matplotlib.patheffects as path_effects
+import pandas as pd
 
 from common.utils import generate_gsa_ranking_files, read_xlabels_dict
 
@@ -15,6 +17,94 @@ def create_custom_colormap(n_ranks):
     """Create a discrete red to white colormap for rankings (darker = better rank)."""
     colors = ['white','#ff0000'] 
     return LinearSegmentedColormap.from_list('red_white', colors, N=n_ranks)
+
+
+def save_summary_statistics(heatmap_data, param_labels, output_labels, savepath, figname_prefix):
+    """
+    Save summary statistics for ranking data.
+    Creates two files: one for per-parameter stats and one for per-output stats.
+    Also includes overall averages across all valid numbers.
+    """
+    
+    # --- Per-parameter statistics ---
+    param_stats = []
+    for i, param in enumerate(param_labels):
+        param_data = heatmap_data[i, :]
+        valid_data = param_data[~np.isnan(param_data)]
+        if len(valid_data) > 0:
+            mean_var = np.mean(valid_data)
+            median_var = np.median(valid_data)
+            max_var = np.max(valid_data)
+            param_stats.append({
+                'Parameter': param,
+                'Mean_ranking': mean_var,
+                'Median_ranking': median_var,
+                'Max_ranking': max_var,
+                'N_Valid_Outputs': len(valid_data)
+            })
+    
+    # Sort by mean ranking (highest first)
+    param_stats = sorted(param_stats, key=lambda x: x['Mean_ranking'], reverse=False)
+    
+    # --- Overall statistics across all valid values ---
+    all_valid_values = heatmap_data[~np.isnan(heatmap_data)]
+    overall_mean = np.mean(all_valid_values)
+    overall_median = np.median(all_valid_values)
+    overall_max = np.max(all_valid_values)
+    
+    # Add overall average row
+    param_stats.append({
+        'Parameter': 'Overall_Average',
+        'Mean_ranking': overall_mean,
+        'Median_ranking': overall_median,
+        'Max_ranking': overall_max,
+        'N_Valid_Outputs': len(all_valid_values)
+    })
+    
+    # Save per-parameter statistics
+    param_df = pd.DataFrame(param_stats)
+    param_file = os.path.join(savepath, f"{figname_prefix}_parameter_ranking_summary.csv")
+    param_df.to_csv(param_file, index=False, float_format='%.3f')
+    print(f"Parameter ranking summary saved to: {param_file}")
+    
+    
+    # --- Per-output statistics ---
+    output_stats = []
+    for j, output in enumerate(output_labels):
+        output_data = heatmap_data[:, j]
+        valid_data = output_data[~np.isnan(output_data)]
+        if len(valid_data) > 0:
+            mean_var = np.mean(valid_data)
+            median_var = np.median(valid_data)
+            max_var = np.max(valid_data)
+            output_stats.append({
+                'Output': output,
+                'Mean_ranking': mean_var,
+                'Median_ranking': median_var,
+                'Max_ranking': max_var,
+                'N_Valid_Parameters': len(valid_data)
+            })
+    
+    # Sort by mean ranking (highest first)
+    output_stats = sorted(output_stats, key=lambda x: x['Mean_ranking'], reverse=False)
+    
+    # Add overall average row (same overall stats)
+    output_stats.append({
+        'Output': 'Overall_Average',
+        'Mean_ranking': overall_mean,
+        'Median_ranking': overall_median,
+        'Max_ranking': overall_max,
+        'N_Valid_Parameters': len(all_valid_values)
+    })
+    
+    # Save per-output statistics
+    output_df = pd.DataFrame(output_stats)
+    output_file = os.path.join(savepath, f"{figname_prefix}_output_ranking_summary.csv")
+    output_df.to_csv(output_file, index=False, float_format='%.3f')
+    print(f"Output ranking summary saved to: {output_file}")
+    
+    return param_df, output_df
+
 
 
 def plot_ranking_heatmap_all_outputs(
@@ -163,6 +253,29 @@ def plot_ranking_heatmap_all_outputs(
                     ax.add_patch(plt.Rectangle((j, i), 1, 1, fill=True, 
                                              facecolor='lightgray', edgecolor='black', linewidth=1))
     
+
+        # Add rank numbers as white text with a thin black outline
+    n_rows, n_cols = heatmap_data.shape
+    for i in range(n_rows):
+        for j in range(n_cols):
+            val = heatmap_data[i, j]
+            if not np.isnan(val):
+                txt = ax.text(
+                    j + 0.5,              # heatmap cells are unit squares starting at integer coords
+                    i + 0.5,
+                    f"{int(round(val))}", # show rank as an integer
+                    ha="center",
+                    va="center",
+                    fontsize=fontsize-2,
+                    color="white",
+                )
+                # thin black outline
+                txt.set_path_effects([
+                    path_effects.Stroke(linewidth=1, foreground="black"),
+                    path_effects.Normal()
+                ])
+
+
     # Formatting
     ax.set_xlabel('Output Features', fontsize=fontsize)
     # ax.set_ylabel('Parameters', fontsize=fontsize)
@@ -185,6 +298,14 @@ def plot_ranking_heatmap_all_outputs(
     plt.savefig(output_path, dpi=300, bbox_inches='tight', pad_inches=0.2)
     plt.close()
     print(f"Comprehensive ranking heatmap saved to: {output_path}")
+
+
+    # Save summary statistics for this scenario
+    save_summary_statistics(heatmap_data = heatmap_data, 
+    param_labels = param_labels, 
+    output_labels= output_labels, 
+    savepath = savepath, 
+    figname_prefix = f"baseline_scenario_{figname[-5]}")
 
 
 def generate_gsa_ranking_heatmaps(
@@ -257,6 +378,9 @@ def main():
                        help='Path to the xlabels dictionary file')
     
     args = parser.parse_args()
+
+    
+
     
     generate_gsa_ranking_heatmaps(
         scenarios=args.scenarios,
