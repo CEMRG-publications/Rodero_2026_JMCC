@@ -22,10 +22,10 @@ def get_color_with_alpha(base_color, effect):
     return to_rgba(base_color, alpha)
 
 # Helper function: determine color
-def get_color(effect, rank_range, very_light_grey, high_variability, grey):
+def get_color(effect, rank_range, very_light_grey, high_variability, grey, rank_range_threshold):
     if effect < 0.05:
         return very_light_grey, 'low_importance'
-    elif rank_range >= 10:
+    elif rank_range >= rank_range_threshold:
         return high_variability, 'high_variability'
     else:
         return grey, 'high_importance'
@@ -302,14 +302,15 @@ def plot_bump_chart_from_rankings(
     rank_file=None,
     title=None,
     top_n=40,
-    xlabels_to_plot=None
+    xlabels_to_plot=None,
+    rank_range_threshold=100
 ):
     """
     Generates a bump chart showing parameter rankings with simplified coloring.
     Coloring logic:
         - Low importance: effect < 0.05
         - High importance & stable: effect ≥ 0.05 and small variability
-        - High importance & highly variable: effect ≥ 0.05 and rank_range ≥ 10
+        - High importance & highly variable: effect ≥ 0.05 and rank_range ≥ rank_range_threshold
     """
 
 
@@ -386,7 +387,7 @@ def plot_bump_chart_from_rankings(
     # ------------------------
     # Initialize plot
     # ------------------------
-    _, ax = plt.subplots(figsize=(12, max(6, len(top_n_params) * 0.25)), constrained_layout=True)
+    _, ax = plt.subplots(figsize=(16, max(6, len(top_n_params) * 0.25)), constrained_layout=True)
     very_light_grey = "#8888887A"
     grey = "#888888"
     high_variability = "#c08978"
@@ -402,7 +403,7 @@ def plot_bump_chart_from_rankings(
         ranks = [param_ranks[param].get(s, len(all_params)+1) for s in all_scenarios]
         effects = [param_effects[param].get(s, 0.0) for s in all_scenarios]
         rank_range = max(ranks) - min(ranks)
-        if max(effects) >= 0.05 and rank_range >= 10:
+        if max(effects) >= 0.05 and rank_range >= rank_range_threshold:
             high_var_params_all.add(param)
 
     # ------------------------
@@ -421,7 +422,8 @@ def plot_bump_chart_from_rankings(
                 continue
             color, color_label = get_color(max(effects[i], effects[i+1]), 
                                            rank_range,
-                                           very_light_grey, high_variability, grey)
+                                           very_light_grey, high_variability, grey,
+                                           rank_range_threshold)
             colors_used_top_n.add(color_label)  # Track colors used for legend
             ax.plot([i, i+1], [r1, r2], color=color, linewidth=2, zorder=1)
 
@@ -429,7 +431,7 @@ def plot_bump_chart_from_rankings(
         for ix, (rank, effect) in enumerate(zip(ranks_clipped, effects)):
             if np.isnan(rank):
                 continue
-            color, color_label = get_color(effect, rank_range, very_light_grey, high_variability, grey)
+            color, color_label = get_color(effect, rank_range, very_light_grey, high_variability, grey, rank_range_threshold)
             colors_used_top_n.add(color_label)  # Track colors used for legend
             ax.scatter(ix, rank, s=200, marker='.', color=color, zorder=3)
 
@@ -445,7 +447,7 @@ def plot_bump_chart_from_rankings(
         effects_all = [param_effects[param].get(s, 0.0) for s in all_scenarios]
         rank_range = max(ranks_all) - min(ranks_all)
         marker = param_to_marker[param]
-        color, _ = get_color(max(effects_all), rank_range, very_light_grey, high_variability, grey)
+        color, _ = get_color(max(effects_all), rank_range, very_light_grey, high_variability, grey, rank_range_threshold)
 
         prev_ix, prev_rank = None, None
         for ix, rank in enumerate(ranks_all):
@@ -544,6 +546,7 @@ def generate_gsa_bump_chart(
     figname_preffix="",
     legend=None,
     top_n=10,
+    rank_range_threshold=100
 ):
     
     features_idx_list, ylabels_raw_all, ylabels_latex_all = generate_gsa_ranking_files(
@@ -557,19 +560,19 @@ def generate_gsa_bump_chart(
     _, xlabels_dict_all = read_xlabels_dict(xlabels_dict, xlabels)
 
 
-    plot_bump_chart_from_rankings_color_specific(
-        scenarios=scenarios,
-        savepath=savepath,
-        legend=legend,
-        xlabels_dict=xlabels_dict_all,
-        fontsize=fontsize,
-        gsa_mode="Si_total",
-        mode="max",
-        figname=f"{figname_preffix}_bump_chart_colored.png",
-        rank_file=None,  # Use default rank file
-        title="Bump chart of parameter rankings in different patients for all functional outputs",
-        top_n=top_n
-        )
+    # plot_bump_chart_from_rankings_color_specific(
+    #     scenarios=scenarios,
+    #     savepath=savepath,
+    #     legend=legend,
+    #     xlabels_dict=xlabels_dict_all,
+    #     fontsize=fontsize,
+    #     gsa_mode="Si_total",
+    #     mode="max",
+    #     figname=f"{figname_preffix}_bump_chart_colored.png",
+    #     rank_file=None,  # Use default rank file
+    #     title="Bump chart of parameter rankings in different patients for all functional outputs",
+    #     top_n=top_n
+    #     )
 
     
     plot_bump_chart_from_rankings(
@@ -582,26 +585,27 @@ def generate_gsa_bump_chart(
         title="Bump chart of parameter rankings in different patients for all functional outputs",
         legend=legend,
         xlabels_to_plot=xlabels_dict_all,
-        top_n=top_n
+        top_n=top_n,
+        rank_range_threshold=rank_range_threshold
         )
     
 
 
     for feature_idx in features_idx_list:
 
-        plot_bump_chart_from_rankings_color_specific(
-            scenarios=scenarios,
-            savepath=savepath,
-            legend=legend,
-            xlabels_dict=xlabels_dict_all,
-            fontsize=fontsize,
-            gsa_mode="Si_total",
-            mode="max",
-            figname=f"{figname_preffix}_bump_chart_{ylabels_raw_all[feature_idx]}_colored.png",
-            rank_file=f"Rank_Si_total_max_{ylabels_raw_all[feature_idx]}.txt",
-            title=f"Bump chart of parameter rankings in different patients for {ylabels_latex_all[feature_idx]}",
-            top_n=top_n
-        )
+        # plot_bump_chart_from_rankings_color_specific(
+        #     scenarios=scenarios,
+        #     savepath=savepath,
+        #     legend=legend,
+        #     xlabels_dict=xlabels_dict_all,
+        #     fontsize=fontsize,
+        #     gsa_mode="Si_total",
+        #     mode="max",
+        #     figname=f"{figname_preffix}_bump_chart_{ylabels_raw_all[feature_idx]}_colored.png",
+        #     rank_file=f"Rank_Si_total_max_{ylabels_raw_all[feature_idx]}.txt",
+        #     title=f"Bump chart of parameter rankings in different patients for {ylabels_latex_all[feature_idx]}",
+        #     top_n=top_n
+        # )
 
             
         plot_bump_chart_from_rankings(
@@ -615,7 +619,8 @@ def generate_gsa_bump_chart(
             title=f"Bump chart of parameter rankings in different patients for {ylabels_latex_all[feature_idx]}",
             legend=legend,
             xlabels_to_plot=xlabels_dict_all,
-            top_n=top_n
+            top_n=top_n,
+            rank_range_threshold=rank_range_threshold
         )
 
 
@@ -631,6 +636,7 @@ def main():
     parser.add_argument('--ylabels_dict', type=str, required=True, help='Path to the ylabels dictionary file (optional)')
     parser.add_argument('--xlabels_dict', type=str, required=True, help='Path to the xlabels dictionary file (optional)')
     parser.add_argument('--top_n', type=int, default=100, help='Number of top parameters to display in the bump chart')
+    parser.add_argument('--rank_range_threshold', type=int, default=100, help="Threshold for what it is considered varible.")
     args = parser.parse_args()
 
 
@@ -644,7 +650,8 @@ def main():
         legend=args.legend,
         ylabels_dict=args.ylabels_dict,
         xlabels_dict=args.xlabels_dict,
-        top_n=args.top_n
+        top_n=args.top_n,
+        rank_range_threshold=args.rank_range_threshold
     )
 
 if __name__ == "__main__":
