@@ -6,7 +6,9 @@ import os
 import seaborn as sns
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patheffects as path_effects
+from matplotlib import colors as mcolors
 import pandas as pd
+from skimage import color
 
 from common.utils import generate_gsa_ranking_files, read_xlabels_dict
 
@@ -14,9 +16,21 @@ from common.utils import generate_gsa_ranking_files, read_xlabels_dict
 # Helper functions
 # ------------------------
 def create_custom_colormap(n_ranks):
-    """Create a discrete red to white colormap for rankings (darker = better rank)."""
-    colors = ['white','#ff0000'] 
-    return LinearSegmentedColormap.from_list('red_white', colors, N=n_ranks)
+    """Create a perceptually uniform red-to-white colormap (darker = better rank)."""
+    # Define endpoints
+    start_color = np.array(mcolors.to_rgb('white'))
+    end_color = np.array(mcolors.to_rgb('#AA151B'))
+
+    # Convert to Lab for perceptual interpolation
+    start_lab = color.rgb2lab(start_color[np.newaxis, np.newaxis, :])
+    end_lab = color.rgb2lab(end_color[np.newaxis, np.newaxis, :])
+
+    # Interpolate in Lab space
+    labs = np.linspace(start_lab, end_lab, n_ranks).reshape(n_ranks, 3)
+    rgbs = color.lab2rgb(labs[np.newaxis, :, :])[0]
+
+    # Create colormap
+    return LinearSegmentedColormap.from_list('white_to_darkred_perceptual', rgbs, N=n_ranks)
 
 
 def save_summary_statistics(heatmap_data, param_labels, output_labels, savepath, figname_prefix):
@@ -119,7 +133,9 @@ def plot_ranking_heatmap_all_outputs(
     gsa_mode="Si_total",
     mode="max",
     figname="ranking_heatmap_all.png",
-    title=None
+    title=None,
+    skip_plots_and_summaries=False,
+    figname_prefix="baseline"
 ):
     """
     Creates a comprehensive heatmap with all output features as columns.
@@ -131,8 +147,10 @@ def plot_ranking_heatmap_all_outputs(
     overall_rank_file = os.path.join(scenario, "output", f"Rank_{gsa_mode}_{mode}.txt")
     
     if not os.path.exists(overall_rank_file):
-        print(f"Warning: Overall rank file not found: {overall_rank_file}")
-        return
+        overall_rank_file = f"{scenario}/Rank_{gsa_mode}_{mode}.txt"
+        if not os.path.exists(overall_rank_file):
+            print(f"Warning: Overall rank file not found: {overall_rank_file}")
+            return
     
     # Get all parameters from overall ranking
     all_params = []
@@ -147,7 +165,14 @@ def plot_ranking_heatmap_all_outputs(
     # Fill data matrix
     for j, feature_idx in enumerate(features_idx_list):
         ylabel_raw = ylabels_raw_all[feature_idx]
-        rank_file_path = os.path.join(scenario, "output", f"Rank_{gsa_mode}_{mode}_{ylabel_raw}.txt")
+        rank_file_path_output = os.path.join(scenario, "output", f"Rank_{gsa_mode}_{mode}_{ylabel_raw}.txt")
+        rank_file_path_no_output = os.path.join(scenario, f"Rank_{gsa_mode}_{mode}_{ylabel_raw}.txt")
+
+        if os.path.isfile(rank_file_path_output):
+            rank_file_path = rank_file_path_output
+        elif os.path.isfile(rank_file_path_no_output):
+            rank_file_path = rank_file_path_no_output
+
         
         if os.path.exists(rank_file_path):
             param_ranks = {}
@@ -202,7 +227,8 @@ def plot_ranking_heatmap_all_outputs(
     # Calculate figure size based on number of elements, with minimum size
     fig_width = max(16, n_outputs * 1.5)
     fig_height = max(12, n_params * 0.8)
-    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+    if not skip_plots_and_summaries:
+        fig, ax = plt.subplots(figsize=(fig_width, fig_height))
     
     # Create discrete colormap
     cmap = create_custom_colormap(max_rank)
@@ -210,102 +236,102 @@ def plot_ranking_heatmap_all_outputs(
     
     # Create mask for low importance values
     mask_low_importance = np.isnan(heatmap_data)
-    
+    if not skip_plots_and_summaries:
     # Plot heatmap with square tiles and edges
-    hm = sns.heatmap(
-        heatmap_data,
-        xticklabels=output_labels,
-        yticklabels=param_labels,
-        cmap=cmap,
-        vmin=1,
-        vmax=max_rank,
-        cbar_kws={
-            'label': 'Ranking position',
-            'shrink': 1.0  # Make colorbar same height as heatmap
-        },
-        ax=ax,
-        mask=mask_low_importance,
-        linewidths=1,
-        linecolor='black',
-        square=True,
-        cbar=True
-    )
-    
-    # Customize colorbar - remove ticks but keep labels, invert order, and set fontsize
-    cbar = hm.collections[0].colorbar
-    cbar.set_ticks([])  # Remove tick marks
-    
-    # Set tick labels at the center of each color segment, inverted order (1 at top)
-    tick_positions = np.arange(1, max_rank + 1)
-    cbar.set_ticks(tick_positions)
-    # Reverse the tick labels so rank 1 appears at top
-    # cbar.set_ticklabels(reversed(tick_positions))
-    cbar.ax.tick_params(size=0, labelsize=fontsize)  # Remove tick marks, set fontsize
-    
-    # Set colorbar label fontsize
-    cbar.set_label('Ranking position', fontsize=fontsize)
-    
-    # Color low importance parameters grey
-    if np.any(mask_low_importance):
-        for i in range(heatmap_data.shape[0]):
-            for j in range(heatmap_data.shape[1]):
-                if mask_low_importance[i, j]:
-                    ax.add_patch(plt.Rectangle((j, i), 1, 1, fill=True, 
-                                             facecolor='lightgray', edgecolor='black', linewidth=1))
-    
+        hm = sns.heatmap(
+            heatmap_data,
+            xticklabels=output_labels,
+            yticklabels=param_labels,
+            cmap=cmap,
+            vmin=1,
+            vmax=max_rank,
+            cbar_kws={
+                'label': 'Ranking position',
+                'shrink': 1.0  # Make colorbar same height as heatmap
+            },
+            ax=ax,
+            mask=mask_low_importance,
+            linewidths=1,
+            linecolor='black',
+            square=True,
+            cbar=True
+        )
+        
+        # Customize colorbar - remove ticks but keep labels, invert order, and set fontsize
+        cbar = hm.collections[0].colorbar
+        cbar.set_ticks([])  # Remove tick marks
+        
+        # Set tick labels at the center of each color segment, inverted order (1 at top)
+        tick_positions = np.arange(1, max_rank + 1)
+        cbar.set_ticks(tick_positions)
+        # Reverse the tick labels so rank 1 appears at top
+        # cbar.set_ticklabels(reversed(tick_positions))
+        cbar.ax.tick_params(size=0, labelsize=fontsize)  # Remove tick marks, set fontsize
+        
+        # Set colorbar label fontsize
+        cbar.set_label('Ranking position', fontsize=fontsize)
+        
+        # Color low importance parameters grey
+        if np.any(mask_low_importance):
+            for i in range(heatmap_data.shape[0]):
+                for j in range(heatmap_data.shape[1]):
+                    if mask_low_importance[i, j]:
+                        ax.add_patch(plt.Rectangle((j, i), 1, 1, fill=True, 
+                                                facecolor='lightgray', edgecolor='black', linewidth=1))
+        
 
-        # Add rank numbers as white text with a thin black outline
-    n_rows, n_cols = heatmap_data.shape
-    for i in range(n_rows):
-        for j in range(n_cols):
-            val = heatmap_data[i, j]
-            if not np.isnan(val):
-                txt = ax.text(
-                    j + 0.5,              # heatmap cells are unit squares starting at integer coords
-                    i + 0.5,
-                    f"{int(round(val))}", # show rank as an integer
-                    ha="center",
-                    va="center",
-                    fontsize=fontsize-2,
-                    color="white",
-                )
-                # thin black outline
-                txt.set_path_effects([
-                    path_effects.Stroke(linewidth=1, foreground="black"),
-                    path_effects.Normal()
-                ])
-
-
-    # Formatting
-    ax.set_xlabel('Output Features', fontsize=fontsize)
-    # ax.set_ylabel('Parameters', fontsize=fontsize)
-    
-    if title is None:
-        title = f"Sensitivity analysis for scenario {scenario_name}"
-    
-    ax.set_title(title, fontsize=fontsize+2, fontweight='bold', pad=20)
-    
-    # Rotate labels
-    plt.setp(ax.get_xticklabels(), rotation=45, ha='right', fontsize=fontsize-2)
-    plt.setp(ax.get_yticklabels(), rotation=0, fontsize=fontsize-2)
-    
-    # Adjust layout
-    plt.tight_layout()
-    
-    # Save figure
-    os.makedirs(savepath, exist_ok=True)
-    output_path = os.path.join(savepath, figname)
-    plt.savefig(output_path, dpi=300, bbox_inches='tight', pad_inches=0.2)
-    plt.close()
-    print(f"Comprehensive ranking heatmap saved to: {output_path}")
+            # Add rank numbers as white text with a thin black outline
+        n_rows, n_cols = heatmap_data.shape
+        for i in range(n_rows):
+            for j in range(n_cols):
+                val = heatmap_data[i, j]
+                if not np.isnan(val):
+                    txt = ax.text(
+                        j + 0.5,              # heatmap cells are unit squares starting at integer coords
+                        i + 0.5,
+                        f"{int(round(val))}", # show rank as an integer
+                        ha="center",
+                        va="center",
+                        fontsize=fontsize-2,
+                        color="white",
+                    )
+                    # thin black outline
+                    txt.set_path_effects([
+                        path_effects.Stroke(linewidth=1, foreground="black"),
+                        path_effects.Normal()
+                    ])
 
 
-    # Save summary statistics for this scenario
-    save_summary_statistics(heatmap_data = heatmap_data, 
-    param_labels = param_labels, 
-    output_labels= output_labels, 
-    savepath = savepath, 
-    figname_prefix = f"baseline_scenario_{figname[-5]}")
+        # Formatting
+        ax.set_xlabel('Output Features', fontsize=fontsize)
+        # ax.set_ylabel('Parameters', fontsize=fontsize)
+        
+        if title is None:
+            title = f"Sensitivity analysis for scenario {scenario_name}"
+        
+        ax.set_title(title, fontsize=fontsize+2, fontweight='bold', pad=20)
+        
+        # Rotate labels
+        plt.setp(ax.get_xticklabels(), rotation=45, ha='right', fontsize=fontsize-2)
+        plt.setp(ax.get_yticklabels(), rotation=0, fontsize=fontsize-2)
+        
+        # Adjust layout
+        plt.tight_layout()
+        
+        # Save figure
+        os.makedirs(savepath, exist_ok=True)
+        output_path = os.path.join(savepath, figname)
+        plt.savefig(output_path, dpi=300, bbox_inches='tight', pad_inches=0.2)
+        plt.close()
+        print(f"Comprehensive ranking heatmap saved to: {output_path}")
+
+
+        # Save summary statistics for this scenario
+        save_summary_statistics(heatmap_data = heatmap_data, 
+        param_labels = param_labels, 
+        output_labels= output_labels, 
+        savepath = savepath, 
+        figname_prefix = f"{figname_prefix}_scenario_{figname[-5]}")
 
 
 def generate_gsa_ranking_heatmaps(
@@ -318,6 +344,7 @@ def generate_gsa_ranking_heatmaps(
     xlabels_dict,
     fontsize=12,
     figname_prefix="",
+    skip_plots_and_summaries=False
 ):
     """
     Main function to generate ranking heatmaps for all scenarios.
@@ -351,7 +378,9 @@ def generate_gsa_ranking_heatmaps(
             features_idx_list=features_idx_list,
             fontsize=fontsize,
             figname=f"{figname_prefix}_heatmap_{i}.png",
-            title=f"Sensitivity analysis for {scenario_name}"
+            title=f"Sensitivity analysis for {scenario_name}",
+            skip_plots_and_summaries=skip_plots_and_summaries,
+            figname_prefix=figname_prefix
         )
 
 
@@ -376,6 +405,7 @@ def main():
                        help='Path to the ylabels dictionary file')
     parser.add_argument('--xlabels_dict', type=str, required=True, 
                        help='Path to the xlabels dictionary file')
+    parser.add_argument('--skip_plots_and_summaries', action='store_true')
     
     args = parser.parse_args()
 
@@ -391,7 +421,8 @@ def main():
         fontsize=args.fontsize,
         figname_prefix=args.figname_prefix,
         ylabels_dict=args.ylabels_dict,
-        xlabels_dict=args.xlabels_dict
+        xlabels_dict=args.xlabels_dict,
+        skip_plots_and_summaries=args.skip_plots_and_summaries
     )
 
 
