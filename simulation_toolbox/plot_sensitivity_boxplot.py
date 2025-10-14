@@ -271,7 +271,7 @@ def create_multipanel_boxplot(
                           marker=marker, zorder=3, edgecolor='black', linewidth=0.5)
         
         # Plot boxplots
-        bp = ax.boxplot(boxplot_data, labels=param_labels, patch_artist=True,
+        bp = ax.boxplot(boxplot_data, tick_labels=param_labels, patch_artist=True,
                        showfliers=False, widths=0.6)
         
         # Color boxplots by group
@@ -286,13 +286,13 @@ def create_multipanel_boxplot(
             whisker.set(linewidth=1, color='black', alpha=0.7)
         for cap in bp['caps']:
             cap.set(linewidth=1, color='black', alpha=0.7)
-        # for median in bp['medians']:
-        #     median.set(linewidth=2, color='darkred')
+        for median in bp['medians']:
+            median.set(linewidth=2, color='#AA151B')
         
         
         
         # Add vertical line at y=0.05 threshold
-        ax.axhline(y=0.05, color='red', linestyle='-', alpha=0.3, linewidth=2)
+        ax.axhline(y=0.05, color='#AA151B', linestyle='-', alpha=0.3, linewidth=2)
         
         # Set y-axis to log scale
         ax.set_yscale('log')
@@ -368,13 +368,13 @@ def create_multipanel_boxplot(
     # First legend — Output type (box colors)
     legend1 = fig.legend(
         handles=group_handles,
-        title="Output type",
+        title="Parameter scale",
         loc='upper center',
         bbox_to_anchor=(0.77, 0.35),
         ncol=1,
-        fontsize=fontsize-1,
+        fontsize=fontsize+2,
         frameon=False,
-        title_fontsize=fontsize
+        title_fontsize=fontsize+3
     )
     legend1.get_title().set_fontweight('bold')
 
@@ -386,9 +386,9 @@ def create_multipanel_boxplot(
         loc='upper center',
         bbox_to_anchor=(0.92, 0.35),
         ncol=1,
-        fontsize=fontsize-1,
+        fontsize=fontsize+2,
         frameon=False,
-        title_fontsize=fontsize
+        title_fontsize=fontsize+3
     )
     legend2.get_title().set_fontweight('bold')
 
@@ -403,7 +403,7 @@ def create_multipanel_boxplot(
     
     # Add supertitle if provided
     if supertitle:
-        fig.suptitle(supertitle, fontsize=fontsize+9, fontweight='bold', y=0.995)
+        fig.suptitle(supertitle, fontsize=fontsize+12, fontweight='bold', y=0.995)
     
     plt.tight_layout(rect=[0, 0.05, 1, 0.99])
     
