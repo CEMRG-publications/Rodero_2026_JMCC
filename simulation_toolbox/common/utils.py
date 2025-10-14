@@ -257,7 +257,7 @@ def read_ylabels_dict(ylabels_dict_file, ylabels_all):
 		if ylabels_dict[label]["run"] == 1:
 			# We find where in ylabels_all is label:
 			if label in ylabels_all:
-				idx = np.where(ylabels_all == label)[0][0]
+				idx = len(ylabels_raw_all)-1
 				features_idx_list.append(idx)
 			else:
 				raise ValueError(f"Label '{label}' not found in ylabels_all. {ylabels_all=}")
@@ -294,7 +294,7 @@ def generate_gsa_ranking_files(xlabels_file,
 	xlabels = np.loadtxt(xlabels_file, dtype=str)
 	ylabels_all = np.loadtxt(ylabels_file, dtype=str)
 	ylabels_raw_all, ylabels_latex_all, features_idx_list = read_ylabels_dict(ylabels_dict, ylabels_all)
-	
+	# print(f"{features_idx_list=}")
 	print(f"Will process a total of {len(features_idx_list)} features.")
 
 	### Process the files read
@@ -305,6 +305,7 @@ def generate_gsa_ranking_files(xlabels_file,
 
 	### Constant variables before the loop
 	features = features_idx_list
+	# print(f"{features=}")
 	gsa_mode="Si_total"
 	mode="max"
 	threshold_cutoff=0
@@ -312,10 +313,16 @@ def generate_gsa_ranking_files(xlabels_file,
 
 	for i, scenario in enumerate(scenarios):
 
-		ylabels = [ylabels_raw_all[i] for i in features]
-		loadpath_sobol=f"{scenario}/output/"
+		ylabels = [ylabels_raw_all[i2] for i2 in features]
+		print(f"{features=}")
+		print(f"{ylabels_raw_all=}")
+		print(f"{ylabels=}")
+		loadpath_sobol=f"{scenario}"
 
 		# Load the sensitivity index data (S) from the Sobol analysis file
+		
+		if not os.path.isfile(f"{loadpath_sobol}/{gsa_mode}.csv"):
+			loadpath_sobol = f"{scenario}/output"
 		with open(f"{loadpath_sobol}/{gsa_mode}.csv", 'r') as f:
 			csv_reader = csv.reader(f)
 			S = np.array([list(map(float, row)) for row in csv_reader])
@@ -338,7 +345,7 @@ def generate_gsa_ranking_files(xlabels_file,
 		ranked_S = S_total[ranked]
 
 		# Output the global ranking to a file
-		output_file = loadpath_sobol + "Rank_" + gsa_mode + "_" + mode + ".txt"
+		output_file = f"{loadpath_sobol}/Rank_{gsa_mode}_{mode}.txt"
 		
 		with open(output_file, "w") as f:
 			for i in range(len(xlabels)):
@@ -353,7 +360,7 @@ def generate_gsa_ranking_files(xlabels_file,
 			ranked_S_norm_cumulative.append(sum(ranked_S_norm[0:i + 1]))
 
 		# Output the cumulative variance
-		output_file = loadpath_sobol + "Rank_" + gsa_mode + "_" + mode + "_ExpVariance.txt"
+		output_file = f"{loadpath_sobol}/Rank_{gsa_mode}_{mode}_ExpVariance.txt"
 
 		with open(output_file, "w") as f:
 			for i in range(len(xlabels)):
@@ -389,7 +396,7 @@ def generate_gsa_ranking_files(xlabels_file,
 
 			# Output the ranking for this label
 			label_output_file = f"{loadpath_sobol}/Rank_{gsa_mode}_{mode}_{sanitized_ylabel}.txt"
-
+			# print(f"{label_output_file=}")
 			with open(label_output_file, "w") as f:
 				for i in range(len(xlabels)):
 					f.write(xlabels[ranked_label[i]] + "\t" + str(ranked_S_label[i]) + "\n")
