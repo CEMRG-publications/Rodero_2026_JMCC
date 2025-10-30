@@ -1,10 +1,9 @@
 #!/bin/bash
 set -e  # Exit if any command fails
 
-echo "=== Starting sensitivity boxplot comparison for all chambers (single combined call) ==="
 
 # -----------------------------------
-# Define parameter ranges for advanced HCM
+# Define parameter ranges for pharma
 # -----------------------------------
 PARAMS_pharma=(
   "dr_V 0.0 50.0"
@@ -65,51 +64,60 @@ done
 echo "✅ All required directories found."
 
 # -----------------------------------
-# Define all outputs (combined from all chambers)
+# Define all chamber configurations
 # -----------------------------------
-ALL_OUTPUTS=(
-  LVedv LVedp LVesv LVpMax LVSV LVEF LVdpdtMax V_TAT
-  RVedv RVedp RVesv RVpMax RVSV RVEF RVdpdtMax
-  LAedv LAvMax LApMax LAinflV
-  RAedv RAvMax RApMax RAinflV
-  diastAP systAP pulseAP mAP diastPAP systPAP pulsePAP mPAP
-)
+declare -A CONFIGS
 
+CONFIGS["LV"]="LVedv LVedp LVesv LVpMax LVSV LVEF LVdpdtMax V_TAT"
+CONFIGS["RV"]="RVedv RVedp RVesv RVpMax RVSV RVEF RVdpdtMax V_TAT"
+CONFIGS["LA"]="LAedv LAvMax LApMax LAinflV A_TAT"
+CONFIGS["RA"]="RAedv RAvMax RApMax RAinflV A_TAT"
+CONFIGS["ART"]="diastAP systAP pulseAP mAP diastPAP systPAP pulsePAP mPAP"
+CONFIGS["ALL"]="LVedv LVedp LVesv LVpMax LVSV LVEF LVdpdtMax V_TAT \
+RVedv RVedp RVesv RVpMax RVSV RVEF RVdpdtMax \
+LAedv LAvMax LApMax LAinflV A_TAT \
+RAedv RAvMax RApMax RAinflV \
+diastAP systAP pulseAP mAP diastPAP systPAP pulsePAP mPAP"
 # -----------------------------------
-# Define save path for combined output
+# Common arguments
 # -----------------------------------
-SAVE_PATH=/media/croderog/Bob/HCM/GSA_analysis/boxplots_pharma/all_chambers
-mkdir -p "$SAVE_PATH"
-
-# -----------------------------------
-# Run combined comparison
-# -----------------------------------
-echo ""
-echo "=== 🧠 Running single combined sensitivity comparison for all chambers ==="
-
-cmd=(python3 print_comparison_analysis.py
+COMMON_ARGS=(
   --n_anatomies 5
   --anatomy_names "Mid-to-apical LVH" LVOTO "Isolated basal LVH" "Milder asymmetric LVH" "Undifferentiated pattern"
   --xlabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels_to_plot.json
   --ylabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels_filtered.json
   --exclusions /media/croderog/Bob/HCM/GSA_analysis/cycle/parameters_exclusions.json
-  --savepath "$SAVE_PATH"
-  --outputs "${ALL_OUTPUTS[@]}"
-  --anatomy1_baseline "$anatomy1_base"
-  --anatomy2_baseline "$anatomy2_base"
-  --anatomy3_baseline "$anatomy3_base"
-  --anatomy4_baseline "$anatomy4_base"
-  --anatomy5_baseline "$anatomy5_base"
-  --anatomy1_modified "${anatomy1_mod[@]}"
-  --anatomy2_modified "${anatomy2_mod[@]}"
-  --anatomy3_modified "${anatomy3_mod[@]}"
-  --anatomy4_modified "${anatomy4_mod[@]}"
-  --anatomy5_modified "${anatomy5_mod[@]}"
 )
 
-# echo "Executing: ${cmd[*]}"
-"${cmd[@]}"
+# -----------------------------------
+# Loop over all chamber configs
+# -----------------------------------
+for chamber in "${!CONFIGS[@]}"; do
+  IFS="|" read -r outputs <<< "${CONFIGS[$chamber]}"
+
+  echo ""
+  echo "=== 🧠 Running sensitivity comparison for ${chamber} ==="
+
+  cmd=(python3 print_comparison_functional_vs_anatomical.py
+    "${COMMON_ARGS[@]}"
+    --outputs $outputs
+    --anatomy1_baseline "$anatomy1_base"
+    --anatomy2_baseline "$anatomy2_base"
+    --anatomy3_baseline "$anatomy3_base"
+    --anatomy4_baseline "$anatomy4_base"
+    --anatomy5_baseline "$anatomy5_base"
+    --anatomy1_modified "${anatomy1_mod[@]}"
+    --anatomy2_modified "${anatomy2_mod[@]}"
+    --anatomy3_modified "${anatomy3_mod[@]}"
+    --anatomy4_modified "${anatomy4_mod[@]}"
+    --anatomy5_modified "${anatomy5_mod[@]}"
+    --savepath /media/croderog/Bob/HCM/GSA_analysis/boxplots_pharma/functional_vs_anatomical/${chamber}
+  )
+
+  # echo "Executing: ${cmd[*]}"
+  "${cmd[@]}"
+  # echo "✅ ${chamber} sensitivity comparison done."
+done
 
 echo ""
-echo "✅ Combined sensitivity comparison for all chambers completed."
-echo "📁 Results saved in: ${SAVE_PATH}"
+echo "🎉 All chamber sensitivity comparisons completed successfully."

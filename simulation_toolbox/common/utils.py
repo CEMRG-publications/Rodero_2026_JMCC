@@ -314,9 +314,9 @@ def generate_gsa_ranking_files(xlabels_file,
 	for i, scenario in enumerate(scenarios):
 
 		ylabels = [ylabels_raw_all[i2] for i2 in features]
-		print(f"{features=}")
-		print(f"{ylabels_raw_all=}")
-		print(f"{ylabels=}")
+		# print(f"{features=}")
+		# print(f"{ylabels_raw_all=}")
+		# print(f"{ylabels=}")
 		loadpath_sobol=f"{scenario}"
 
 		# Load the sensitivity index data (S) from the Sobol analysis file

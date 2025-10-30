@@ -240,7 +240,7 @@ def generate_gsa_sensitivity_range_summary(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Print GSA Sensitivity Range Summary")
+    parser = argparse.ArgumentParser(description="Script to print a summary of sensitivity ranges across baseline scenarios.")
     parser.add_argument('--scenarios', nargs='+', required=True,
                         help='Paths to the scenario folders')
     parser.add_argument('--xlabels', required=True,
