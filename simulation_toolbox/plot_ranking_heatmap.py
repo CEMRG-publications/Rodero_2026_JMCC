@@ -325,13 +325,13 @@ def plot_ranking_heatmap_all_outputs(
         plt.close()
         print(f"Comprehensive ranking heatmap saved to: {output_path}")
 
-
+        scenario_number = figname.split("_")[-1].split(".")[0]
         # Save summary statistics for this scenario
         save_summary_statistics(heatmap_data = heatmap_data, 
         param_labels = param_labels, 
         output_labels= output_labels, 
         savepath = savepath, 
-        figname_prefix = f"{figname_prefix}_scenario_{figname[-5]}")
+        figname_prefix = f"{figname_prefix}_scenario_{scenario_number}")
 
 
 def generate_gsa_ranking_heatmaps(
