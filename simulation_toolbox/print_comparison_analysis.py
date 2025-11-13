@@ -39,11 +39,12 @@ def extract_sensitivity_data(scenario_path, ylabels_raw_all, gsa_mode="Si_total"
 def compute_differences(baseline_data, modified_data, excluded_params=None):
     if excluded_params is None:
         excluded_params = []
-    differences = {'absolute': {}, 'relative': {}, 'raw': {}}
+    differences = {'absolute': {}, 'relative': {}, 'raw': {}, 'percentage': {}}
     for output_name in baseline_data.keys():
         differences['absolute'][output_name] = {}
         differences['relative'][output_name] = {}
         differences['raw'][output_name] = {}
+        differences['percentage'][output_name] = {}
         baseline_params = baseline_data[output_name]
         modified_params = modified_data.get(output_name, {})
         for param in baseline_params.keys():
@@ -55,6 +56,11 @@ def compute_differences(baseline_data, modified_data, excluded_params=None):
                 differences['absolute'][output_name][param] = abs(modified_val - baseline_val)
                 differences['relative'][output_name][param] = abs((modified_val - baseline_val) / baseline_val) if baseline_val != 0 else None
                 differences['raw'][output_name][param] = modified_val - baseline_val
+                # Percentage difference from baseline
+                if baseline_val != 0:
+                    differences['percentage'][output_name][param] = ((modified_val - baseline_val) / baseline_val) * 100
+                else:
+                    differences['percentage'][output_name][param] = None
     return differences
 
 def analyze_scenario_differences(anatomies_dict, ylabels_raw_all, xlabels_dict, ylabels_dict, exclusions, gsa_mode="Si_total", mode="max"):
@@ -92,28 +98,44 @@ def compute_range_statistics(all_differences, modified_names, anatomy_names, yla
     anatomy_ranges, output_ranges, parameter_ranges, scenario_ranges = {}, {}, {}, {}
     individual_ranges = []
 
-
     # Overall ranges by anatomy
     for anat in anatomy_names:
         vals = []
-
+        pct_vals = []
         for mod in modified_names:
-            # Get the absolute differences for this anatomy and modified scenario
             absolute_diffs = all_differences[anat][mod]['absolute']
+            percentage_diffs = all_differences[anat][mod]['percentage']
             
             for out_name, param_dict in absolute_diffs.items():
                 for param, value in param_dict.items():
                     if value is not None:
                         vals.append(value)
+                    pct_val = percentage_diffs.get(out_name, {}).get(param)
+                    if pct_val is not None:
+                        pct_vals.append(pct_val)
         if vals:
-            anatomy_ranges[anat] = {'mean': np.mean(vals), 'std': np.std(vals), 'range': np.max(vals)-np.min(vals)}
+            anatomy_ranges[anat] = {
+                'mean': np.mean(vals), 
+                'std': np.std(vals), 
+                'range': np.max(vals)-np.min(vals),
+                'pct_mean': np.mean(pct_vals) if pct_vals else None,
+                'pct_std': np.std(pct_vals) if pct_vals else None
+            }
 
     # Range by output
     for out in ylabels_raw_all:
         vals = [v for anat in anatomy_names for mod in modified_names 
                 for p, v in all_differences[anat][mod]['absolute'].get(out, {}).items() if v is not None]
+        pct_vals = [v for anat in anatomy_names for mod in modified_names 
+                    for p, v in all_differences[anat][mod]['percentage'].get(out, {}).items() if v is not None]
         if vals:
-            output_ranges[out] = {'mean': np.mean(vals), 'std': np.std(vals), 'range': np.max(vals)-np.min(vals)}
+            output_ranges[out] = {
+                'mean': np.mean(vals), 
+                'std': np.std(vals), 
+                'range': np.max(vals)-np.min(vals),
+                'pct_mean': np.mean(pct_vals) if pct_vals else None,
+                'pct_std': np.std(pct_vals) if pct_vals else None
+            }
 
     # Range by parameter
     all_params = set()
@@ -125,14 +147,30 @@ def compute_range_statistics(all_differences, modified_names, anatomy_names, yla
         vals = [all_differences[anat][mod]['absolute'][out][param]
                 for anat in anatomy_names for mod in modified_names for out in all_differences[anat][mod]['absolute'].keys()
                 if param in all_differences[anat][mod]['absolute'][out] and all_differences[anat][mod]['absolute'][out][param] is not None]
+        pct_vals = [all_differences[anat][mod]['percentage'][out][param]
+                    for anat in anatomy_names for mod in modified_names for out in all_differences[anat][mod]['percentage'].keys()
+                    if param in all_differences[anat][mod]['percentage'][out] and all_differences[anat][mod]['percentage'][out][param] is not None]
         if vals:
-            parameter_ranges[param] = {'mean': np.mean(vals), 'std': np.std(vals), 'range': np.max(vals)-np.min(vals)}
+            parameter_ranges[param] = {
+                'mean': np.mean(vals), 
+                'std': np.std(vals), 
+                'range': np.max(vals)-np.min(vals),
+                'pct_mean': np.mean(pct_vals) if pct_vals else None,
+                'pct_std': np.std(pct_vals) if pct_vals else None
+            }
 
     # Range by modified scenario
     for mod in modified_names:
         vals = [v for anat in anatomy_names for out in all_differences[anat][mod]['absolute'].values() for v in out.values() if v is not None]
+        pct_vals = [v for anat in anatomy_names for out in all_differences[anat][mod]['percentage'].values() for v in out.values() if v is not None]
         if vals:
-            scenario_ranges[mod] = {'mean': np.mean(vals), 'std': np.std(vals), 'range': np.max(vals)-np.min(vals)}
+            scenario_ranges[mod] = {
+                'mean': np.mean(vals), 
+                'std': np.std(vals), 
+                'range': np.max(vals)-np.min(vals),
+                'pct_mean': np.mean(pct_vals) if pct_vals else None,
+                'pct_std': np.std(pct_vals) if pct_vals else None
+            }
 
     # Top 3 individual combinations
     for anat in anatomy_names:
@@ -144,10 +182,21 @@ def compute_range_statistics(all_differences, modified_names, anatomy_names, yla
                 vals = [all_differences[anat][mod]['absolute'][out][param]
                         for mod in modified_names
                         if param in all_differences[anat][mod]['absolute'].get(out, {}) and all_differences[anat][mod]['absolute'][out][param] is not None]
+                pct_vals = [all_differences[anat][mod]['percentage'][out][param]
+                            for mod in modified_names
+                            if param in all_differences[anat][mod]['percentage'].get(out, {}) and all_differences[anat][mod]['percentage'][out][param] is not None]
                 if len(vals) > 1:
-                    individual_ranges.append({'anatomy': anat, 'output': out, 'parameter': param,
-                                              'range': np.max(vals)-np.min(vals),
-                                              'mean': np.mean(vals), 'std': np.std(vals)})
+                    individual_ranges.append({
+                        'anatomy': anat, 
+                        'output': out, 
+                        'parameter': param,
+                        'range': np.max(vals)-np.min(vals),
+                        'mean': np.mean(vals), 
+                        'std': np.std(vals),
+                        'pct_range': np.max(pct_vals)-np.min(pct_vals) if pct_vals else None,
+                        'pct_mean': np.mean(pct_vals) if pct_vals else None,
+                        'pct_std': np.std(pct_vals) if pct_vals else None
+                    })
     return anatomy_ranges, output_ranges, parameter_ranges, scenario_ranges, individual_ranges
 
 def print_and_save_top_ranges(anatomy_ranges, output_ranges, parameter_ranges, scenario_ranges, individual_ranges,
@@ -158,8 +207,10 @@ def print_and_save_top_ranges(anatomy_ranges, output_ranges, parameter_ranges, s
 
     # Compute overall statistics across all data
     all_vals = [v for anat in anatomy_names for mod in modified_names for out in all_differences[anat][mod]['absolute'].values() for v in out.values() if v is not None]
+    all_pct_vals = [v for anat in anatomy_names for mod in modified_names for out in all_differences[anat][mod]['percentage'].values() for v in out.values() if v is not None]
     overall_mean, overall_std = np.mean(all_vals), np.std(all_vals)
-    msg = f"Overall, modifying the scenarios resulted in a difference of {overall_mean:.6f}±{overall_std:.6f} in the sensitivity when compared to baseline"
+    overall_pct_mean, overall_pct_std = np.mean(all_pct_vals), np.std(all_pct_vals)
+    msg = f"Overall, modifying the scenarios resulted in a difference of {overall_mean:.6f}±{overall_std:.6f} in the sensitivity when compared to baseline ({overall_pct_mean:.2f}%±{overall_pct_std:.2f}%)"
     print("\n" + "="*120)
     print(msg)
     results_text.append(msg)
@@ -169,7 +220,8 @@ def print_and_save_top_ranges(anatomy_ranges, output_ranges, parameter_ranges, s
     results_text.append("\nTOP 3 ANATOMIES WITH HIGHEST VARIABILITY")
     sorted_anatomies = sorted(anatomy_ranges.items(), key=lambda x: x[1]['mean'], reverse=True)[:3]
     for i, (anat, stats) in enumerate(sorted_anatomies, 1):
-        msg = f"#{i}: The anatomy '{anat}' has the highest variability between baseline and scenarios, with a mean of {stats['mean']:.6f}±{stats['std']:.6f}"
+        pct_str = f" ({stats['pct_mean']:.2f}%±{stats['pct_std']:.2f}%)" if stats['pct_mean'] is not None else ""
+        msg = f"#{i}: The anatomy '{anat}' has the highest variability between baseline and scenarios, with a mean of {stats['mean']:.6f}±{stats['std']:.6f}{pct_str}"
         print(msg)
         results_text.append(msg)
 
@@ -179,7 +231,8 @@ def print_and_save_top_ranges(anatomy_ranges, output_ranges, parameter_ranges, s
     sorted_outputs = sorted(output_ranges.items(), key=lambda x: x[1]['mean'], reverse=True)[:3]
     for i, (out, stats) in enumerate(sorted_outputs, 1):
         label = ylabels_dict.get(out, {}).get('latex', out)
-        msg = f"#{i}: The output '{label}' has the highest variability between baseline and scenarios, with a range of {stats['mean']:.6f}±{stats['std']:.6f}"
+        pct_str = f" ({stats['pct_mean']:.2f}%±{stats['pct_std']:.2f}%)" if stats['pct_mean'] is not None else ""
+        msg = f"#{i}: The output '{label}' has the highest variability between baseline and scenarios, with a range of {stats['mean']:.6f}±{stats['std']:.6f}{pct_str}"
         print(msg)
         results_text.append(msg)
 
@@ -189,7 +242,8 @@ def print_and_save_top_ranges(anatomy_ranges, output_ranges, parameter_ranges, s
     sorted_params = sorted(parameter_ranges.items(), key=lambda x: x[1]['mean'], reverse=True)[:3]
     for i, (param, stats) in enumerate(sorted_params, 1):
         label = xlabels_dict.get(param, {}).get('latex', param)
-        msg = f"#{i}: The parameter '{label}' has the highest variability between baseline and scenarios, with a range of {stats['mean']:.6f}±{stats['std']:.6f}"
+        pct_str = f" ({stats['pct_mean']:.2f}%±{stats['pct_std']:.2f}%)" if stats['pct_mean'] is not None else ""
+        msg = f"#{i}: The parameter '{label}' has the highest variability between baseline and scenarios, with a range of {stats['mean']:.6f}±{stats['std']:.6f}{pct_str}"
         print(msg)
         results_text.append(msg)
 
@@ -198,7 +252,8 @@ def print_and_save_top_ranges(anatomy_ranges, output_ranges, parameter_ranges, s
     results_text.append("\nTOP 3 MODIFIED SCENARIOS WITH HIGHEST VARIABILITY")
     sorted_scenarios = sorted(scenario_ranges.items(), key=lambda x: x[1]['mean'], reverse=True)[:3]
     for i, (mod, stats) in enumerate(sorted_scenarios, 1):
-        msg = f"#{i}: The modified scenario '{mod}' has the highest variability between baseline and scenarios, with a range of {stats['mean']:.6f}±{stats['std']:.6f}"
+        pct_str = f" ({stats['pct_mean']:.2f}%±{stats['pct_std']:.2f}%)" if stats['pct_mean'] is not None else ""
+        msg = f"#{i}: The modified scenario '{mod}' has the highest variability between baseline and scenarios, with a range of {stats['mean']:.6f}±{stats['std']:.6f}{pct_str}"
         print(msg)
         results_text.append(msg)
 
@@ -220,12 +275,13 @@ def print_and_save_top_ranges(anatomy_ranges, output_ranges, parameter_ranges, s
                 max_diff = val
                 max_scenario = mod
         
+        pct_str = f" ({combo['pct_mean']:.2f}%±{combo['pct_std']:.2f}%)" if combo['pct_mean'] is not None else ""
+        pct_range_str = f" ({combo['pct_range']:.2f}%)" if combo.get('pct_range') is not None else ""
         msg = (f"#{i}: Anatomy='{combo['anatomy']}', Output='{out_label}', Parameter='{param_label}', "
-            f"Scenario='{max_scenario}' with range={combo['range']:.6f} (mean={combo['mean']:.6f}±{combo['std']:.6f}), "
+            f"Scenario='{max_scenario}' with range={combo['range']:.6f}{pct_range_str} (mean={combo['mean']:.6f}±{combo['std']:.6f}{pct_str}), "
             f"max difference={max_diff:.6f}")
         print(msg)
         results_text.append(msg)
-
 
     # Save summary
     summary_file = os.path.join(savepath, "top3_variability_summary.txt")
@@ -256,7 +312,12 @@ def save_detailed_range_csv(anatomy_ranges, output_ranges, parameter_ranges, sce
         'output_raw': c['output'],
         'parameter': xlabels_dict.get(c['parameter'], {}).get('latex', c['parameter']),
         'parameter_raw': c['parameter'],
-        'range': c['range'], 'mean': c['mean'], 'std': c['std']
+        'range': c['range'], 
+        'mean': c['mean'], 
+        'std': c['std'],
+        'pct_range': c.get('pct_range'),
+        'pct_mean': c.get('pct_mean'),
+        'pct_std': c.get('pct_std')
     } for c in individual_ranges])
     df.to_csv(os.path.join(savepath, "ranges_by_individual_combination.csv"), index=False)
 
@@ -296,7 +357,6 @@ def main():
     all_differences, modified_names, anatomy_names = analyze_scenario_differences(
         anatomies_dict, args.outputs, xlabels_dict, ylabels_dict, exclusions
     )
-
 
     anatomy_ranges, output_ranges, parameter_ranges, scenario_ranges, individual_ranges = compute_range_statistics(
         all_differences, modified_names, anatomy_names, args.outputs
