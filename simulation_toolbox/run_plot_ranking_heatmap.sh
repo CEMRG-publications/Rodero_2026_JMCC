@@ -54,71 +54,71 @@ check_dir() {
   fi
 }
 
-# # -----------------------------------
-# # 1️⃣ Call for baseline scenarios only
-# # -----------------------------------
-# baseline_scenarios=()
-# baseline_names=()
+# -----------------------------------
+# 1️⃣ Call for baseline scenarios only
+# -----------------------------------
+baseline_scenarios=()
+baseline_names=()
 
-# for i in "${!anatomy_base_dirs[@]}"; do
-#   dir="${anatomy_base_dirs[i]}"
-#   check_dir "$dir"
-#   baseline_scenarios+=("$dir")
-#   baseline_names+=("${anatomy_names[i]} baseline")
-# done
+for i in "${!anatomy_base_dirs[@]}"; do
+  dir="${anatomy_base_dirs[i]}"
+  check_dir "$dir"
+  baseline_scenarios+=("$dir")
+  baseline_names+=("${anatomy_names[i]} baseline")
+done
 
-# # echo "=== Generating ranking heatmap for baseline scenarios ==="
-# python3 plot_ranking_heatmap.py \
-#   --scenarios "${baseline_scenarios[@]}" \
-#   --xlabels /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels.txt \
-#   --ylabels /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels.txt \
-#   --savepath /media/croderog/Bob/HCM/GSA_analysis/heatmaps/baseline \
-#   --figname_prefix baseline \
-#   --ylabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels_filtered.json \
-#   --xlabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels_to_plot.json \
-#   --fontsize 25 \
-#   --scenarios_names "${baseline_names[@]}"
+# echo "=== Generating ranking heatmap for baseline scenarios ==="
+python3 plot_ranking_heatmap.py \
+  --scenarios "${baseline_scenarios[@]}" \
+  --xlabels /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels.txt \
+  --ylabels /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels.txt \
+  --savepath /media/croderog/Bob/HCM/GSA_analysis/heatmaps/baseline \
+  --figname_prefix baseline \
+  --ylabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels_filtered.json \
+  --xlabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels_to_plot.json \
+  --fontsize 25 \
+  --scenarios_names "${baseline_names[@]}"
 
 
-# echo "✅ Baseline ranking heatmap generated."
+echo "✅ Baseline ranking heatmap generated."
 
-# # -----------------------------------
-# # 2️⃣ Call for Advanced HCM (modified) scenarios
-# # -----------------------------------
-# advanced_scenarios=()
-# advanced_names=()
+# -----------------------------------
+# 2️⃣ Call for Advanced HCM (modified) scenarios
+# -----------------------------------
+advanced_scenarios=()
+advanced_names=()
 
-# for i in "${!anatomy_base_dirs[@]}"; do
-#   base="${anatomy_base_dirs[i]}"
-#   anat_name="${anatomy_names[i]}"
+for i in "${!anatomy_base_dirs[@]}"; do
+  base="${anatomy_base_dirs[i]}"
+  anat_name="${anatomy_names[i]}"
 
-#   for param in "${PARAMS_advanced_HCM[@]}"; do
-#     set -- $param
-#     pname=$1
-#     lower=$2
-#     upper=$3
+  for param in "${PARAMS_advanced_HCM[@]}"; do
+    set -- $param
+    pname=$1
+    lower=$2
+    upper=$3
 
-#     mod_dir="${base}output/GSA_${pname}_lower_${lower}_upper_${upper}"
-#     check_dir "$mod_dir"
-#     advanced_scenarios+=("$mod_dir")
-#     advanced_names+=("${anat_name} with ${pname} (${lower}-${upper})")
-#   done
-# done
+    mod_dir="${base}output/GSA_${pname}_lower_${lower}_upper_${upper}"
+    check_dir "$mod_dir"
+    advanced_scenarios+=("$mod_dir")
+    advanced_names+=("${anat_name} with ${pname} (${lower}-${upper})")
+  done
+done
 
-# echo "=== Generating ranking heatmap for Advanced HCM scenarios ==="
-# python3 plot_ranking_heatmap.py \
-#   --scenarios "${advanced_scenarios[@]}" \
-#   --xlabels /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels.txt \
-#   --ylabels /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels.txt \
-#   --savepath /media/croderog/Bob/HCM/GSA_analysis/heatmaps/disease \
-#   --figname_prefix diseased \
-#   --ylabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels_filtered.json \
-#   --xlabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels_to_plot.json \
-#   --fontsize 25 \
-#   --scenarios_names "${advanced_names[@]}" \
-# #   --skip_plots_and_summaries
+echo "=== Generating ranking heatmap for Advanced HCM scenarios ==="
+python3 plot_ranking_heatmap.py \
+  --scenarios "${advanced_scenarios[@]}" \
+  --xlabels /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels.txt \
+  --ylabels /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels.txt \
+  --savepath /media/croderog/Bob/HCM/GSA_analysis/heatmaps/functional_remodeling \
+  --figname_prefix functional_remodeled \
+  --ylabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels_filtered.json \
+  --xlabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels_to_plot.json \
+  --fontsize 25 \
+  --scenarios_names "${advanced_names[@]}" \
+#   --skip_plots_and_summaries
 
-# echo "✅ Advanced HCM ranking heatmap generated."
+echo "✅ Advanced HCM ranking heatmap generated."
 
 
 # -----------------------------------
