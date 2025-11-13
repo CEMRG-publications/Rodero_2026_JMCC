@@ -15,11 +15,15 @@ PARAMS_advanced_HCM=(
   "Rpulm 50.0 100.0"
   "PaPref 50.0 100.0"
   "kArt 50.0 100.0"
+  "ca50_A 50.0 100.0"
   "a_ventricles 50.0 100.0"
   "k_peri 50.0 100.0"
   "AoPref 50.0 100.0"
+ "dr_V 50.0 100.0"
+ "mu_V 50.0 100.0"
   "EDP_rv 50.0 100.0"
   "g_CaL 50.0 100.0"
+ "perm50_A 50.0 100.0"
   "a_atria 50.0 100.0"
 )
 
@@ -81,11 +85,11 @@ echo "✅ All required directories found."
 # -----------------------------------
 declare -A CONFIGS
 
-CONFIGS["LV"]="LVedv LVedp LVesv LVpMax LVSV LVEF LVdpdtMax V_TAT|LV_outputs|Global sensitivity analysis in LV outputs in diseased models"
-CONFIGS["RV"]="RVedv RVedp RVesv RVpMax RVSV RVEF RVdpdtMax V_TAT|RV_outputs|Global sensitivity analysis in RV outputs in diseased models"
-CONFIGS["LA"]="LAedv LAvMax LApMax LAinflV A_TAT|LA_outputs|Global sensitivity analysis in LA outputs in diseased models"
-CONFIGS["RA"]="RAedv RAvMax RApMax RAinflV A_TAT|RA_outputs|Global sensitivity analysis in RA outputs in diseased models"
-CONFIGS["ART"]="diastAP systAP pulseAP mAP diastPAP systPAP pulsePAP mPAP|artery_outputs|Global sensitivity analysis in arterial outputs in diseased models"
+CONFIGS["LV"]="LVedv LVedp LVesv LVpMax LVSV LVEF LVdpdtMax V_TAT|LV_outputs|Global sensitivity analysis in LV outputs on functional remodeling scenarios"
+CONFIGS["RV"]="RVedv RVedp RVesv RVpMax RVSV RVEF RVdpdtMax V_TAT|RV_outputs|Global sensitivity analysis in RV outputs on functional remodeling scenarios"
+CONFIGS["LA"]="LAedv LAvMax LApMax LAinflV A_TAT|LA_outputs|Global sensitivity analysis in LA outputs on functional remodeling scenarios"
+CONFIGS["RA"]="RAedv RAvMax RApMax RAinflV A_TAT|RA_outputs|Global sensitivity analysis in RA outputs on functional remodeling scenarios"
+CONFIGS["ART"]="diastAP systAP pulseAP mAP diastPAP systPAP pulsePAP mPAP|artery_outputs|Global sensitivity analysis in arterial outputs on functional remodeling scenarios"
 
 # -----------------------------------
 # Common arguments
@@ -96,7 +100,7 @@ COMMON_ARGS=(
   --xlabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels_to_plot.json
   --ylabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels_filtered.json
   --exclusions /media/croderog/Bob/HCM/GSA_analysis/cycle/parameters_exclusions.json
-  --savepath /media/croderog/Bob/HCM/GSA_analysis/boxplots_advanced_disease
+  --savepath /media/croderog/Bob/HCM/GSA_analysis/boxplots_functional_remodeling
   --fontsize 18
 )
 

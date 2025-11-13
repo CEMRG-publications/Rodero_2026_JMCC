@@ -14,11 +14,15 @@ PARAMS_advanced_HCM=(
   "Rpulm 50.0 100.0"
   "PaPref 50.0 100.0"
   "kArt 50.0 100.0"
+  "ca50_A 50.0 100.0"
   "a_ventricles 50.0 100.0"
   "k_peri 50.0 100.0"
   "AoPref 50.0 100.0"
+ "dr_V 50.0 100.0"
+ "mu_V 50.0 100.0"
   "EDP_rv 50.0 100.0"
   "g_CaL 50.0 100.0"
+ "perm50_A 50.0 100.0"
   "a_atria 50.0 100.0"
 )
 
