@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from matplotlib.patches import Rectangle
 from collections import defaultdict
 
 
@@ -150,7 +151,7 @@ def extract_all_anatomies_data(anatomies_dict, ylabels_raw_all, modified_names,
 
 def aggregate_for_scenario_boxplot(all_anatomies_data, xlabels_dict, threshold=0.05):
     """
-    Prepare data for boxplot visualization with scenarios as boxplots.
+    Prepare data for box visualization with scenarios.
     Returns nested dict: output_name -> parameter_name -> scenario_name -> list of (anatomy_name, value) tuples
     Also returns baseline data: output_name -> parameter_name -> list of (anatomy_name, value) tuples
     """
@@ -225,7 +226,7 @@ def create_scenario_boxplot(
     ylabels_dict,
     savepath,
     fontsize=12,
-    figname="sensitivity_scenario_boxplots.png",
+    figname="sensitivity_scenario_boxes.png",
     gsa_mode="Si_total",
     mode="max",
     ylabels_raw_all=None,
@@ -234,13 +235,14 @@ def create_scenario_boxplot(
     scenario_colors_file=None,
     supertitle=None,
     threshold=0.05,
-    exclusions_file=None
+    exclusions_file=None,
+    box_width=0.7
 ):
     """
-    Create multipanel boxplot with scenarios as boxplots (instead of anatomies).
+    Create multipanel plot with scenarios as boxes/patches (instead of boxplots).
     Each panel = one output
-    For each parameter: N+1 boxplots (baseline + N modified scenarios)
-    Each boxplot contains: values from different anatomies
+    For each parameter: N+1 boxes (baseline + N modified scenarios)
+    Each box represents the range (min to max) across anatomies
     """
     
     if ylabels_raw_all is None:
@@ -309,7 +311,7 @@ def create_scenario_boxplot(
     n_cols = min(3, n_outputs)
     n_rows = int(np.ceil(n_outputs / n_cols))
     
-    fig_width = 8 * n_cols
+    fig_width = 24
     fig_height = 7 * n_rows
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(fig_width, fig_height))
     axes = np.atleast_1d(axes).flatten()
@@ -347,7 +349,7 @@ def create_scenario_boxplot(
         if col_idx != 0:
             ax.set_yticklabels([])
         else:
-            ax.set_ylabel('Log-Sensitivity', fontsize=fontsize-1)
+            ax.set_ylabel('Log-Sensitivity')
         
         if output not in aggregated_by_output:
             ax.text(0.5, 0.5, f"No data for {output}", ha='center', va='center',
@@ -374,17 +376,18 @@ def create_scenario_boxplot(
                               key=lambda p: param_mean_baseline[p], 
                               reverse=True)
         
-        # Prepare boxplot data
-        # For each parameter: baseline + N scenarios (each boxplot has values from all anatomies)
-        all_boxplot_data = []
-        all_boxplot_anatomy_data = []  # Store (anatomy_name, value) tuples
+        # Prepare box data
         all_positions = []
         all_colors = []
-        all_scenario_labels = []  # Track which scenario each boxplot belongs to
+        all_scenario_labels = []
+        all_mins = []
+        all_maxs = []
+        all_means = []
+        all_anatomy_data = []  # Store individual anatomy data
         
         x_position = 1
-        param_positions = {}  # Store center position for each parameter
-        param_x_starts = {}  # Store start position for each parameter
+        param_positions = {}
+        param_x_starts = {}
         
         n_scenarios_per_param = len(all_scenarios) + 1  # +1 for baseline
         
@@ -402,57 +405,54 @@ def create_scenario_boxplot(
             param_center = x_position + (n_scenarios_per_param - 1) / 2.0
             param_positions[param] = param_center
             
-            # Add baseline boxplot
+            # Add baseline box
             if baseline_data:
-                all_boxplot_data.append([val for _, val in baseline_data])
-                all_boxplot_anatomy_data.append(baseline_data)
+                values = [val for _, val in baseline_data]
                 all_positions.append(x_position)
-                all_colors.append('red')  # Red for baseline
+                all_colors.append('#AA151B')
                 all_scenario_labels.append('Baseline')
+                all_mins.append(min(values))
+                all_maxs.append(max(values))
+                all_means.append(np.mean(values))
+                all_anatomy_data.append(baseline_data)
                 x_position += 1
             
-            # Add scenario boxplots
+            # Add scenario boxes
             for scenario_name in all_scenarios:
                 if scenario_name in scenario_data and len(scenario_data[scenario_name]) > 0:
                     scenario_vals_with_anatomy = scenario_data[scenario_name]
-                    all_boxplot_data.append([val for _, val in scenario_vals_with_anatomy])
-                    all_boxplot_anatomy_data.append(scenario_vals_with_anatomy)
+                    values = [val for _, val in scenario_vals_with_anatomy]
                     all_positions.append(x_position)
                     all_colors.append(scenario_color_map.get(scenario_name, '#808080'))
                     all_scenario_labels.append(scenario_name)
+                    all_mins.append(min(values))
+                    all_maxs.append(max(values))
+                    all_means.append(np.mean(values))
+                    all_anatomy_data.append(scenario_vals_with_anatomy)
                 x_position += 1
         
-        # Plot boxplots
-        if len(all_boxplot_data) > 0:
-            # Overlay individual points (anatomies) with different markers
-            for i, (anatomy_data, pos, scenario) in enumerate(zip(all_boxplot_anatomy_data, all_positions, all_scenario_labels)):
+        # Plot boxes/patches
+        if len(all_positions) > 0:
+            for i, (pos, color, min_val, max_val, mean_val, anatomy_data, scenario) in enumerate(
+                zip(all_positions, all_colors, all_mins, all_maxs, all_means, all_anatomy_data, all_scenario_labels)):
+                
+                # Draw box from min to max
+                height = max_val - min_val
+                rect = Rectangle((pos - box_width/2, min_val), box_width, height,
+                                facecolor=color, alpha=1, edgecolor='black', linewidth=1)
+                ax.add_patch(rect)
+                
+                
+                # Overlay individual points (anatomies) with different markers
                 for anatomy_name, val in anatomy_data:
                     marker = anatomy_markers[anatomy_name]
                     x = np.random.normal(pos, 0.05)
                     if scenario == 'Baseline':
-                        ax.scatter(x, val, alpha=0.6, s=50, color='darkred', 
-                                  marker=marker, zorder=3, edgecolor='darkred', linewidth=0.5)
+                        ax.scatter(x, val, alpha=0.6, s=50, color='black', 
+                                  marker=marker, zorder=4, edgecolor='black', linewidth=0.5)
                     else:
                         ax.scatter(x, val, alpha=0.6, s=50, color='black', 
-                                  marker=marker, zorder=3, edgecolor='black', linewidth=0.5)
-            
-            bp = ax.boxplot(all_boxplot_data, positions=all_positions, 
-                           patch_artist=True, showfliers=False, widths=0.7)
-            
-            # Color boxplots
-            for patch, color in zip(bp['boxes'], all_colors):
-                patch.set_facecolor(color)
-                patch.set_alpha(0.5)
-                patch.set_edgecolor('black')
-                patch.set_linewidth(1)
-            
-            # Style whiskers, caps, medians
-            for whisker in bp['whiskers']:
-                whisker.set(linewidth=1, color='black', alpha=0.7)
-            for cap in bp['caps']:
-                cap.set(linewidth=1, color='black', alpha=0.7)
-            for median in bp['medians']:
-                median.set(linewidth=2, color='#AA151B')
+                                  marker=marker, zorder=4, edgecolor='black', linewidth=0.5)
             
             # Add vertical separators between parameters
             for param in sorted_params:
@@ -471,11 +471,11 @@ def create_scenario_boxplot(
         output_title = output
         if output in ylabels_dict:
             output_title = ylabels_dict[output].get('latex', output)
-        ax.set_title(output_title, fontsize=fontsize, fontweight='bold')
+        ax.set_title(output_title, fontsize=18, fontweight='bold')
         
         # Grid
         ax.grid(True, alpha=0.3, linestyle='--', axis='y')
-        ax.tick_params(labelsize=fontsize-2)
+        ax.tick_params(labelsize=16)
         
         # X-axis labels: parameter names at center of each parameter group
         xtick_positions = []
@@ -487,7 +487,7 @@ def create_scenario_boxplot(
                 xtick_labels.append(latex_label)
         
         ax.set_xticks(xtick_positions)
-        ax.set_xticklabels(xtick_labels, rotation=45, ha='right', fontsize=fontsize-3)
+        ax.set_xticklabels(xtick_labels, rotation=45, ha='right', fontsize=15)
         
         # Add annotations
         if output in annotations:
@@ -508,7 +508,7 @@ def create_scenario_boxplot(
     # Create legends
     # Legend 1: Scenario colors
     scenario_handles = [
-        plt.Rectangle((0, 0), 1, 1, facecolor='red', alpha=0.5,
+        plt.Rectangle((0, 0), 1, 1, facecolor='#AA151B', alpha=1,
                      edgecolor='black', linewidth=1, label='Baseline')
     ]
     
@@ -516,14 +516,14 @@ def create_scenario_boxplot(
         color = scenario_color_map.get(scenario_name, '#808080')
         label = scenario_labels.get(scenario_name, scenario_name)
         scenario_handles.append(
-            plt.Rectangle((0, 0), 1, 1, facecolor=color, alpha=0.5,
+            plt.Rectangle((0, 0), 1, 1, facecolor=color, alpha=1,
                          edgecolor='black', linewidth=1, label=label)
         )
     
     legend1 = fig.legend(handles=scenario_handles, title="Treatment",
                         loc='upper center', bbox_to_anchor=(0.77, 0.35),
-                        ncol=1, fontsize=fontsize+2, frameon=False,
-                        title_fontsize=fontsize+3)
+                        ncol=1, fontsize=20, frameon=False,
+                        title_fontsize=21)
     legend1.get_title().set_fontweight('bold')
     
     # Legend 2: Anatomy markers
@@ -537,8 +537,8 @@ def create_scenario_boxplot(
     
     legend2 = fig.legend(handles=anatomy_handles, title="Heart",
                         loc='upper center', bbox_to_anchor=(0.92, 0.35),
-                        ncol=1, fontsize=fontsize+2, frameon=False,
-                        title_fontsize=fontsize+3)
+                        ncol=1, fontsize=20, frameon=False,
+                        title_fontsize=21)
     legend2.get_title().set_fontweight('bold')
     
     fig.add_artist(legend1)
@@ -550,7 +550,7 @@ def create_scenario_boxplot(
     
     # Add supertitle
     if supertitle:
-        fig.suptitle(supertitle, fontsize=fontsize+12, fontweight='bold', y=0.995)
+        fig.suptitle(supertitle, fontsize=30, fontweight='bold', y=0.995)
     
     plt.tight_layout(rect=[0, 0.05, 1, 0.99])
     
@@ -559,12 +559,12 @@ def create_scenario_boxplot(
     output_path = os.path.join(savepath, figname)
     plt.savefig(output_path, dpi=300, bbox_inches='tight', pad_inches=0.3)
     plt.close()
-    print(f"Scenario boxplot saved to: {output_path}")
+    print(f"Scenario boxes plot saved to: {output_path}")
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate sensitivity boxplots with scenarios as boxplots (baseline + modified)"
+        description="Generate sensitivity plots with scenarios as boxes/patches (baseline + modified)"
     )
     
     # Anatomy arguments
@@ -583,7 +583,7 @@ def main():
                        help='Path to save figures')
     parser.add_argument('--fontsize', type=int, default=12,
                        help='Font size')
-    parser.add_argument('--figname', default='sensitivity_scenario_boxplots.png',
+    parser.add_argument('--figname', default='sensitivity_scenario_boxes.png',
                        help='Output figure name')
     parser.add_argument('--annotations', default=None,
                        help='Path to annotations JSON')
@@ -601,6 +601,8 @@ def main():
                        help='Sensitivity threshold for inclusion')
     parser.add_argument('--exclusions', default=None,
                        help='Path to JSON file with exclusions')
+    parser.add_argument('--box_width', type=float, default=0.7,
+                       help='Width of boxes')
     
     # Parse known args first to get n_anatomies
     args, remaining = parser.parse_known_args()
@@ -629,7 +631,7 @@ def main():
     xlabels_dict = load_xlabels_dict(args.xlabels_dict)
     ylabels_dict = load_ylabels_dict(args.ylabels_dict)
     
-    # Create boxplots
+    # Create box plots
     create_scenario_boxplot(
         anatomies_dict=anatomies_dict,
         outputs=args.outputs,
@@ -646,7 +648,8 @@ def main():
         scenario_colors_file=args.scenario_colors,
         supertitle=args.supertitle,
         threshold=args.threshold,
-        exclusions_file=args.exclusions
+        exclusions_file=args.exclusions,
+        box_width=args.box_width
     )
 
 

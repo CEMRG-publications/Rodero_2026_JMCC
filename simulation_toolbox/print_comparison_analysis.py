@@ -179,10 +179,10 @@ def compute_range_statistics(all_differences, modified_names, anatomy_names, yla
             for mod in modified_names:
                 all_params_for_out.update(all_differences[anat][mod]['absolute'].get(out, {}).keys())
             for param in all_params_for_out:
-                vals = [all_differences[anat][mod]['absolute'][out][param]
+                vals = [np.abs(all_differences[anat][mod]['absolute'][out][param])
                         for mod in modified_names
                         if param in all_differences[anat][mod]['absolute'].get(out, {}) and all_differences[anat][mod]['absolute'][out][param] is not None]
-                pct_vals = [all_differences[anat][mod]['percentage'][out][param]
+                pct_vals = [np.abs(all_differences[anat][mod]['percentage'][out][param])
                             for mod in modified_names
                             if param in all_differences[anat][mod]['percentage'].get(out, {}) and all_differences[anat][mod]['percentage'][out][param] is not None]
                 if len(vals) > 1:
@@ -193,9 +193,13 @@ def compute_range_statistics(all_differences, modified_names, anatomy_names, yla
                         'range': np.max(vals)-np.min(vals),
                         'mean': np.mean(vals), 
                         'std': np.std(vals),
+                        'min': np.min(vals),
+                        'max': np.max(vals),
                         'pct_range': np.max(pct_vals)-np.min(pct_vals) if pct_vals else None,
                         'pct_mean': np.mean(pct_vals) if pct_vals else None,
-                        'pct_std': np.std(pct_vals) if pct_vals else None
+                        'pct_std': np.std(pct_vals) if pct_vals else None,
+                        'pct_min': np.min(pct_vals) if pct_vals else None,
+                        'pct_max': np.max(pct_vals) if pct_vals else None
                     })
     return anatomy_ranges, output_ranges, parameter_ranges, scenario_ranges, individual_ranges
 
@@ -206,14 +210,43 @@ def print_and_save_top_ranges(anatomy_ranges, output_ranges, parameter_ranges, s
     results_text = []
 
     # Compute overall statistics across all data
-    all_vals = [v for anat in anatomy_names for mod in modified_names for out in all_differences[anat][mod]['absolute'].values() for v in out.values() if v is not None]
-    all_pct_vals = [v for anat in anatomy_names for mod in modified_names for out in all_differences[anat][mod]['percentage'].values() for v in out.values() if v is not None]
-    overall_mean, overall_std = np.mean(all_vals), np.std(all_vals)
-    overall_pct_mean, overall_pct_std = np.mean(all_pct_vals), np.std(all_pct_vals)
-    msg = f"Overall, modifying the scenarios resulted in a difference of {overall_mean:.6f}±{overall_std:.6f} in the sensitivity when compared to baseline ({overall_pct_mean:.2f}%±{overall_pct_std:.2f}%)"
+    all_vals = [np.abs(v) for anat in anatomy_names for mod in modified_names for out in all_differences[anat][mod]['absolute'].values() for v in out.values() if v is not None]
+    all_pct_vals = [np.abs(v) for anat in anatomy_names for mod in modified_names for out in all_differences[anat][mod]['percentage'].values() for v in out.values() if v is not None]
+    overall_mean, overall_std, overall_min, overall_max = np.mean(all_vals), np.std(all_vals), np.min(all_vals), np.max(all_vals)
+    overall_pct_mean, overall_pct_std, overall_pct_min, overall_pct_max = np.mean(all_pct_vals), np.std(all_pct_vals), np.min(all_pct_vals), np.max(all_pct_vals)
+    msg = f"Overall, modifying the scenarios resulted in a difference of {overall_mean:.2e}±{overall_std:.2e} ([{overall_min:.2f}, {overall_max:.2f}]) in the sensitivity when compared to baseline ({overall_pct_mean:.2f}%±{overall_pct_std:.2f}%, range [{overall_pct_min:.2f}%, {overall_pct_max:.2f}%])"
     print("\n" + "="*120)
     print(msg)
     results_text.append(msg)
+
+
+
+    print("\nTOP 3 INDIVIDUAL COMBINATIONS (ANATOMY, OUTPUT, PARAMETER, SCENARIO)")
+    results_text.append("\nTOP 3 INDIVIDUAL COMBINATIONS (ANATOMY, OUTPUT, PARAMETER, SCENARIO)")
+
+    sorted_individuals = sorted(individual_ranges, key=lambda x: x['range'], reverse=True)[:3]
+
+    for i, combo in enumerate(sorted_individuals, 1):
+        out_label = ylabels_dict.get(combo['output'], {}).get('latex', combo['output'])
+        param_label = xlabels_dict.get(combo['parameter'], {}).get('latex', combo['parameter'])
+        
+        # Determine which scenario has the maximum difference for this combo
+        max_diff = -np.inf
+        max_scenario = None
+        for mod in modified_names:
+            val = all_differences[combo['anatomy']][mod]['absolute'].get(combo['output'], {}).get(combo['parameter'], None)
+            if val is not None and val > max_diff:
+                max_diff = val
+                max_diff_pct = all_differences[combo['anatomy']][mod]['percentage'].get(combo['output'], {}).get(combo['parameter'], None)
+                
+                max_scenario = mod
+        
+        pct_str = f" ({combo['pct_mean']:.2f}%±{combo['pct_std']:.2f}%, [{combo['min']:.2f}%, {combo['max']:.2f}%])" if combo['pct_mean'] is not None else ""
+        msg = (f"#{i}: Anatomy='{combo['anatomy']}', Output='{out_label}', Parameter='{param_label}', "
+            f"Scenario='{max_scenario}' with max difference={max_diff:.2e} ({max_diff_pct:.2f}%) | ")
+        print(msg)
+        results_text.append(msg)
+
 
     # Top 3 Anatomies
     print("\nTOP 3 ANATOMIES WITH HIGHEST VARIABILITY")
@@ -221,7 +254,7 @@ def print_and_save_top_ranges(anatomy_ranges, output_ranges, parameter_ranges, s
     sorted_anatomies = sorted(anatomy_ranges.items(), key=lambda x: x[1]['mean'], reverse=True)[:3]
     for i, (anat, stats) in enumerate(sorted_anatomies, 1):
         pct_str = f" ({stats['pct_mean']:.2f}%±{stats['pct_std']:.2f}%)" if stats['pct_mean'] is not None else ""
-        msg = f"#{i}: The anatomy '{anat}' has the highest variability between baseline and scenarios, with a mean of {stats['mean']:.6f}±{stats['std']:.6f}{pct_str}"
+        msg = f"#{i}: The anatomy '{anat}' has the highest variability between baseline and scenarios, with a mean of {stats['mean']:.2e}±{stats['std']:.2e}{pct_str}"
         print(msg)
         results_text.append(msg)
 
@@ -254,32 +287,6 @@ def print_and_save_top_ranges(anatomy_ranges, output_ranges, parameter_ranges, s
     for i, (mod, stats) in enumerate(sorted_scenarios, 1):
         pct_str = f" ({stats['pct_mean']:.2f}%±{stats['pct_std']:.2f}%)" if stats['pct_mean'] is not None else ""
         msg = f"#{i}: The modified scenario '{mod}' has the highest variability between baseline and scenarios, with a range of {stats['mean']:.6f}±{stats['std']:.6f}{pct_str}"
-        print(msg)
-        results_text.append(msg)
-
-    print("\nTOP 3 INDIVIDUAL COMBINATIONS (ANATOMY, OUTPUT, PARAMETER, SCENARIO)")
-    results_text.append("\nTOP 3 INDIVIDUAL COMBINATIONS (ANATOMY, OUTPUT, PARAMETER, SCENARIO)")
-
-    sorted_individuals = sorted(individual_ranges, key=lambda x: x['range'], reverse=True)[:3]
-
-    for i, combo in enumerate(sorted_individuals, 1):
-        out_label = ylabels_dict.get(combo['output'], {}).get('latex', combo['output'])
-        param_label = xlabels_dict.get(combo['parameter'], {}).get('latex', combo['parameter'])
-        
-        # Determine which scenario has the maximum difference for this combo
-        max_diff = -np.inf
-        max_scenario = None
-        for mod in modified_names:
-            val = all_differences[combo['anatomy']][mod]['absolute'].get(combo['output'], {}).get(combo['parameter'], None)
-            if val is not None and val > max_diff:
-                max_diff = val
-                max_scenario = mod
-        
-        pct_str = f" ({combo['pct_mean']:.2f}%±{combo['pct_std']:.2f}%)" if combo['pct_mean'] is not None else ""
-        pct_range_str = f" ({combo['pct_range']:.2f}%)" if combo.get('pct_range') is not None else ""
-        msg = (f"#{i}: Anatomy='{combo['anatomy']}', Output='{out_label}', Parameter='{param_label}', "
-            f"Scenario='{max_scenario}' with range={combo['range']:.6f}{pct_range_str} (mean={combo['mean']:.6f}±{combo['std']:.6f}{pct_str}), "
-            f"max difference={max_diff:.6f}")
         print(msg)
         results_text.append(msg)
 

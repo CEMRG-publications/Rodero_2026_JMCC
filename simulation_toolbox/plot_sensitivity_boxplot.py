@@ -197,6 +197,8 @@ def create_multipanel_boxplot(
     fig_height = 7 * n_rows
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(fig_width, fig_height))
 
+    print(f"{fig_width=}")
+
     axes = np.atleast_1d(axes).flatten()
     
     # Collect all unique groups for legend
@@ -230,7 +232,7 @@ def create_multipanel_boxplot(
         if col_idx != 0:
             ax.set_yticklabels([])
         else:
-            ax.set_ylabel('Log-Sensitivity', fontsize=fontsize-1)
+            ax.set_ylabel('Log-Sensitivity')
         
         if output not in aggregated_by_output:
             ax.text(0.5, 0.5, f"No data for {output}", ha='center', va='center',
@@ -306,8 +308,12 @@ def create_multipanel_boxplot(
             output_title = ylabels_dict[output].get('latex', output)
         
         ax.set_title(output_title, fontsize=fontsize, fontweight='bold')
+        print(f"Title fontsize set to {fontsize}")
         ax.grid(True, alpha=0.3, linestyle='--', axis='y')
         ax.tick_params(labelsize=fontsize-2)
+        print(f"Tick label fontsize set to {fontsize-2}")
+
+        
         
         # Use LaTeX labels from xlabels_dict if available
         latex_labels = []
@@ -318,6 +324,7 @@ def create_multipanel_boxplot(
         # Apply LaTeX labels to x-axis
         ax.set_xticks(range(1, len(param_labels) + 1))
         ax.set_xticklabels(latex_labels, rotation=45, ha='right', fontsize=fontsize-3)
+        print(f"X-tick label fontsize set to {fontsize-3}")
 
         
         # Add annotations for specified parameters
@@ -378,7 +385,9 @@ def create_multipanel_boxplot(
     )
     legend1.get_title().set_fontweight('bold')
 
-
+    print(f"Legend fontsize set to {fontsize+2}")
+    print(f"Legend title fontsize set to {fontsize+3}")
+    
     # Second legend — Heart (markers)
     legend2 = fig.legend(
         handles=anatomy_handles,
@@ -404,6 +413,8 @@ def create_multipanel_boxplot(
     # Add supertitle if provided
     if supertitle:
         fig.suptitle(supertitle, fontsize=fontsize+12, fontweight='bold', y=0.995)
+    
+    print(f"Supertitle fontsize set to {fontsize+12}")
     
     plt.tight_layout(rect=[0, 0.05, 1, 0.99])
     

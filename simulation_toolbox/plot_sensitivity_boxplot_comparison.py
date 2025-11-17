@@ -338,9 +338,8 @@ def create_comparison_boxplot(
 
     # --- Figure sizing: base width on number of displayed parameters (not all global params) ---
     n_outputs = len(outputs)
-    # Width rule: minimum 8 inches, max 22 inches
     if len(display_params) > 0:
-        fig_width = max(8, min(22, 1.4 * len(display_params)))
+        fig_width = 24
     else:
         fig_width = 10
     fig_height = 3 * n_outputs
@@ -446,9 +445,9 @@ def create_comparison_boxplot(
         output_title = output
         if output in ylabels_dict:
             output_title = ylabels_dict[output].get('latex', output)
-        ax.set_title(output_title, fontsize=fontsize, fontweight='bold')
+        ax.set_title(output_title, fontsize=18, fontweight='bold')
         ax.grid(True, alpha=0.3, linestyle='--', axis='y')
-        ax.tick_params(labelsize=fontsize - 2)
+        ax.tick_params(labelsize=16)
 
         # X-axis ticks/labels: use centers for display_params; show labels only on bottom panel
         xtick_positions = [param_center_pos[p] for p in display_params]
@@ -456,7 +455,7 @@ def create_comparison_boxplot(
 
         if output_idx == n_outputs - 1:
             ax.set_xticks(xtick_positions)
-            ax.set_xticklabels(xtick_labels, rotation=45, ha='right', fontsize=fontsize - 2)
+            ax.set_xticklabels(xtick_labels, rotation=45, ha='right', fontsize=15)
         else:
             ax.set_xticks(xtick_positions)
             ax.set_xticklabels([])
@@ -499,8 +498,8 @@ def create_comparison_boxplot(
     if anatomy_handles:
         legend_anat = fig.legend(handles=anatomy_handles, title="Anatomies",
                                 loc='upper right', bbox_to_anchor=(0.98, 0.98),
-                                ncol=1, fontsize=fontsize - 1, frameon=True,
-                                title_fontsize=fontsize)
+                                ncol=1, fontsize=20, frameon=True,
+                                title_fontsize=21)
         legend_anat.get_title().set_fontweight('bold')
 
     # --- SCENARIO TYPE LEGEND ---
@@ -512,14 +511,14 @@ def create_comparison_boxplot(
 
     legend_scenario = fig.legend(handles=scenario_handles, title="Scenario type",
                                 loc='upper right', bbox_to_anchor=(0.98, 0.86),
-                                ncol=1, fontsize=fontsize - 1, frameon=True,
-                                title_fontsize=fontsize)
+                                ncol=1, fontsize=20, frameon=True,
+                                title_fontsize=21)
     legend_scenario.get_title().set_fontweight('bold')
 
 
     # Add supertitle
     if supertitle:
-        fig.suptitle(supertitle, fontsize=fontsize + 6, fontweight='bold', y=0.995)
+        fig.suptitle(supertitle, fontsize=30, fontweight='bold', y=0.995)
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.99])
 

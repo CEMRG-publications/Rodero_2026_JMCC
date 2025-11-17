@@ -162,11 +162,11 @@ def plot_vas_comparison(vas_by_output, modified_names, outputs, ylabels_dict,
     centered at x=0, extending left (negative VAS) or right (positive VAS).
     """
     n_outputs = len(outputs)
-    n_cols = min(3, n_outputs)
+    n_cols = min(2, n_outputs)
     n_rows = int(np.ceil(n_outputs / n_cols))
     
-    fig_width = 10 * n_cols
-    fig_height = 8 * n_rows
+    fig_width = 24
+    fig_height = 40
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(fig_width, fig_height))
     axes = np.atleast_1d(axes).flatten()
     
@@ -213,7 +213,7 @@ def plot_vas_comparison(vas_by_output, modified_names, outputs, ylabels_dict,
                 colors.append('#cccccc')
         
         # Create horizontal bar chart
-        bars = ax.barh(y_positions, vas_values, color=colors, alpha=0.7, 
+        bars = ax.barh(y_positions, vas_values, color=colors, alpha=1, 
                       edgecolor='black', linewidth=0.5)
         
         # Add vertical line at x=0
@@ -238,7 +238,9 @@ def plot_vas_comparison(vas_by_output, modified_names, outputs, ylabels_dict,
             final_ylabel = [prefixes[i] + latex_friendly_vars[i] for i in range(len(prefixes))]
 
 
-            ax.set_yticklabels(final_ylabel, fontsize=fontsize-2)
+            ax.set_yticklabels(final_ylabel)
+        else:
+            ax.set_yticks([])
         
 
         # # X-axis label
@@ -247,11 +249,11 @@ def plot_vas_comparison(vas_by_output, modified_names, outputs, ylabels_dict,
         
         # Title
         output_title = ylabels_dict.get(output, {}).get('latex', output)
-        ax.set_title(output_title, fontsize=fontsize+2, fontweight='bold')
+        ax.set_title(output_title, fontsize=18, fontweight='bold')
         
         # Grid
         ax.grid(True, alpha=0.3, linestyle='--', axis='x')
-        ax.tick_params(labelsize=fontsize-2)
+        ax.tick_params(labelsize=16)
         
         # Add value labels on bars
         for i, (bar, vas) in enumerate(zip(bars, vas_values)):
@@ -260,7 +262,7 @@ def plot_vas_comparison(vas_by_output, modified_names, outputs, ylabels_dict,
                 x_pos = vas + (3 if vas > 0 else -3)
                 ha = 'left' if vas > 0 else 'right'
                 ax.text(x_pos, i, f'{vas:.0f}%', va='center', ha=ha, 
-                       fontsize=fontsize-3)
+                       fontsize=16)
     
     # Hide empty subplots
     for idx in range(n_outputs, len(axes)):
@@ -268,7 +270,7 @@ def plot_vas_comparison(vas_by_output, modified_names, outputs, ylabels_dict,
     
     # Add supertitle
     if supertitle:
-        fig.suptitle(supertitle, fontsize=fontsize+8, fontweight='bold', y=0.995)
+        fig.suptitle(supertitle, fontsize=30, fontweight='bold', y=0.995)
     
     # Add legend
     # from matplotlib.patches import Patch
@@ -292,14 +294,67 @@ def plot_vas_comparison(vas_by_output, modified_names, outputs, ylabels_dict,
 
 def save_vas_summary(vas_by_output, detailed_vas, modified_names, ylabels_dict, 
                      xlabels_dict, savepath):
-    """Save VAS results to text files."""
+    """Save VAS results to text files with enhanced statistics."""
     os.makedirs(savepath, exist_ok=True)
     
-    # Save summary
+    # Calculate global statistics
+    total_scenarios = len(modified_names)
+    scenarios_with_increase = set()
+    scenarios_with_decrease = set()
+    params_with_increase = set()
+    
+    # Track statistics per scenario
+    scenario_stats = {scenario: {'increases': 0, 'decreases': 0, 'total': 0} 
+                      for scenario in modified_names}
+    
+    # Collect all VAS values
+    for output in vas_by_output.keys():
+        for scenario in modified_names:
+            if scenario in vas_by_output[output]:
+                vas = vas_by_output[output][scenario]['vas']
+                param = vas_by_output[output][scenario]['param']
+                
+                scenario_stats[scenario]['total'] += 1
+                
+                if vas > 0:
+                    scenarios_with_increase.add(scenario)
+                    scenario_stats[scenario]['increases'] += 1
+                    params_with_increase.add(param)
+                elif vas < 0:
+                    scenarios_with_decrease.add(scenario)
+                    scenario_stats[scenario]['decreases'] += 1
+    
+    # Save summary with enhanced statistics
     summary_file = os.path.join(savepath, "vas_summary.txt")
     with open(summary_file, 'w') as f:
         f.write("VAS (Variability in Anatomical Sensitivity) Summary\n")
         f.write("="*80 + "\n\n")
+        
+        # Global statistics section
+        f.write("GLOBAL STATISTICS\n")
+        f.write("-"*80 + "\n")
+        f.write(f"Total modified scenarios: {total_scenarios}\n")
+        f.write(f"Scenarios with VAS increase: {len(scenarios_with_increase)} ({len(scenarios_with_increase)/total_scenarios*100:.1f}%)\n")
+        f.write(f"Scenarios with VAS decrease: {len(scenarios_with_decrease)} ({len(scenarios_with_decrease)/total_scenarios*100:.1f}%)\n")
+        f.write(f"Parameters with VAS increase (at least once): {len(params_with_increase)}\n")
+        f.write(f"  Parameters: {', '.join(sorted(params_with_increase))}\n")
+        f.write("\n")
+        
+        # Per-scenario statistics
+        f.write("PER-SCENARIO STATISTICS\n")
+        f.write("-"*80 + "\n")
+        for scenario in modified_names:
+            stats = scenario_stats[scenario]
+            if stats['total'] > 0:
+                pct_increase = stats['increases'] / stats['total'] * 100
+                pct_decrease = stats['decreases'] / stats['total'] * 100
+                f.write(f"\n{scenario}:\n")
+                f.write(f"  Outputs with VAS increase: {stats['increases']}/{stats['total']} ({pct_increase:.1f}%)\n")
+                f.write(f"  Outputs with VAS decrease: {stats['decreases']}/{stats['total']} ({pct_decrease:.1f}%)\n")
+        
+        f.write("\n\n")
+        f.write("DETAILED RESULTS BY OUTPUT\n")
+        f.write("="*80 + "\n")
         
         for output in vas_by_output.keys():
             output_label = ylabels_dict.get(output, {}).get('latex', output)
@@ -311,7 +366,8 @@ def save_vas_summary(vas_by_output, detailed_vas, modified_names, ylabels_dict,
                     vas = vas_by_output[output][scenario]['vas']
                     param = vas_by_output[output][scenario]['param']
                     param_label = xlabels_dict.get(param, {}).get('latex', param)
-                    f.write(f"  {scenario}: {vas:+.2f}% (max at parameter: {param_label})\n")
+                    direction = "↑" if vas > 0 else "↓"
+                    f.write(f"  {scenario}: {direction} {abs(vas):.2f}% (max at parameter: {param_label})\n")
     
     print(f"VAS summary saved to: {summary_file}")
     
@@ -327,7 +383,19 @@ def save_vas_summary(vas_by_output, detailed_vas, modified_names, ylabels_dict,
                     f.write(f"{output_label}\t{scenario}\t{param_label}\t{vas:.2f}\n")
     
     print(f"Detailed VAS saved to: {detailed_file}")
-
+    
+    # Save a CSV summary for easy analysis
+    csv_file = os.path.join(savepath, "vas_scenario_summary.csv")
+    with open(csv_file, 'w') as f:
+        f.write("Scenario,Total_Outputs,Outputs_Increased,Outputs_Decreased,Pct_Increased,Pct_Decreased\n")
+        for scenario in modified_names:
+            stats = scenario_stats[scenario]
+            if stats['total'] > 0:
+                pct_increase = stats['increases'] / stats['total'] * 100
+                pct_decrease = stats['decreases'] / stats['total'] * 100
+                f.write(f"{scenario},{stats['total']},{stats['increases']},{stats['decreases']},{pct_increase:.1f},{pct_decrease:.1f}\n")
+    
+    print(f"CSV summary saved to: {csv_file}")
 
 def main():
     parser = argparse.ArgumentParser(

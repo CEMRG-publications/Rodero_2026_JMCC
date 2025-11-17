@@ -112,7 +112,7 @@ COMMON_ARGS=(
 # -----------------------------------
 # Loop over all chamber configs
 # -----------------------------------
-for chamber in "${!CONFIGS[@]}"; do
+for chamber in LV RV LA RA ART; do
   IFS="|" read -r outputs figname supertitle <<< "${CONFIGS[$chamber]}"
 
   echo ""
