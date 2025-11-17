@@ -4,29 +4,12 @@ set -e  # Exit if any command fails
 echo "=== Starting VAS (Variability in Anatomical Sensitivity) comparison plots ==="
 
 # -----------------------------------
-# Define parameter ranges for advanced HCM
+# Define parameter ranges for pharma
 # -----------------------------------
-PARAMS_advanced_HCM=(
-  "CV_atria 0.0 50.0" 
-  "aortic_area 0.0 50.0"
-  "sysOrifice_area 0.0 50.0"
-  "CV_ventricles 50.0 100.0"
-  "Rsys 50.0 100.0"
-  "Rpulm 50.0 100.0"
-  "PaPref 50.0 100.0"
-  "kArt 50.0 100.0"
-  "ca50_A 50.0 100.0"
-  "a_ventricles 50.0 100.0"
-  "k_peri 50.0 100.0"
-  "AoPref 50.0 100.0"
-  "dr_V 50.0 100.0"
-  "mu_V 50.0 100.0"
-  "EDP_rv 50.0 100.0"
-  "g_CaL 50.0 100.0"
-  "perm50_A 50.0 100.0"
-  "a_atria 50.0 100.0"
+PARAMS_pharma=(
+  "dr_V 0.0 50.0"
+  "mu_V 0.0 50.0"
 )
-
 # -----------------------------------
 # Baseline directories
 # -----------------------------------
@@ -45,7 +28,7 @@ anatomy3_mod=()
 anatomy4_mod=()
 anatomy5_mod=()
 
-for param in "${PARAMS_advanced_HCM[@]}"; do
+for param in "${PARAMS_pharma[@]}"; do
   set -- $param
   pname=$1
   lower=$2
@@ -90,6 +73,11 @@ CONFIGS["RV"]="RVedv RVedp RVesv RVpMax RVSV RVEF RVdpdtMax V_TAT"
 CONFIGS["LA"]="LAedv LAvMax LApMax LAinflV A_TAT"
 CONFIGS["RA"]="RAedv RAvMax RApMax RAinflV A_TAT"
 CONFIGS["ART"]="diastAP systAP pulseAP mAP diastPAP systPAP pulsePAP mPAP"
+CONFIGS["ALL"]="LVedv LVedp LVesv LVpMax LVSV LVEF LVdpdtMax V_TAT \
+RVedv RVedp RVesv RVpMax RVSV RVEF RVdpdtMax \
+LAedv LAvMax LApMax LAinflV A_TAT \
+RAedv RAvMax RApMax RAinflV \
+diastAP systAP pulseAP mAP diastPAP systPAP pulsePAP mPAP"
 
 # -----------------------------------
 # Common arguments
@@ -126,7 +114,7 @@ for chamber in "${!CONFIGS[@]}"; do
     --anatomy3_modified "${anatomy3_mod[@]}"
     --anatomy4_modified "${anatomy4_mod[@]}"
     --anatomy5_modified "${anatomy5_mod[@]}"
-    --savepath /media/croderog/Bob/HCM/GSA_analysis/VAS_plots/${chamber}
+    --savepath /media/croderog/Bob/HCM/GSA_analysis/VAS_plots_pharma/${chamber}
     --figname vas_comparison_${chamber}.png
     --supertitle "Variability in anatomical sensitivity for the ${chamber} outputs"
   )
