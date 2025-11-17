@@ -90,11 +90,6 @@ CONFIGS["RV"]="RVedv RVedp RVesv RVpMax RVSV RVEF RVdpdtMax V_TAT"
 CONFIGS["LA"]="LAedv LAvMax LApMax LAinflV A_TAT"
 CONFIGS["RA"]="RAedv RAvMax RApMax RAinflV A_TAT"
 CONFIGS["ART"]="diastAP systAP pulseAP mAP diastPAP systPAP pulsePAP mPAP"
-CONFIGS["ALL"]="LVedv LVedp LVesv LVpMax LVSV LVEF LVdpdtMax V_TAT \
-RVedv RVedp RVesv RVpMax RVSV RVEF RVdpdtMax \
-LAedv LAvMax LApMax LAinflV A_TAT \
-RAedv RAvMax RApMax RAinflV \
-diastAP systAP pulseAP mAP diastPAP systPAP pulsePAP mPAP"
 
 # -----------------------------------
 # Common arguments

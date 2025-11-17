@@ -81,11 +81,6 @@ done
 echo "✅ All required directories found."
 
 # -----------------------------------
-# Define anatomy names
-# -----------------------------------
-ANATOMY_NAMES=("Mid-to-apical LVH" "LVOTO" "Isolated basal LVH" "Milder asymmetric LVH" "Undifferentiated pattern")
-
-# -----------------------------------
 # Define all chamber configurations
 # -----------------------------------
 declare -A CONFIGS
@@ -101,12 +96,12 @@ CONFIGS["ART"]="diastAP systAP pulseAP mAP diastPAP systPAP pulsePAP mPAP|artery
 # -----------------------------------
 COMMON_ARGS=(
   --n_anatomies 5
-  --anatomy_names "${ANATOMY_NAMES[@]}"
+  --anatomy_names "Mid-to-apical LVH" LVOTO "Isolated basal LVH" "Milder asymmetric LVH" "Undifferentiated pattern"
   --xlabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels_to_plot.json
   --ylabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels_filtered.json
   --exclusions /media/croderog/Bob/HCM/GSA_analysis/cycle/parameters_exclusions.json
   --savepath /media/croderog/Bob/HCM/GSA_analysis/boxplots_functional_remodeling
-  --fontsize 22
+  --fontsize 18
 )
 
 # -----------------------------------
