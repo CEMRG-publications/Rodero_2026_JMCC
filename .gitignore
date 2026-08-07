@@ -1,38 +1,31 @@
-*venv*
-.*
-simulation_toolbox/common/__pycache__/file_utils.cpython-39.pyc
+# Byte-compiled files and caches
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Virtual environments
+venv*/
+
+# Editor and local configuration
+.vscode/
+.claude/
+.idea/
+.python-version
+.DS_Store
+
+# Superseded or scratch files kept locally only
 notebooks/tests.ipynb
 notebooks/tests2.ipynb
-simulation_toolbox/original_marina.py
-simulation_toolbox/__pycache__/check_cycle_output_archer2.cpython-39.pyc
-notebooks/0_sampling.ipynb
-notebooks/old_1_generate_unloading_scripts.ipynb
-notebooks/old_2_run_cell_generate_cycle.ipynb
+notebooks/old_*.ipynb
 simulation_toolbox/old_write_simulation_scripts.py
-simulation_toolbox/scp_files_hpc.sh
-simulation_toolbox/scp_files_hpc.sh
-notebooks/2_scale_EP_generate_cycle.ipynb
-poetry.lock
-poetry.lock
-simulation_toolbox/common/__pycache__/utils.cpython-39.pyc
-simulation_toolbox/common/__pycache__/visualisation.cpython-39.pyc
-./simulation_toolbox/scp_files_hpc.sh
-scp_files_hpc.sh
-poetry.lock
-*/*/*/__pycache__/
+simulation_toolbox/original_marina.py
+
+# Local data and trained emulator snapshots (too large for the repository)
 simulation_toolbox/snapshot/
-poetry.lock
-simulation_toolbox/GPErks_modified/log/__pycache__/
-simulation_toolbox/GPErks_modified/perks/__pycache__/
-simulation_toolbox/GPErks_modified/train/__pycache__/
-simulation_toolbox/GPErks_modified/log/__pycache__/logger.cpython-39.pyc
-simulation_toolbox/GPErks_modified/log/__pycache__/logger.cpython-39.pyc
-simulation_toolbox/GPErks_modified/perks/__pycache__/cross_validation.cpython-39.pyc
-simulation_toolbox/GPErks_modified/perks/__pycache__/cross_validation.cpython-39.pyc
-simulation_toolbox/GPErks_modified/perks/__pycache__/gsa.cpython-39.pyc
-simulation_toolbox/GPErks_modified/perks/__pycache__/inference.cpython-39.pyc
-simulation_toolbox/GPErks_modified/plot/__pycache__/gsa.cpython-39.pyc
-simulation_toolbox/GPErks_modified/serialization/__pycache__/labels.cpython-39.pyc
-simulation_toolbox/GPErks_modified/train/__pycache__/emulator.cpython-39.pyc
-simulation_toolbox/GPErks_modified/utils/__pycache__/indices.cpython-39.pyc
-simulation_toolbox/GPErks_modified/utils/__pycache__/plotting.cpython-39.pyc
+simulation_toolbox/rodero_healthy/
+
+# Manuscript material and working notes (local only)
+simulation_toolbox/writing/
+MAVACAMTEN_*.md
+REVIEWER_RESPONSE_*.md
+UPDATED_ABSTRACT.md

@@ -1,8 +1,11 @@
-imperial_root_path="/rds/general/user/croderog/home"
+# Set your cluster username before running
+imperial_user="<imperial_username>"
+
+imperial_root_path="/rds/general/user/$imperial_user/home"
 mesh_folder="rodero_healthy/h11"
 folder_experiment_name=$mesh_folder"/scenarios/5"
 
-ssh -t croderog@login.hpc.imperial.ac.uk /bin/bash -s "$imperial_root_path" "$folder_experiment_name" "$mesh_folder" << 'EOF'
+ssh -t $imperial_user@login.hpc.imperial.ac.uk /bin/bash -s "$imperial_root_path" "$folder_experiment_name" "$mesh_folder" << 'EOF'
 
 	imperial_root_path="$1"
 	folder_experiment_name="$2"

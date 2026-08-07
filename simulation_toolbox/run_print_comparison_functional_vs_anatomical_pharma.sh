@@ -6,7 +6,7 @@ set -e  # Exit if any command fails
 # Define parameter ranges for pharma
 # -----------------------------------
 PARAMS_pharma=(
-  "dr_V 0.0 50.0"
+  "wfrac_V 0.0 50.0"
   "mu_V 0.0 50.0"
 )
 

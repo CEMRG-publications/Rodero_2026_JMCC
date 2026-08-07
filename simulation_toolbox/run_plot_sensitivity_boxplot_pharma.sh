@@ -7,7 +7,7 @@ echo "=== Starting sensitivity boxplot comparison for all chambers ==="
 # Define parameter ranges for advanced HCM
 # -----------------------------------
 PARAMS_pharma=(
-  "dr_V 0.0 50.0"
+  "wfrac_V 0.0 50.0"
   "mu_V 0.0 50.0"
 )
 # -----------------------------------
