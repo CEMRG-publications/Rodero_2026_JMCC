@@ -4,8 +4,8 @@ import numpy as np
 import json
 import argparse
 
-from SIMULATION_library import simulator_utils
-from SIMULATION_library.fch_setup import simulation
+from common.carp_setup import simulator_utils
+from common.carp_setup.fch_setup import simulation
 from Historia.shared.design_utils import read_labels
 
 def check_files(datafolder,fields):

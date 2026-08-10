@@ -4,9 +4,9 @@ import numpy as np
 import json
 import argparse
 
-from SIMULATION_library import simulator_utils
-from SIMULATION_library.fch_setup import simulation
-from SIMULATION_library.cell_sims_utils import generate_bench_script
+from common.carp_setup import simulator_utils
+from common.carp_setup.fch_setup import simulation
+from common.carp_setup.cell_sims_utils import generate_bench_script
 
 from common.cell_io import bin_to_dat_folder, plot_Land_output
 
