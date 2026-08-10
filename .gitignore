@@ -33,3 +33,8 @@ simulation_toolbox/writing/
 MAVACAMTEN_*.md
 REVIEWER_RESPONSE_*.md
 UPDATED_ABSTRACT.md
+
+# Poetry lock file: not shipped, because the optional "simulation" extra points
+# at private repositories that most users cannot resolve. Dependencies are
+# resolved from pyproject.toml at install time.
+poetry.lock
