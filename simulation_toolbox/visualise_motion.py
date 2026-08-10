@@ -1,6 +1,5 @@
-from GSA_library.mesh_utils import *
-from GSA_library.pyvista_utils import read_pvcc_paraview_file, read_mesh, carp_to_pyvista, read_IGB_file
-from simulation_toolbox.common.utils import file_exists
+from common.mesh_io import read_pvcc_paraview_file, read_mesh, carp_to_pyvista, read_IGB_file
+from common.utils import file_exists
 
 import argparse
 import tqdm

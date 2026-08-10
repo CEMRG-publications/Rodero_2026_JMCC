@@ -1,5 +1,4 @@
-from GSA_library.mesh_utils import read_IGB_file, carp_to_pyvista
-from GSA_library.pyvista_utils import read_pvcc_paraview_file, read_mesh
+from common.mesh_io import read_IGB_file, read_mesh
 
 import argparse
 import math

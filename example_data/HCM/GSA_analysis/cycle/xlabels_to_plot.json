@@ -1,0 +1,242 @@
+{
+  "CV_atria": {
+    "plot": 1,
+    "latex": "Atrial conduction velocity",
+    "group": "Tissue"
+  },
+
+    "CV_ventricles": {
+    "plot": 1,
+    "latex": "Ventricular conduction velocity",
+    "group": "Tissue"
+  },
+
+    "Rsys":{
+      "latex": "LV afterload",
+      "color": "red",
+      "group": "Cardiovascular"
+    },
+
+    "Rpulm":{
+      "latex": "RV afterload",
+      "color": "#34516b",
+      "group": "Cardiovascular"
+    },
+
+    "EDP_lv":{
+      "latex": "LV preload",
+      "color": "red",
+      "group": "Cardiovascular"
+    },
+
+    "AV_delay":{
+      "latex": "Atrioventricular delay",
+      "group": "Tissue"
+    },
+
+    "aortic_area":{
+      "latex": "Aortic valve area",
+      "color": "red",
+      "group": "Cardiovascular"
+    },
+
+    "tricuspid_area":{
+      "latex": "Tricuspid valve area",
+      "group": "Cardiovascular"
+    },
+
+    "PaPref":{
+      "latex": "Pulmonary artery pressure",
+      "color": "#34516b",
+      "group": "Cardiovascular"
+    },
+
+    "VePref":{
+      "latex": "Veins pressure",
+      "group": "Cardiovascular"
+    },
+
+    "kArt":{
+      "latex": "Aorta stiffness",
+      "color": "red",
+      "group": "Tissue"
+    },
+
+    "ca50_A":{
+      "latex": "Atrial $Ca^{2+}$ sensitivity",
+      "group": "Cellular"
+    },
+
+    "ca50_V":{
+      "latex": "Ventricular $Ca^{2+}$ sensitivity",
+      "group": "Cellular"
+    },
+
+    "a_ventricles":{
+      "latex": "Ventricular stiffness",
+      "group": "Tissue"
+    },
+
+    "k_peri":{
+      "latex": "Pericardial stiffness",
+      "group": "Tissue"
+    },
+
+    "pulmOrifice_area":{
+      "latex": "Pulmonary outflow tract area",
+      "color": "#34516b",
+      "group": "Cardiovascular"
+    },
+
+    "AoPref":{
+      "latex": "Scaling factor for reference\naortic pressure",
+      "color": "red",
+      "group": "Cardiovascular"
+    },
+
+    "Tref_lvrv":{
+      "latex": "Reference isometric tension\nfactor of the RV w.r.t. the LV",
+      "group": "Cellular"
+      },
+
+    "sysOrifice_area":{
+      "latex": "Systemic outflow tract area",
+      "color": "red",
+      "group": "Cardiovascular"
+    },
+
+    "mitral_area":{
+      "latex": "Mitral valve area",
+      "group": "Cardiovascular"
+    },
+
+    "dr_V":{
+      "latex": "Ratio of strongly bound\nactin-myosin units",
+      "color": "red",
+      "group": "Cellular"
+    },
+
+    "dr_A":{
+      "latex": "Ratio of strongly bound actin-myosin units in the atria",
+      "group": "Cellular"
+    },
+
+    "mu_V":{
+      "latex": "Weak-to-strong crossbridge\ntrasition rate",
+      "color": "red",
+      "group": "Cellular"
+    },
+
+    "mu_A":{
+      "latex": "Weak-to-strong crossbridge trasition rate in the atria",
+      "group": "Cellular"
+    },
+
+    "nperm_A":{
+      "group": "Cellular"
+
+    },
+    "nperm_V":{
+
+      "group": "Cellular"
+    },
+
+    "ktm_unblock":{
+      "latex": "Rate constant for\ntropomyosin unblocking",
+      "color": "red",
+      "group": "Cellular"
+    },
+    "wfrac_V":{
+      "latex": "Ratio of weakly bound\nactin-myosin units",
+      "color": "red",
+      "group": "Cellular"
+    },
+    "wfrac_A":{
+      "latex": "Ratio of weakly bound actin-myosin units in the atria",
+      "color": "red",
+      "group": "Cellular"
+    },
+    "Tref_V":{
+      "latex": "Reference isometric tension",
+      "color": "red",
+      "group": "Cellular"
+    },
+    "Tref_A":{
+      "latex": "Reference isometric tension",
+      "group": "Cellular"
+    },
+    "trpnmax": {
+      "latex": "Maximum troponin C concentration",
+      "color": "red",
+      "group": "Cellular"
+    },
+
+    "maxTrpn": {
+      "latex": "Total troponin C concentration in cytoplasm",
+      "group": "Cellular"
+    },
+
+    "TOT_A_V":{
+      "latex": "Distortion due to contraction velocity",
+      "color": "red",
+      "group": "Cellular"
+    },
+    "EDP_rv":{
+      "latex": "RV preload",
+      "color": "#34516b",
+      "group": "Cardiovascular"
+    },
+    "g_CaL":{
+      "latex": "L-type  $Ca^{2+}$ channel conductance",
+      "group": "Cellular"
+    },
+
+    "maxI_up":{
+      "latex": "Maximum $Ca^{2+}$ uptake rate into the network SR",
+      "group": "Cellular"
+    },
+
+    "perm50_A":{
+      "latex": "Atrial $Ca^{2+}$-trpn concentration\n when 50% of cross-bridges are blocked" ,
+      "group": "Cellular"
+    },
+
+    "perm50_V":{
+      "latex": "Ventricular $Ca^{2+}$-trpn concentration\nwhen 50% of cross-bridges are blocked",    
+      "group": "Cellular"
+    },
+
+    "a_atria":{
+      "latex": "Atrial stiffness",
+      "group": "Tissue"
+    },
+
+    "phi":{
+      "latex": "Distortion decay",
+      "group": "Cellular"
+    },
+
+    "PCa_b":{
+      "latex": "L-type $Ca^{2+}$ current conductance",
+      "group": "Cellular"
+    },
+
+    "Gncx_b":{
+       "latex": "$Ca^{2+}$-$Ca^{2+}$ exchanger conductance",
+      "group": "Cellular"
+    },
+
+    "TOT_A_A":{
+      "latex": "Distortion due to contraction velocity",
+      "group": "Cellular"
+    },
+
+    "TRPN_n_A":{
+
+      "group": "Cellular"
+    },
+
+    "TRPN_n_V":{
+      "group": "Cellular"
+    }
+}

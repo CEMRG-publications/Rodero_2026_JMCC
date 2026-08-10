@@ -1,6 +1,21 @@
 #!/bin/bash
 set -e  # Exit if any command fails
 
+# ---------------------------------------------------------------------------
+# Data and results locations.
+#
+#   DATA_ROOT     directory holding the simulation data, so that the scenarios
+#                 live at $DATA_ROOT/HCM/<case>/scenarios/<scenario>/
+#   RESULTS_ROOT  where the figures and tables are written
+#                 (defaults to $DATA_ROOT/results)
+#
+# Set them in the environment before running, for example:
+#   export DATA_ROOT=/path/to/data
+# ---------------------------------------------------------------------------
+: "${DATA_ROOT:?Set DATA_ROOT to the directory containing HCM/ (see README)}"
+RESULTS_ROOT="${RESULTS_ROOT:-$DATA_ROOT/results}"
+
+
 echo "=== Starting sensitivity boxplot comparison for all chambers (single combined call) ==="
 
 # -----------------------------------
@@ -14,11 +29,11 @@ PARAMS_pharma=(
 # -----------------------------------
 # Baseline directories
 # -----------------------------------
-anatomy1_base=/media/croderog/Bob/HCM/1/scenarios/53_more_samples/
-anatomy2_base=/media/croderog/SeagateExpansionDrive/HCM/2/scenarios/47_more_samples/
-anatomy3_base=/data/HCM/3/scenarios/48_more_samples/
-anatomy4_base=/media/croderog/SeagateExpansionDrive/HCM/4/scenarios/49_more_samples/
-anatomy5_base=/media/croderog/Bob/HCM/5/scenarios/50_more_samples/
+anatomy1_base=${DATA_ROOT}/HCM/1/scenarios/53_more_samples/
+anatomy2_base=${DATA_ROOT}/HCM/2/scenarios/47_more_samples/
+anatomy3_base=${DATA_ROOT}/HCM/3/scenarios/48_more_samples/
+anatomy4_base=${DATA_ROOT}/HCM/4/scenarios/49_more_samples/
+anatomy5_base=${DATA_ROOT}/HCM/5/scenarios/50_more_samples/
 
 # -----------------------------------
 # Build modified scenario paths for each anatomy
@@ -35,11 +50,11 @@ for param in "${PARAMS_pharma[@]}"; do
   lower=$2
   upper=$3
 
-  anatomy1_mod+=(/media/croderog/Bob/HCM/1/scenarios/53_more_samples/output/GSA_${pname}_lower_${lower}_upper_${upper})
-  anatomy2_mod+=(/media/croderog/SeagateExpansionDrive/HCM/2/scenarios/47_more_samples/output/GSA_${pname}_lower_${lower}_upper_${upper})
-  anatomy3_mod+=(/data/HCM/3/scenarios/48_more_samples/output/GSA_${pname}_lower_${lower}_upper_${upper})
-  anatomy4_mod+=(/media/croderog/SeagateExpansionDrive/HCM/4/scenarios/49_more_samples/output/GSA_${pname}_lower_${lower}_upper_${upper})
-  anatomy5_mod+=(/media/croderog/Bob/HCM/5/scenarios/50_more_samples/output/GSA_${pname}_lower_${lower}_upper_${upper})
+  anatomy1_mod+=(${DATA_ROOT}/HCM/1/scenarios/53_more_samples/output/GSA_${pname}_lower_${lower}_upper_${upper})
+  anatomy2_mod+=(${DATA_ROOT}/HCM/2/scenarios/47_more_samples/output/GSA_${pname}_lower_${lower}_upper_${upper})
+  anatomy3_mod+=(${DATA_ROOT}/HCM/3/scenarios/48_more_samples/output/GSA_${pname}_lower_${lower}_upper_${upper})
+  anatomy4_mod+=(${DATA_ROOT}/HCM/4/scenarios/49_more_samples/output/GSA_${pname}_lower_${lower}_upper_${upper})
+  anatomy5_mod+=(${DATA_ROOT}/HCM/5/scenarios/50_more_samples/output/GSA_${pname}_lower_${lower}_upper_${upper})
 done
 
 # -----------------------------------
@@ -78,7 +93,7 @@ ALL_OUTPUTS=(
 # -----------------------------------
 # Define save path for combined output
 # -----------------------------------
-SAVE_PATH=/media/croderog/Bob/HCM/GSA_analysis/boxplots_pharma/all_chambers
+SAVE_PATH=${RESULTS_ROOT}/boxplots_pharma/all_chambers
 mkdir -p "$SAVE_PATH"
 
 # -----------------------------------
@@ -90,9 +105,9 @@ echo "=== 🧠 Running single combined sensitivity comparison for all chambers =
 cmd=(python3 print_comparison_analysis.py
   --n_anatomies 5
   --anatomy_names "Mid-to-apical LVH" LVOTO "Isolated basal LVH" "Milder asymmetric LVH" "Undifferentiated pattern"
-  --xlabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels_to_plot.json
-  --ylabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels_filtered.json
-  --exclusions /media/croderog/Bob/HCM/GSA_analysis/cycle/parameters_exclusions.json
+  --xlabels_dict ${DATA_ROOT}/HCM/GSA_analysis/cycle/xlabels_to_plot.json
+  --ylabels_dict ${DATA_ROOT}/HCM/GSA_analysis/cycle/ylabels_filtered.json
+  --exclusions ${DATA_ROOT}/HCM/GSA_analysis/cycle/parameters_exclusions.json
   --savepath "$SAVE_PATH"
   --outputs "${ALL_OUTPUTS[@]}"
   --anatomy1_baseline "$anatomy1_base"

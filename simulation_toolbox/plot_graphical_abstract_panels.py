@@ -38,21 +38,26 @@ from matplotlib.patches import Patch
 from plot_vas_comparison import compute_vas_metrics
 
 # --------------------------------------------------------------------------- #
-# data locations
+# Data locations. DATA_ROOT is the directory holding HCM/, and RESULTS_ROOT is
+# where the figures are written; both are read from the environment (see README).
 # --------------------------------------------------------------------------- #
+DATA_ROOT = os.environ.get("DATA_ROOT", "")
+RESULTS_ROOT = os.environ.get("RESULTS_ROOT", os.path.join(DATA_ROOT, "results"))
+CONFIG_DIR = os.path.join(DATA_ROOT, "HCM/GSA_analysis/cycle")
+
 ANATOMIES = [
-    ("Mid-to-apical LVH",      "/media/croderog/Bob/HCM/1/scenarios/53_more_samples"),
-    ("LVOTO",                  "/media/croderog/SeagateExpansionDrive/HCM/2/scenarios/47_more_samples"),
-    ("Isolated basal LVH",     "/data/HCM/3/scenarios/48_more_samples"),
-    ("Milder asymmetric LVH",  "/media/croderog/SeagateExpansionDrive/HCM/4/scenarios/49_more_samples"),
-    ("Undifferentiated pattern", "/media/croderog/Bob/HCM/5/scenarios/50_more_samples"),
+    ("Mid-to-apical LVH",        os.path.join(DATA_ROOT, "HCM/1/scenarios/53_more_samples")),
+    ("LVOTO",                    os.path.join(DATA_ROOT, "HCM/2/scenarios/47_more_samples")),
+    ("Isolated basal LVH",       os.path.join(DATA_ROOT, "HCM/3/scenarios/48_more_samples")),
+    ("Milder asymmetric LVH",    os.path.join(DATA_ROOT, "HCM/4/scenarios/49_more_samples")),
+    ("Undifferentiated pattern", os.path.join(DATA_ROOT, "HCM/5/scenarios/50_more_samples")),
 ]
 STIFF_SCENARIO = "GSA_a_ventricles_lower_50.0_upper_100.0"  # increased ventricular stiffness
-XLABELS_JSON = "/media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels_to_plot.json"
-YLABELS_JSON = "/media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels_filtered.json"
-GROUP_COLORS_JSON = "/media/croderog/Bob/HCM/GSA_analysis/cycle/group_colors.json"
-EXCLUSIONS_JSON = "/media/croderog/Bob/HCM/GSA_analysis/cycle/parameters_exclusions.json"
-OUTPUT_DIR = "/media/croderog/Bob/HCM/figures/graphical_abstract"
+XLABELS_JSON = os.path.join(CONFIG_DIR, "xlabels_to_plot.json")
+YLABELS_JSON = os.path.join(CONFIG_DIR, "ylabels_filtered.json")
+GROUP_COLORS_JSON = os.path.join(CONFIG_DIR, "group_colors.json")
+EXCLUSIONS_JSON = os.path.join(CONFIG_DIR, "parameters_exclusions.json")
+OUTPUT_DIR = os.path.join(RESULTS_ROOT, "graphical_abstract")
 
 PANEL_A_OUTPUT = "LVEF"
 PANEL_B_OUTPUTS = ["LVesv", "LVEF"]   # reshuffle variant
@@ -70,7 +75,7 @@ VAS_FULL_OUTPUTS = [
 VAS_PANEL_OUTPUTS = ["RVedv", "systAP", "mPAP", "RApMax", "LVdpdtMax", "LVEF", "LVSV", "LVedv"]
 
 # pharma panel: the two drug scenarios compared on the same VAS metric
-SCENARIO_COLORS_JSON = "/media/croderog/Bob/HCM/GSA_analysis/cycle/scenario_colors.json"
+SCENARIO_COLORS_JSON = os.path.join(CONFIG_DIR, "scenario_colors.json")
 MAVA_SCENARIO = "GSA_wfrac_V_lower_0.0_upper_50.0"
 AFI_SCENARIO = "GSA_mu_V_lower_0.0_upper_50.0"
 PHARMA_PANEL_OUTPUTS = ["RVedv", "mPAP", "RApMax", "LVedp", "systAP", "diastAP", "mAP", "LVEF", "LVdpdtMax"]

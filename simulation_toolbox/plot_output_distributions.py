@@ -131,7 +131,7 @@ if __name__ == '__main__':
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument('--basefolder', type=str, required=True,
-                        default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations",
+                        default=os.path.join(os.environ.get("DATA_ROOT", ""), "simulations"),
                         help='Path to the folder where the simulations, data, and figure folders are.')
 
     args = parser.parse_args()

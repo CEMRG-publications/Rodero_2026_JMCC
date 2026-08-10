@@ -28,14 +28,9 @@ import matplotlib.pyplot as plt  # noqa: E402
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from plot_HCM_pv_loops import plot_case, CHAMBERS  # noqa: E402
 
-DRIVES = [
-    "/media/croderog/SeagateExpansionDrive",
-    "/media/croderog/Seagate Expansion Drive",
-    "/media/croderog/Elements",
-    "/media/croderog/Elements_1",
-    "/media/croderog/Bob",
-    "/data",
-]
+# Roots searched for the simulation data. Set DATA_ROOT to one or more
+# directories, colon-separated like PATH, each containing HCM/<case>/scenarios/.
+DRIVES = [d for d in os.environ.get("DATA_ROOT", "").split(os.pathsep) if d]
 
 # label -> (patient folder, scenario number, phenotype name)
 CASES = {
@@ -139,7 +134,7 @@ def process_case(label, output_root, dpi, limit, force):
 def main():
     ap = argparse.ArgumentParser(description="Batch PV-loop plots for all working HCM cycles.")
     ap.add_argument('--output_root', type=str,
-                    default="/media/croderog/Bob/HCM/figures/all_working_cycles",
+                    default=os.path.join(os.environ.get("RESULTS_ROOT", "results"), "all_working_cycles"),
                     help="Root folder; one subfolder per case is created inside.")
     ap.add_argument('--cases', nargs='+', default=list(CASES.keys()),
                     help="Subset of cases to process (default: all).")

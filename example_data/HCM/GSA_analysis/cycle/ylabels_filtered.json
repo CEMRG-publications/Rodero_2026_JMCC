@@ -1,0 +1,195 @@
+{
+"LVedv":{
+    "run":1,
+    "latex":"$LV_{EDV}$"
+    },
+"LVedp":{
+    "run":1,
+    "latex":"$LV_{EDP}$"
+    },
+"LVesv":{
+    "run":1,
+    "latex":"$LV_{ESV}$"
+    },
+"LVpMax":{
+    "run":1,
+    "latex":"$LV_{Pmax}$"
+    },
+"LVdpdtMax":{
+    "run":1,
+    "latex":"$LV_{dP/dt_{max}}$"
+    },
+"LVdpdtMin":{
+    "run":0,
+    "latex":"$LV_{dP/dt_{min}}$"
+    },
+"LVSV":{
+    "run":1,
+    "latex":"$LV_{SV}$"
+    },
+"LVEF":{
+    "run":1,
+    "latex":"$LV_{EF}$"
+    },
+"RVedv":{
+    "run":1,
+    "latex":"$RV_{EDV}$"
+    },
+"RVedp":{
+    "run":1,
+    "latex":"$RV_{EDP}$"
+    },
+"RVesv":{
+    "run":1,
+    "latex":"$RV_{ESV}$"
+    },
+"RVpMax":{
+    "run":1,
+    "latex":"$RV_{Pmax}$"
+    },
+"RVdpdtMax":{
+    "run":1,
+    "latex":"$RV_{dP/dt_{max}}$"
+    },
+"RVdpdtMin":{
+    "run":0,
+    "latex":"$RV_{dP/dt_{min}}$"
+    },
+"RVSV":{
+    "run":1,
+    "latex":"$RV_{SV}$"
+    },
+"RVEF":{
+    "run":1,
+    "latex":"$RV_{EF}$"
+    },
+"LAedv":{
+    "run":1,
+    "latex":"$LA_{EDV}$"
+    },
+"LAesv":{
+    "run":0,
+    "latex":"$LA_{ESV}$"
+    },
+"LAvMax":{
+    "run":1,
+    "latex":"$LA_{vmax}$"
+    },
+"LApMax":{
+    "run":1,
+    "latex":"$LA_{pmax}$"
+    },
+"RAedv":{
+    "run":1,
+    "latex":"$RA_{EDV}$"
+    },
+"RAesv":{
+    "run":0,
+    "latex":"$RA_{ESV}$"
+    },
+"RAvMax":{
+    "run":1,
+    "latex":"$RA_{vmax}$"
+    },
+"RApMax":{
+    "run":1,
+    "latex":"$RA_{pmax}$"
+    },
+"LAsvA":{
+    "run":0,
+    "latex":"$LA_{SV_{A}}$"
+    },
+"LAsvV":{
+    "run":0,
+    "latex":"$LA_{SV_{V}}$"
+    },
+"LAinflV":{
+    "run":1,
+    "latex":"$LA_{inflV}$"
+    },
+"RAsvA":{
+    "run":0,
+    "latex":"$RA_{SV_{A}}$"
+    },
+"RAsvV":{
+    "run":0,
+    "latex":"$RA_{SV_{V}}$"
+    },
+"RAinflV":{
+    "run":1,
+    "latex":"$RA_{inflV}$"
+    },
+"diastAP":{
+    "run":1,
+    "latex":"$diast_{AP}$"
+    },
+"systAP":{
+    "run":1,
+    "latex":"$syst_{AP}$"
+    },
+"pulseAP":{
+    "run":1,
+    "latex":"$pulse_{AP}$"
+    },
+"mAP":{
+    "run":1,
+    "latex":"$m_{AP}$"
+    },
+"diastPAP":{
+    "run":1,
+    "latex":"$diast_{PAP}$"
+    },
+"systPAP":{
+    "run":1,
+    "latex":"$syst_{PAP}$"
+    },
+"pulsePAP":{
+    "run":1,
+    "latex":"$pulse_{PAP}$"
+    },
+"mPAP":{
+    "run":1,
+    "latex":"$m_{PAP}$"
+    },
+"LVivc":{
+    "run":0,
+    "latex":"$LV_{IVC}$"
+    },
+"LVeje":{
+    "run":0,
+    "latex":"$LV_{EJE}$"
+    },
+"LVivr":{
+    "run":0,
+    "latex":"$LV_{IVR}$"
+    },
+"LVfil":{
+    "run":0,
+    "latex":"$LV_{FIL}$"
+    },
+"RVivc":{
+    "run":0,
+    "latex":"$RV_{IVC}$"
+    },
+"RVeje":{
+    "run":0,
+    "latex":"$RV_{EJE}$"
+    },
+"RVivr":{
+    "run":0,
+    "latex":"$RV_{IVR}$"
+    },
+"RVfil":{
+    "run":0,
+    "latex":"$RV_{FIL}$"
+    },
+"A_TAT":{
+    "run":1,
+    "latex":"$A_{TAT}$"
+    },
+"V_TAT":{
+    "run":1,
+    "latex":"$V_{TAT}$"
+    }
+}
+

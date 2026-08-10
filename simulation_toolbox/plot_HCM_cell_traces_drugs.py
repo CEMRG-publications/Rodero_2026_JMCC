@@ -26,7 +26,7 @@ Produces, per drug:
 import argparse
 import json
 import os
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -42,44 +42,51 @@ from matplotlib.lines import Line2D
 
 # Per-case cell-sim source directories (union across drives), the scenario folder
 # that holds data/X.txt + json_files/clinical_data.json, and the phenotype name.
+DATA_ROOT = os.environ.get("DATA_ROOT", "")
+
+
+def _scenario(case, scen):
+    return os.path.join(DATA_ROOT, f"HCM/{case}/scenarios/{scen}")
+
+
+# Per-case scenario folder (holding data/X.txt and json_files/clinical_data.json),
+# the cell-simulation state directories, and the phenotype name. Cases 2 and 3 keep
+# two state directories because simulations 0-799 live in the base scenario and
+# 800+ in the _more_samples one.
 CASES: Dict[int, Dict] = {
     1: {
         "phenotype": "Mid-to-apical LVH",
-        "scenario": "/media/croderog/Bob/HCM/1/scenarios/53_more_samples",
-        "ss_dirs": [
-            "/media/croderog/Bob/HCM/1/scenarios/53_more_samples/SS/ToRORd_dynCl",
-            "/media/croderog/SeagateExpansionDrive/HCM/1/scenarios/53_more_samples/SS/ToRORd_dynCl",
-        ],
+        "scenario": _scenario(1, "53_more_samples"),
+        "ss_dirs": [os.path.join(_scenario(1, "53_more_samples"), "SS/ToRORd_dynCl")],
     },
     2: {
-        # base scenario 47 holds cell sims 0-799; 47_more_samples holds 800+
         "phenotype": "LVOTO",
-        "scenario": "/data/HCM/2/scenarios/47_more_samples",
+        "scenario": _scenario(2, "47_more_samples"),
         "ss_dirs": [
-            "/media/croderog/SeagateExpansionDrive/HCM/2/scenarios/47/SS/ToRORd_dynCl",
-            "/data/HCM/2/scenarios/47_more_samples/SS/ToRORd_dynCl",
+            os.path.join(_scenario(2, "47"), "SS/ToRORd_dynCl"),
+            os.path.join(_scenario(2, "47_more_samples"), "SS/ToRORd_dynCl"),
         ],
     },
     3: {
         "phenotype": "Isolated basal LVH",
-        "scenario": "/data/HCM/3/scenarios/48_more_samples",
+        "scenario": _scenario(3, "48_more_samples"),
         "ss_dirs": [
-            "/media/croderog/Elements/HCM/3/scenarios/48/SS/ToRORd_dynCl",
-            "/data/HCM/3/scenarios/48_more_samples/SS/ToRORd_dynCl",
+            os.path.join(_scenario(3, "48"), "SS/ToRORd_dynCl"),
+            os.path.join(_scenario(3, "48_more_samples"), "SS/ToRORd_dynCl"),
         ],
     },
     4: {
         "phenotype": "Milder asymmetric LVH",
-        "scenario": "/media/croderog/Elements/HCM/4/scenarios/49_more_samples",
+        "scenario": _scenario(4, "49_more_samples"),
         "ss_dirs": [
-            "/media/croderog/Elements/HCM/4/scenarios/49/SS/ToRORd_dynCl",
-            "/media/croderog/Elements/HCM/4/scenarios/49_more_samples/SS/ToRORd_dynCl",
+            os.path.join(_scenario(4, "49"), "SS/ToRORd_dynCl"),
+            os.path.join(_scenario(4, "49_more_samples"), "SS/ToRORd_dynCl"),
         ],
     },
     5: {
         "phenotype": "Undifferentiated pattern",
-        "scenario": "/data/HCM/5/scenarios/50_more_samples",
-        "ss_dirs": ["/data/HCM/5/scenarios/50_more_samples/SS/ToRORd_dynCl"],
+        "scenario": _scenario(5, "50_more_samples"),
+        "ss_dirs": [os.path.join(_scenario(5, "50_more_samples"), "SS/ToRORd_dynCl")],
     },
 }
 
@@ -440,7 +447,7 @@ def main():
     p.add_argument("--cases", nargs="+", type=int, default=[1, 2, 3, 4, 5])
     p.add_argument("--drugs", nargs="+", default=list(DRUGS.keys()),
                    choices=list(DRUGS.keys()))
-    p.add_argument("--output_dir", default="/media/croderog/Bob/HCM/figures/cell_traces_drugs")
+    p.add_argument("--output_dir", default=os.path.join(os.environ.get("RESULTS_ROOT", "results"), "cell_traces_drugs"))
     p.add_argument("--with_ca", action="store_true", default=True,
                    help="also read/plot intracellular calcium (default on)")
     p.add_argument("--no_ca", dest="with_ca", action="store_false")

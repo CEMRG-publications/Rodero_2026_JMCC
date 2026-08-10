@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas as pd
-from matplotlib.patches import Rectangle
 
 from common.utils import generate_gsa_ranking_files, read_xlabels_dict
 

@@ -9,8 +9,8 @@ loop is visible. One figure is produced per case (2x2 chamber panels by default)
 Example
 -------
 python plot_HCM_pv_loops.py \
-    --case "HCM1=/media/croderog/Elements_1/HCM/1/scenarios/53/simulations/cycle_123" \
-    --case "HCM2=/media/croderog/Elements/HCM/2/scenarios/47/simulations/cycle_45" \
+    --case "HCM1=$DATA_ROOT/HCM/1/scenarios/53/simulations/cycle_123" \
+    --case "HCM2=$DATA_ROOT/HCM/2/scenarios/47/simulations/cycle_45" \
     --BCL 800 --n_beats 5 --output_dir ./figures
 """
 import os

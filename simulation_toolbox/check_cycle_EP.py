@@ -4,7 +4,7 @@ import numpy as np
 import json
 import tqdm
 
-from SIMULATION_library.mesh_utils import read_tets
+from common.mesh_io import read_tets
 
 
 def electrophysiology_all_cycle_output(datafolder,
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument('--basefolder', type=str, required=True,
-                        default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations",
+                        default=os.path.join(os.environ.get("DATA_ROOT", ""), "simulations"),
                         help='Path to the folder where the simulations, data, and figure folders are.')
     parser.add_argument('--elem_file', type=str, help="Path to the elem file of the mesh to compute the activation times.", required=True)
 

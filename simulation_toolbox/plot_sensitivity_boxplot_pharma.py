@@ -2,9 +2,7 @@ import argparse
 import json
 import os
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 from matplotlib.patches import Rectangle
 from collections import defaultdict
 

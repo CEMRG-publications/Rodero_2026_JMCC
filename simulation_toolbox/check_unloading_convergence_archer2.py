@@ -3,7 +3,6 @@ import argparse
 
 import numpy as np
 import matplotlib.pyplot as plt
-import re
 import tqdm
 import seaborn as sns
 import pandas as pd

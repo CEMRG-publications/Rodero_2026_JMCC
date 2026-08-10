@@ -9,7 +9,6 @@ import gpytorch.constraints
 import numpy
 import torch
 import torchmetrics
-import types
 
 from GPErks_modified.constants import (
     DEFAULT_GSA_N_DRAWS,

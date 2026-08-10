@@ -5,7 +5,7 @@ For each HCM case it recomputes the pipeline's mechanics biomarkers (the 38
 outputs in cycle_output) for beat 4 and beat 5 of every *working* cycle (the
 output_mask_beat_5 sims, which by definition completed both beats), using the
 EXACT pipeline definitions imported from check_cycle_output_archer2 /
-SIMULATION_library.fourchamber_output and the same AVD-based beat window
+common.fourchamber_output and the same AVD-based beat window
 (start = (N-1)*BCL - AVD, end = start + BCL).
 
 It then reports, per output, statistics of the beat5-vs-beat4 difference both in
@@ -32,15 +32,14 @@ from check_cycle_output_archer2 import (  # noqa: E402
     VV_output_free_IV_thr,
     artery_cycle_output_free_output_mask_name as artery_output,
 )
-from SIMULATION_library.fourchamber_output import AA_output, AA_output_ej  # noqa: E402
+from common.fourchamber_output import AA_output, AA_output_ej  # noqa: E402
 
 IV_THR = 0.1
 EPS = 1e-6  # below this |beat4| we skip the % difference (avoid blow-ups)
 
-DRIVES = [
-    "/media/croderog/SeagateExpansionDrive", "/media/croderog/Seagate Expansion Drive",
-    "/media/croderog/Elements", "/media/croderog/Elements_1", "/media/croderog/Bob", "/data",
-]
+# Roots searched for the simulation data. Set DATA_ROOT to one or more
+# directories, colon-separated like PATH, each containing HCM/<case>/scenarios/.
+DRIVES = [d for d in os.environ.get("DATA_ROOT", "").split(os.pathsep) if d]
 # label -> (patient folder, scenario number, phenotype)
 CASES = {
     "HCM1": (1, 53, "Mid-to-apical LVH"),
@@ -260,7 +259,7 @@ def summarise(B4, B5, heart):
 def main():
     import pandas as pd
     ap = argparse.ArgumentParser(description="Beat-4 vs beat-5 output-difference statistics.")
-    ap.add_argument("--output_dir", default="/media/croderog/Bob/HCM/beat4_vs_beat5_stats")
+    ap.add_argument("--output_dir", default=os.path.join(os.environ.get("RESULTS_ROOT", "results"), "beat4_vs_beat5_stats"))
     ap.add_argument("--cases", nargs="+", default=list(CASES.keys()))
     ap.add_argument("--limit", type=int, default=None, help="Max cycles per heart (testing).")
     ap.add_argument("--keep_neg_edp", action="store_true",

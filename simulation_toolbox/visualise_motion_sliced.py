@@ -11,14 +11,12 @@ import numpy as np
 import pyvista as pv
 import math
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
 import tempfile
 import subprocess
 import tqdm
 
 # Import functions from your existing libraries
-from GSA_library.mesh_utils import *
-from GSA_library.pyvista_utils import read_mesh, carp_to_pyvista, read_IGB_file
+from common.mesh_io import read_mesh, carp_to_pyvista, read_IGB_file
 from common.utils import file_exists
 
 def rotation_matrix(u: np.ndarray, theta: float) -> np.ndarray:

@@ -4,7 +4,7 @@ imperial_user="<imperial_username>"
 
 archer2_root_path="/work/e348/e348/$archer2_user"
 imperial_root_path="/rds/general/user/$imperial_user/home"
-local_root_path="/media/croderog/SeagateExpansionDrive"
+local_root_path="${DATA_ROOT:?Set DATA_ROOT to your local data directory}"
 folder_experiment_name="rodero_healthy/h11/scenarios/5"
 first_simulation=50
 last_simulation=99

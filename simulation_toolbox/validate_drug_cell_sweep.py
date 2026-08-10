@@ -27,7 +27,7 @@ import shutil
 import subprocess
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from collections import OrderedDict
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -36,10 +36,10 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-BENCH = "/home/croderog/software/CARPentry_ICL_latest/bin/bench.pt"
+BENCH = os.environ.get("BENCH", "bench.pt")
 
-# scenario providing the representative cell + parameter ranges (HCM1 on Bob)
-SCENARIO = "/media/croderog/Bob/HCM/1/scenarios/53_more_samples"
+# Scenario providing the representative cell and the parameter ranges (HCM1)
+SCENARIO = os.path.join(os.environ.get("DATA_ROOT", ""), "HCM/1/scenarios/53_more_samples")
 BCL = 1017.0
 
 # swept parameters: name -> (X.txt column, Land-file key, colour)
@@ -152,7 +152,7 @@ def main():
     p.add_argument("--workdir", default="/tmp/drug_cell_sweep")
     p.add_argument("--replot", action="store_true",
                    help="skip the bench sims and re-plot from an existing (kept) workdir")
-    p.add_argument("--output_dir", default="/media/croderog/Bob/HCM/figures/drug_validation")
+    p.add_argument("--output_dir", default=os.path.join(os.environ.get("RESULTS_ROOT", "results"), "drug_validation"))
     p.add_argument("--keep_workdir", action="store_true")
     p.add_argument("--dpi", type=int, default=200)
     args = p.parse_args()

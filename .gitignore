@@ -24,6 +24,10 @@ simulation_toolbox/original_marina.py
 simulation_toolbox/snapshot/
 simulation_toolbox/rodero_healthy/
 
+# Output of reproduce_figures.sh, and ranking files regenerated in place
+results/
+example_data/**/Rank_Si_total_max*.txt.new
+
 # Manuscript material and working notes (local only)
 simulation_toolbox/writing/
 MAVACAMTEN_*.md

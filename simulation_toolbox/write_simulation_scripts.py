@@ -1,17 +1,14 @@
 import os
-import sys
 
 import numpy as np
 import json
-import copy
 import argparse
 
 from SIMULATION_library import simulator_utils
 from SIMULATION_library.fch_setup import simulation
-from SIMULATION_library.cell_sims_utils import *
+from SIMULATION_library.cell_sims_utils import generate_bench_script
 
-from GSA_library import ionic_output
-from GSA_library.plotting import plot_Land_output
+from common.cell_io import bin_to_dat_folder, plot_Land_output
 
 def main(args):
 
@@ -83,7 +80,7 @@ def main(args):
                             suffix="")
       os.system("bash "+cell_sims_basefolder+"run_ToRORd_dynCl.sh")     
 
-      ionic_output.bin_to_dat_folder(cell_sims_basefolder+"ToRORd_dynCl/",
+      bin_to_dat_folder(cell_sims_basefolder+"ToRORd_dynCl/",
                                 0,
                                 N-1,
                                 BCL,
@@ -108,7 +105,7 @@ def main(args):
                             suffix="_rv")
       os.system("bash "+cell_sims_basefolder+"run_ToRORd_dynCl_rv.sh")      
 
-      ionic_output.bin_to_dat_folder(cell_sims_basefolder+"ToRORd_dynCl_rv/",
+      bin_to_dat_folder(cell_sims_basefolder+"ToRORd_dynCl_rv/",
                                 0,
                                 N-1,
                                 BCL,
@@ -133,7 +130,7 @@ def main(args):
                             suffix="")
       os.system("bash "+cell_sims_basefolder+"run_JB_COURTEMANCHE.sh")  
 
-      ionic_output.bin_to_dat_folder(cell_sims_basefolder+"JB_COURTEMANCHE/",
+      bin_to_dat_folder(cell_sims_basefolder+"JB_COURTEMANCHE/",
                                 0,
                                 N-1,
                                 BCL,

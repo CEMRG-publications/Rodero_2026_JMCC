@@ -1,4 +1,4 @@
-from common.utils import rotate_mesh, load_json, read_elem, read_pts, pts_elem_to_pyvista, carp_to_pyvista
+from common.utils import rotate_mesh, load_json
 from common.visualisation import print_screenshot_video, print_activation_times
 
 import argparse
