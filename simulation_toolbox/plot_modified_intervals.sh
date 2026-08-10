@@ -1,13 +1,28 @@
 #!/bin/bash
 
+# ---------------------------------------------------------------------------
+# Data and results locations.
+#
+#   DATA_ROOT     directory holding the simulation data, so that the scenarios
+#                 live at $DATA_ROOT/HCM/<case>/scenarios/<scenario>/
+#   RESULTS_ROOT  where the figures and tables are written
+#                 (defaults to $DATA_ROOT/results)
+#
+# Set them in the environment before running, for example:
+#   export DATA_ROOT=/path/to/data
+# ---------------------------------------------------------------------------
+: "${DATA_ROOT:?Set DATA_ROOT to the directory containing HCM/ (see README)}"
+RESULTS_ROOT="${RESULTS_ROOT:-$DATA_ROOT/results}"
+
+
 # Base paths
-BASELINE="/media/croderog/Bob/HCM/1/scenarios/53_more_samples/"
-OUTPUT_DIR="/media/croderog/Bob/HCM/1/scenarios/53_more_samples/output"
-XLABELS="/media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels.txt"
-YLABELS="/media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels.txt"
-SAVE="/media/croderog/Bob/HCM/GSA_analysis/"
-YLABELS_DICT="/media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels_filtered.json"
-XLABELS_DICT="/media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels_to_plot.json"
+BASELINE="${DATA_ROOT}/HCM/1/scenarios/53_more_samples/"
+OUTPUT_DIR="${DATA_ROOT}/HCM/1/scenarios/53_more_samples/output"
+XLABELS="${DATA_ROOT}/HCM/GSA_analysis/cycle/xlabels.txt"
+YLABELS="${DATA_ROOT}/HCM/GSA_analysis/cycle/ylabels.txt"
+SAVE="${RESULTS_ROOT}/"
+YLABELS_DICT="${DATA_ROOT}/HCM/GSA_analysis/cycle/ylabels_filtered.json"
+XLABELS_DICT="${DATA_ROOT}/HCM/GSA_analysis/cycle/xlabels_to_plot.json"
 
 # Create subfolder for modified interval results
 SAVE_MODIFIED="${SAVE}/modified_intervals"

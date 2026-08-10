@@ -4,7 +4,7 @@ import numpy as np
 import json
 import matplotlib.pyplot as plt
 
-from SIMULATION_library import fourchamber_output, mesh_utils
+from common.mesh_io import read_tets
 
 
 kPa_to_mmHg = 7.50062
@@ -26,7 +26,7 @@ def passive_output_per_chamber(output_folder,
                    last_frame=5):
 
     print('Reading mesh elem file...')
-    elem = mesh_utils.read_tets(elem_file)
+    elem = read_tets(elem_file)
     print('Done.')
       
     LV_EIDX = np.where(np.isin(elem[:,-1],tags["lv"]+tags["fast_endo_lv"])==1)[0]
@@ -239,7 +239,7 @@ if __name__ == "__main__":
         "--basefolder",
         type=str,
         required=True,
-        default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations",
+        default=os.path.join(os.environ.get("DATA_ROOT", ""), "simulations"),
         help="Path to the folder where the simulations, data, and figure folders are located.",
     )
     parser.add_argument(

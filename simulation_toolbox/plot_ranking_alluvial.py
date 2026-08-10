@@ -13,7 +13,6 @@ import argparse
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 from common.utils import generate_gsa_ranking_files, read_xlabels_dict
 
 # ------------------------------

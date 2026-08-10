@@ -1,17 +1,32 @@
 #!/bin/bash
 set -e  # Exit if any command fails
 
+# ---------------------------------------------------------------------------
+# Data and results locations.
+#
+#   DATA_ROOT     directory holding the simulation data, so that the scenarios
+#                 live at $DATA_ROOT/HCM/<case>/scenarios/<scenario>/
+#   RESULTS_ROOT  where the figures and tables are written
+#                 (defaults to $DATA_ROOT/results)
+#
+# Set them in the environment before running, for example:
+#   export DATA_ROOT=/path/to/data
+# ---------------------------------------------------------------------------
+: "${DATA_ROOT:?Set DATA_ROOT to the directory containing HCM/ (see README)}"
+RESULTS_ROOT="${RESULTS_ROOT:-$DATA_ROOT/results}"
+
+
 echo "=== Starting ranking heatmap generation ==="
 
 # -----------------------------------
 # Define baseline directories
 # -----------------------------------
 anatomy_base_dirs=(
-  "/media/croderog/Bob/HCM/1/scenarios/53_more_samples/"
-  "/media/croderog/SeagateExpansionDrive/HCM/2/scenarios/47_more_samples/"
-  "/data/HCM/3/scenarios/48_more_samples/"
-  "/media/croderog/SeagateExpansionDrive/HCM/4/scenarios/49_more_samples/"
-  "/media/croderog/Bob/HCM/5/scenarios/50_more_samples/"
+  "${DATA_ROOT}/HCM/1/scenarios/53_more_samples/"
+  "${DATA_ROOT}/HCM/2/scenarios/47_more_samples/"
+  "${DATA_ROOT}/HCM/3/scenarios/48_more_samples/"
+  "${DATA_ROOT}/HCM/4/scenarios/49_more_samples/"
+  "${DATA_ROOT}/HCM/5/scenarios/50_more_samples/"
 )
 
 anatomy_names=("Mid-to-apical LVH" "LVOTO" "Isolated basal LVH" "Milder asymmetric LVH" "Undifferentiated pattern")
@@ -70,12 +85,12 @@ done
 # echo "=== Generating ranking heatmap for baseline scenarios ==="
 python3 plot_ranking_heatmap.py \
   --scenarios "${baseline_scenarios[@]}" \
-  --xlabels /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels.txt \
-  --ylabels /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels.txt \
-  --savepath /media/croderog/Bob/HCM/GSA_analysis/heatmaps/baseline \
+  --xlabels ${DATA_ROOT}/HCM/GSA_analysis/cycle/xlabels.txt \
+  --ylabels ${DATA_ROOT}/HCM/GSA_analysis/cycle/ylabels.txt \
+  --savepath ${RESULTS_ROOT}/heatmaps/baseline \
   --figname_prefix baseline \
-  --ylabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels_filtered.json \
-  --xlabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels_to_plot.json \
+  --ylabels_dict ${DATA_ROOT}/HCM/GSA_analysis/cycle/ylabels_filtered.json \
+  --xlabels_dict ${DATA_ROOT}/HCM/GSA_analysis/cycle/xlabels_to_plot.json \
   --fontsize 25 \
   --scenarios_names "${baseline_names[@]}"
 
@@ -108,12 +123,12 @@ done
 echo "=== Generating ranking heatmap for Advanced HCM scenarios ==="
 python3 plot_ranking_heatmap.py \
   --scenarios "${advanced_scenarios[@]}" \
-  --xlabels /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels.txt \
-  --ylabels /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels.txt \
-  --savepath /media/croderog/Bob/HCM/GSA_analysis/heatmaps/functional_remodeling \
+  --xlabels ${DATA_ROOT}/HCM/GSA_analysis/cycle/xlabels.txt \
+  --ylabels ${DATA_ROOT}/HCM/GSA_analysis/cycle/ylabels.txt \
+  --savepath ${RESULTS_ROOT}/heatmaps/functional_remodeling \
   --figname_prefix functional_remodeled \
-  --ylabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels_filtered.json \
-  --xlabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels_to_plot.json \
+  --ylabels_dict ${DATA_ROOT}/HCM/GSA_analysis/cycle/ylabels_filtered.json \
+  --xlabels_dict ${DATA_ROOT}/HCM/GSA_analysis/cycle/xlabels_to_plot.json \
   --fontsize 25 \
   --scenarios_names "${advanced_names[@]}" \
 #   --skip_plots_and_summaries
@@ -147,12 +162,12 @@ done
 echo "=== Generating ranking heatmap for pharma HCM scenarios ==="
 python3 plot_ranking_heatmap.py \
   --scenarios "${pharma_scenarios[@]}" \
-  --xlabels /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels.txt \
-  --ylabels /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels.txt \
-  --savepath /media/croderog/Bob/HCM/GSA_analysis/heatmaps/pharma \
+  --xlabels ${DATA_ROOT}/HCM/GSA_analysis/cycle/xlabels.txt \
+  --ylabels ${DATA_ROOT}/HCM/GSA_analysis/cycle/ylabels.txt \
+  --savepath ${RESULTS_ROOT}/heatmaps/pharma \
   --figname_prefix pharma \
-  --ylabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels_filtered.json \
-  --xlabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels_to_plot.json \
+  --ylabels_dict ${DATA_ROOT}/HCM/GSA_analysis/cycle/ylabels_filtered.json \
+  --xlabels_dict ${DATA_ROOT}/HCM/GSA_analysis/cycle/xlabels_to_plot.json \
   --fontsize 25 \
   --scenarios_names "${pharma_names[@]}" \
   --skip_plots_and_summaries

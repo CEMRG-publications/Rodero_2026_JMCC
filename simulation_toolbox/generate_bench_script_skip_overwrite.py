@@ -1,5 +1,4 @@
 import os
-import sys
 
 def generate_bench_script(first_simulation,
 						  last_simulation,

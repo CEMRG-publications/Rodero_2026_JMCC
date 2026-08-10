@@ -1,0 +1,8 @@
+{
+  "LVedv": ["a_ventricles", "EDP_lv"],
+  "LVedp": ["pulmOrifice_area","VePref"],
+  "LVpMax": ["Rsys"],
+  "LVdpdtMax": ["Rsys", "dr_V"],
+  "V_TAT": ["CV_ventricles"],
+  "LVEF": ["a_ventricles","Rsys"]
+}

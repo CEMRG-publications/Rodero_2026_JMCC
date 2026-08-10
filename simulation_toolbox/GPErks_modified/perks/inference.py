@@ -3,7 +3,6 @@ from typing import Callable, Optional
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import types
 
 from GPErks_modified.constants import DEFAULT_INFERENCE_GRID_DIM, HEIGHT, WIDTH
 from GPErks_modified.train.emulator import GPEmulator

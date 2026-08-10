@@ -3,7 +3,7 @@ import os
 import numpy as np
 import argparse
 
-from SIMULATION_library import simulator_utils
+from common.carp_setup import simulator_utils
 
 def check_files(datafolder,fields):
 

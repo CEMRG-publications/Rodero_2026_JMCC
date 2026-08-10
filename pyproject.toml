@@ -1,17 +1,46 @@
 [tool.poetry]
 name = "simulation-toolbox"
-version = "0.1.0"
-description = ""
+version = "1.0.0"
+description = "Post-processing, emulation, and global sensitivity analysis of four-chamber cardiac electromechanical simulations in hypertrophic cardiomyopathy"
 authors = ["Cristobal Rodero <cristobal.rodero@imperial.ac.uk>"]
 readme = "README.md"
+license = "MIT"
+packages = [{ include = "simulation_toolbox" }]
 
 [tool.poetry.dependencies]
 python = "~=3.9.13"
-simulation-library = {git = "ssh://git@github.com/MarinaStrocchi/SIMULATION_library.git", rev = "jb_courtemanche"}
-requests = "^2.31.0"
-unloading-library = {git = "ssh://git@github.com/MarinaStrocchi/UNLOADING_library.git", rev = "master"}
-tqdm = "^4.67.0"
 
+# Core: everything needed to reproduce the analysis and the paper figures.
+numpy = "^1.26.4"
+pandas = "^2.3.3"
+matplotlib = "^3.9.4"
+scipy = "^1.13.1"
+seaborn = "^0.13.2"
+scikit-learn = ">=0.24.2"
+scikit-image = "^0.24.0"
+fpdf2 = "^2.8.4"
+reportlab = "^3.6.13"
+tqdm = "^4.67.0"
+requests = "^2.31.0"
+
+# Emulation and global sensitivity analysis (extra "emulation").
+torch = { version = ">=1.9.0", optional = true }
+gpytorch = { version = ">=1.5.0", optional = true }
+torchmetrics = { version = ">=0.5.0", optional = true }
+SALib = { version = "^1.4.0", optional = true }
+gpytGPE = { version = "^1.0.0", optional = true }
+Historia = { version = "^1.1.0", optional = true }
+alphashape = { version = "*", optional = true }
+networkx = { version = "^3.2.1", optional = true }
+
+# 3D mesh rendering (extra "visualisation"). On a headless machine also install
+# the OSMesa VTK wheels, see the README.
+pyvista = { version = "^0.41.1", optional = true }
+vtk = { version = "^9.3.1", optional = true }
+
+[tool.poetry.extras]
+emulation = ["torch", "gpytorch", "torchmetrics", "SALib", "gpytGPE", "Historia", "alphashape", "networkx"]
+visualisation = ["pyvista", "vtk"]
 
 [build-system]
 requires = ["poetry-core"]

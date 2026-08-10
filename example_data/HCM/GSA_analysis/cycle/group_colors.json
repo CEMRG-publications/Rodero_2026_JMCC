@@ -1,0 +1,10 @@
+{
+  "Electrophysiology": {"color": "#DDCC77", "marker": "o"},
+  "Cardiovascular": {"color": "#CC6677", "marker": "s"},
+  "Active tension": {"color": "#88CCEE", "marker": "^"},
+  "Geometry": {"color": "#AA4499", "marker": "D"},
+  "Ionic": {"color": "#117733", "marker": "v"},
+  "Mechanics": {"color": "#44AA99", "marker": "P"},
+  "Cellular": {"color": "#F1BF00", "marker": ""},
+  "Tissue": {"color": "#D3D3D3", "marker": "X"}
+}

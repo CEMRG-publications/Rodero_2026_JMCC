@@ -4,8 +4,6 @@ import numpy as np
 import os
 import seaborn as sns
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap, BoundaryNorm
-from matplotlib.patches import Circle
-from matplotlib.lines import Line2D
 import matplotlib.patheffects as path_effects
 from common.utils import generate_gsa_ranking_files, read_xlabels_dict
 

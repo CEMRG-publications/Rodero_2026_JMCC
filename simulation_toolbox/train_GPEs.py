@@ -1111,7 +1111,7 @@ if __name__ == '__main__':
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument('--basefolder', type=str, required=True,
-                        default="/media/croderog/SeagateExpansionDrive/HCM/2/scenarios/41",
+                        default=os.environ.get("DATA_ROOT", ""),
                         help='Path to the folder where the simulations, data, and figure folders are.')
     parser.add_argument('--feature_idx', default=-1)
     parser.add_argument('--output_mask_name', default="output_mask_beat_5.txt")

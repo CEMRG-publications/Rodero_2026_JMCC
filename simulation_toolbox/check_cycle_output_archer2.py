@@ -1,19 +1,18 @@
 import argparse
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 from pandas import read_csv
 import json
-import sys
 import tqdm
-from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
+from concurrent.futures import as_completed, ProcessPoolExecutor
 
 
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib import colors
 
-from SIMULATION_library import fourchamber_output, mesh_utils
+from common import fourchamber_output
+from common.mesh_io import read_tets
 
 def plot_statistics_file(basefolder):
     # Load data from Y.txt
@@ -408,7 +407,7 @@ def electrophysiology_cycle_output_output_mask_free(datafolder,
     idx_ok = np.where(mask == 1)[0]
 
     print('Reading mesh elem file...')
-    elem = mesh_utils.read_tets(elem_file)
+    elem = read_tets(elem_file)
     print('Done.')
 
     if "ventricles" in tags:
@@ -476,7 +475,7 @@ def electrophysiology_cycle_output_output_mask_free_no_parallel(datafolder,
     idx_ok = np.where(mask==1)[0]
 
     print('Reading mesh elem file...')
-    elem = mesh_utils.read_tets(elem_file)
+    elem = read_tets(elem_file)
     print('Done.')
 
     if "ventricles" in tags:
@@ -1080,7 +1079,7 @@ if __name__ == '__main__':
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument('--basefolder', type=str, required=True,
-                        default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations",
+                        default=os.path.join(os.environ.get("DATA_ROOT", ""), "simulations"),
                         help='Path to the folder where the simulations, data, and figure folders are.')
     parser.add_argument('--elem_file', type=str, help="Path to the elem file of the mesh to compute the activation times.", required=True)
     parser.add_argument('--n_beat', type=int, required=False, help="Heartbeat number to compute the output.", default=5)

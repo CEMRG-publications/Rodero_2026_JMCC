@@ -1,16 +1,31 @@
 #!/bin/bash
 set -e  # Exit if any command fails
 
+# ---------------------------------------------------------------------------
+# Data and results locations.
+#
+#   DATA_ROOT     directory holding the simulation data, so that the scenarios
+#                 live at $DATA_ROOT/HCM/<case>/scenarios/<scenario>/
+#   RESULTS_ROOT  where the figures and tables are written
+#                 (defaults to $DATA_ROOT/results)
+#
+# Set them in the environment before running, for example:
+#   export DATA_ROOT=/path/to/data
+# ---------------------------------------------------------------------------
+: "${DATA_ROOT:?Set DATA_ROOT to the directory containing HCM/ (see README)}"
+RESULTS_ROOT="${RESULTS_ROOT:-$DATA_ROOT/results}"
+
+
 echo "=== Starting baseline sensitivity summary analysis ==="
 
 # -----------------------------------
 # Baseline directories
 # -----------------------------------
-anatomy1_base=/media/croderog/Bob/HCM/1/scenarios/53_more_samples/
-anatomy2_base=/media/croderog/SeagateExpansionDrive/HCM/2/scenarios/47_more_samples/
-anatomy3_base=/data/HCM/3/scenarios/48_more_samples/
-anatomy4_base=/media/croderog/SeagateExpansionDrive/HCM/4/scenarios/49_more_samples/
-anatomy5_base=/media/croderog/Bob/HCM/5/scenarios/50_more_samples/
+anatomy1_base=${DATA_ROOT}/HCM/1/scenarios/53_more_samples/
+anatomy2_base=${DATA_ROOT}/HCM/2/scenarios/47_more_samples/
+anatomy3_base=${DATA_ROOT}/HCM/3/scenarios/48_more_samples/
+anatomy4_base=${DATA_ROOT}/HCM/4/scenarios/49_more_samples/
+anatomy5_base=${DATA_ROOT}/HCM/5/scenarios/50_more_samples/
 
 # -----------------------------------
 # Check directories
@@ -71,8 +86,8 @@ SCENARIOS=(
 ANATOMY_NAMES=("Mid-to-apical LVH" "LVOTO" "Isolated basal LVH" "Milder asymmetric LVH" "Undifferentiated pattern")
 
 COMMON_ARGS=(
-  --xlabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/xlabels_to_plot.json
-  --ylabels_dict /media/croderog/Bob/HCM/GSA_analysis/cycle/ylabels_filtered.json
+  --xlabels_dict ${DATA_ROOT}/HCM/GSA_analysis/cycle/xlabels_to_plot.json
+  --ylabels_dict ${DATA_ROOT}/HCM/GSA_analysis/cycle/ylabels_filtered.json
   --threshold 0.05
   --anatomy_names "${ANATOMY_NAMES[@]}"
 )
@@ -100,7 +115,7 @@ EOF
 python3 plot_baseline_sensitivity_summary.py \
   --scenarios "${SCENARIOS[@]}" \
   --outputs "${LV_OUTPUTS[@]}" \
-  --savepath /media/croderog/Bob/HCM/GSA_analysis/baseline_summary/LV_outputs \
+  --savepath ${RESULTS_ROOT}/baseline_summary/LV_outputs \
   --output_groups "$OUTPUT_GROUPS_FILE" \
   "${COMMON_ARGS[@]}"
 
@@ -124,7 +139,7 @@ EOF
 python3 plot_baseline_sensitivity_summary.py \
   --scenarios "${SCENARIOS[@]}" \
   --outputs "${RV_OUTPUTS[@]}" \
-  --savepath /media/croderog/Bob/HCM/GSA_analysis/baseline_summary/RV_outputs \
+  --savepath ${RESULTS_ROOT}/baseline_summary/RV_outputs \
   --output_groups "$OUTPUT_GROUPS_FILE" \
   "${COMMON_ARGS[@]}"
 
@@ -148,7 +163,7 @@ EOF
 python3 plot_baseline_sensitivity_summary.py \
   --scenarios "${SCENARIOS[@]}" \
   --outputs "${LA_OUTPUTS[@]}" \
-  --savepath /media/croderog/Bob/HCM/GSA_analysis/baseline_summary/LA_outputs \
+  --savepath ${RESULTS_ROOT}/baseline_summary/LA_outputs \
   --output_groups "$OUTPUT_GROUPS_FILE" \
   "${COMMON_ARGS[@]}"
 
@@ -172,7 +187,7 @@ EOF
 python3 plot_baseline_sensitivity_summary.py \
   --scenarios "${SCENARIOS[@]}" \
   --outputs "${RA_OUTPUTS[@]}" \
-  --savepath /media/croderog/Bob/HCM/GSA_analysis/baseline_summary/RA_outputs \
+  --savepath ${RESULTS_ROOT}/baseline_summary/RA_outputs \
   --output_groups "$OUTPUT_GROUPS_FILE" \
   "${COMMON_ARGS[@]}"
 
@@ -195,7 +210,7 @@ EOF
 python3 plot_baseline_sensitivity_summary.py \
   --scenarios "${SCENARIOS[@]}" \
   --outputs "${ART_OUTPUTS[@]}" \
-  --savepath /media/croderog/Bob/HCM/GSA_analysis/baseline_summary/arterial_outputs \
+  --savepath ${RESULTS_ROOT}/baseline_summary/arterial_outputs \
   --output_groups "$OUTPUT_GROUPS_FILE" \
   "${COMMON_ARGS[@]}"
 
@@ -224,7 +239,7 @@ EOF
 python3 plot_baseline_sensitivity_summary.py \
   --scenarios "${SCENARIOS[@]}" \
   --outputs "${VENTRICULAR_OUTPUTS[@]}" \
-  --savepath /media/croderog/Bob/HCM/GSA_analysis/baseline_summary/ventricular_outputs \
+  --savepath ${RESULTS_ROOT}/baseline_summary/ventricular_outputs \
   --output_groups "$OUTPUT_GROUPS_FILE" \
   "${COMMON_ARGS[@]}"
 
@@ -253,7 +268,7 @@ EOF
 python3 plot_baseline_sensitivity_summary.py \
   --scenarios "${SCENARIOS[@]}" \
   --outputs "${ATRIAL_OUTPUTS[@]}" \
-  --savepath /media/croderog/Bob/HCM/GSA_analysis/baseline_summary/atrial_outputs \
+  --savepath ${RESULTS_ROOT}/baseline_summary/atrial_outputs \
   --output_groups "$OUTPUT_GROUPS_FILE" \
   "${COMMON_ARGS[@]}"
 
@@ -280,7 +295,7 @@ EOF
 python3 plot_baseline_sensitivity_summary.py \
   --scenarios "${SCENARIOS[@]}" \
   --outputs "${ALL_OUTPUTS[@]}" \
-  --savepath /media/croderog/Bob/HCM/GSA_analysis/baseline_summary/all_outputs \
+  --savepath ${RESULTS_ROOT}/baseline_summary/all_outputs \
   --output_groups "$OUTPUT_GROUPS_FILE" \
   "${COMMON_ARGS[@]}"
 
@@ -310,7 +325,7 @@ EOF
 python3 plot_baseline_sensitivity_summary.py \
   --scenarios "${SCENARIOS[@]}" \
   --outputs "${VENTRICULAR_HEMODYNAMICS_OUTPUTS[@]}" \
-  --savepath /media/croderog/Bob/HCM/GSA_analysis/baseline_summary/ventricular_hemodynamics_outputs \
+  --savepath ${RESULTS_ROOT}/baseline_summary/ventricular_hemodynamics_outputs \
   --output_groups "$OUTPUT_GROUPS_FILE" \
   "${COMMON_ARGS[@]}"
 
@@ -323,4 +338,4 @@ rm -f "$OUTPUT_GROUPS_FILE"
 
 echo ""
 echo "🎉 All baseline sensitivity summary analyses completed successfully!"
-echo "📊 Results saved in: /media/croderog/Bob/HCM/GSA_analysis/baseline_summary/"
+echo "📊 Results saved in: ${RESULTS_ROOT}/baseline_summary/"

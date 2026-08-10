@@ -10,11 +10,11 @@ first_simulation=4000
 last_simulation=6999
 
 if [ "$hpc" == "imperial" ]; then
-    username="croderog"
+    username="<imperial_username>"
     hpc_address="login.hpc.imperial.ac.uk"
-    hpc_root_path="/rds/general/user/croderog/home"
+    hpc_root_path="/rds/general/user/$username/home"
 elif [ "$hpc" == "archer2" ]; then
-    username="charlessillett"
+    username="<archer2_username>"
     hpc_address="login.archer2.ac.uk"
     hpc_root_path="/scratch-nvme/e348/e348/"$username
 fi

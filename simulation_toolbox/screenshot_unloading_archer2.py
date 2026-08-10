@@ -5,7 +5,7 @@ import numpy as np
 import tqdm
 import pyvista as pv
 
-from GSA_library.mesh_utils import read_elem, read_pts
+from common.mesh_io import read_elem, read_pts
 
 def pts_elem_to_pyvista(pts,elem,add_tags=False,el_type='Tt'):
 
@@ -391,7 +391,7 @@ if __name__ == '__main__':
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument('--basefolder', type=str, required=True,
-                        default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations",help="Path to the simulations folder.")
+                        default=os.path.join(os.environ.get("DATA_ROOT", ""), "simulations"),help="Path to the simulations folder.")
     parser.add_argument('--path2figure', type=str, required=False)
     parser.add_argument('--first_simulation', type=int, required=False, default=-1)
     parser.add_argument('--last_simulation', type=int, required=False, default=-1)

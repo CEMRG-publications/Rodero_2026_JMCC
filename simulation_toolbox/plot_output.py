@@ -1027,7 +1027,7 @@ if __name__ == '__main__':
     parser.formatter_class = argparse.ArgumentDefaultsHelpFormatter
     
     parser.add_argument('--basefolder', type=str, required=True,
-                        default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations",
+                        default=os.path.join(os.environ.get("DATA_ROOT", ""), "simulations"),
                         help='Path to the folder where the simulations, data, and figure folders are.')
     parser.add_argument('--n_beat', type=int, required=False, help="Heartbeat number to compute the output.", default=5)
     parser.add_argument('--first_simulation', type=int, help="First simulation index.", default=None)

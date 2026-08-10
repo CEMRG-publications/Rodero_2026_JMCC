@@ -760,7 +760,7 @@ if __name__ == '__main__':
     
 
     parser.add_argument('--basefolder', type=str, required=True,
-                        default="/media/croderog/SeagateExpansionDrive/h01/new_unloading/unloading_simulations")
+                        default=os.path.join(os.environ.get("DATA_ROOT", ""), "simulations"))
     parser.add_argument('--first_simulation', type=int, required=True, default=0)
     parser.add_argument('--last_simulation', type=int, required=True, default=99)
     parser.add_argument('--n_beat', type=int, required=False, help="Heartbeat number to compute the output.", default=5)

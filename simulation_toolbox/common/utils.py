@@ -7,7 +7,6 @@ import os
 import pyvista as pv
 import re
 import vtk
-import tqdm
 
 def file_exists(files_to_check):
 	
@@ -21,64 +20,6 @@ def file_exists(files_to_check):
 	else:
 		raise Exception(f"Only strings can be checked. {files_to_check} is not a string.")
 	
-
-def read_elem(filename,el_type='Tt',tags=True):
-	print('Reading '+filename+'...')
-
-	if el_type=='Tt':
-		if tags:
-			return np.loadtxt(filename, dtype=int, skiprows=1, usecols=(1,2,3,4,5))
-		else:
-			filtered_lines = []
-			with open(filename, 'r') as infile:
-				first_line = True
-				for i in tqdm.tqdm(range(infile)):
-					line = infile[i]
-					if first_line:
-						first_line = False
-						continue
-					else:
-					# Split the line into columns
-						columns = line.split()
-						# Check if the number of columns is 6
-						if len(columns) == 6:
-							filtered_lines.append(columns[1:5])
-						else:
-							break
-	
-			# Convert the filtered lines to a numpy array
-			# Skipping the first row (header) and using specific columns
-			data = np.array(filtered_lines, dtype=int)
-			return data
-			# return np.loadtxt(filename, dtype=int, skiprows=1, usecols=(1,2,3,4))
-	elif el_type=='Tr':
-		if tags:
-			return np.loadtxt(filename, dtype=int, skiprows=1, usecols=(1,2,3,4))
-		else:
-			return np.loadtxt(filename, dtype=int, skiprows=1, usecols=(1,2,3))
-	elif el_type=='Ln':
-		if tags:
-			return np.loadtxt(filename, dtype=int, skiprows=1, usecols=(1,2,3))
-		else:
-			return np.loadtxt(filename, dtype=int, skiprows=1, usecols=(1,2))
-	else:
-		raise Exception('element type not recognised. Accepted: Tt, Tr, Ln')
-
-def read_pts(filename):
-	print(f'Reading: {filename}')
-	return np.loadtxt(filename, dtype=float, skiprows=1)
-
-def carp_to_pyvista(meshname):
-
-	pts = np.loadtxt(meshname+'.pts', dtype=float, skiprows=1)
-	elem = read_elem(meshname+'.elem',el_type='Tt',tags=False)
-
-	tets = np.column_stack((np.ones((elem.shape[0],),dtype=int)*4,elem)).flatten()
-	cell_type = np.ones((elem.shape[0],),dtype=int)*vtk.VTK_TETRA	
-
-	plt_msh = pv.UnstructuredGrid(tets,cell_type,pts)
-
-	return plt_msh
 
 def numpy_hook(dct):
 	for key, value in dct.items():

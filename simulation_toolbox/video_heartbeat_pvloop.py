@@ -5,14 +5,12 @@ import numpy as np
 from pandas import read_csv
 from pathlib import Path
 import pyvista as pv
-import shutil
 import subprocess
 import tqdm
 import os
 import vtk
 
-from GSA_library.mesh_utils import read_IGB_file, read_elem
-from GSA_library.pyvista_utils import read_pvcc_paraview_file
+from common.mesh_io import read_IGB_file, read_elem, read_pvcc_paraview_file
 
 def read_pts(filename: str) -> np.ndarray:
     """

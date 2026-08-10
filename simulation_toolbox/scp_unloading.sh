@@ -1,6 +1,10 @@
-archer2_root_path="/work/e348/e348/crg17"
-imperial_root_path="/rds/general/user/croderog/home"
-local_root_path="/media/croderog/SeagateExpansionDrive"
+# Set your cluster usernames before running
+archer2_user="<archer2_username>"
+imperial_user="<imperial_username>"
+
+archer2_root_path="/work/e348/e348/$archer2_user"
+imperial_root_path="/rds/general/user/$imperial_user/home"
+local_root_path="${DATA_ROOT:?Set DATA_ROOT to your local data directory}"
 folder_experiment_name="rodero_healthy/h11/scenarios/5"
 first_simulation=50
 last_simulation=99
@@ -9,7 +13,7 @@ mesh_name="myocardium_AV_FEC_BB_lvrv"
 total_simulations=$((last_simulation - first_simulation + 1))
 progress=0
 
-ssh -t crg17@login.archer2.ac.uk /bin/bash -s "$archer2_root_path" "$folder_experiment_name" "$total_simulations" "$first_simulation" "$last_simulation" "$mesh_name" << 'EOF'
+ssh -t $archer2_user@login.archer2.ac.uk /bin/bash -s "$archer2_root_path" "$folder_experiment_name" "$total_simulations" "$first_simulation" "$last_simulation" "$mesh_name" << 'EOF'
 	archer2_root_path="$1"
 	folder_experiment_name="$2"
 	total_simulations="$3"
@@ -45,15 +49,15 @@ EOF
 
 echo "Syncing the unloaded folder to the local machine..."
 
-scp crg17@login.archer2.ac.uk:$archer2_root_path/$folder_experiment_name/unloaded_to_transfer.tar.gz $local_root_path/$folder_experiment_name/.
+scp $archer2_user@login.archer2.ac.uk:$archer2_root_path/$folder_experiment_name/unloaded_to_transfer.tar.gz $local_root_path/$folder_experiment_name/.
 
 echo "Syncing the unloaded folder to the imperial hpc..."
 
-scp $local_root_path/$folder_experiment_name/unloaded_to_transfer.tar.gz croderog@login.hpc.imperial.ac.uk:$imperial_root_path/.
+scp $local_root_path/$folder_experiment_name/unloaded_to_transfer.tar.gz $imperial_user@login.hpc.imperial.ac.uk:$imperial_root_path/.
 
 echo "Cleaning..."
 
-ssh -t crg17@login.archer2.ac.uk << EOF
+ssh -t $archer2_user@login.archer2.ac.uk << EOF
 	rm -rf $archer2_root_path/$folder_experiment_name/unloaded_to_transfer.tar.gz
 EOF
 

@@ -1,0 +1,10 @@
+{
+  "GSA_wfrac_V_lower_0.0_upper_50.0": {
+    "color": "#CE6A0E",
+    "label": "Mavacamten"
+  },
+  "GSA_mu_V_lower_0.0_upper_50.0": {
+    "color": "#F1BF00",
+    "label": "Aficamten"
+  }
+}
