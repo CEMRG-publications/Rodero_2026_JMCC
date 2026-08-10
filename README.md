@@ -38,15 +38,21 @@ parameter rankings for the five anatomies and the two drug scenarios. It is
 enough to check an installation and to see the analysis end to end. See
 `example_data/README.md` for its layout.
 
-The full data are deposited on Zenodo:
+The full data are deposited on Zenodo. Each deposit is the output of one stage of
+the pipeline below, so you can start at whichever stage you are interested in
+rather than rerunning the ones before it:
 
-| Dataset | DOI |
-|---|---|
-| Meshes | [10.5281/zenodo.21282274](https://doi.org/10.5281/zenodo.21282274) |
-| Electrophysiology simulations | [10.5281/zenodo.21720235](https://doi.org/10.5281/zenodo.21720235) |
-| Inflation simulations | [10.5281/zenodo.21720634](https://doi.org/10.5281/zenodo.21720634) |
-| Unloading simulations | [10.5281/zenodo.21809471](https://doi.org/10.5281/zenodo.21809471) |
-| Cycle simulations | [10.5281/zenodo.21822518](https://doi.org/10.5281/zenodo.21822518) |
+| Dataset | Pipeline stage | DOI |
+|---|---|---|
+| Meshes | Input anatomies | [10.5281/zenodo.21282274](https://doi.org/10.5281/zenodo.21282274) |
+| Electrophysiology simulations | Step 11 | [10.5281/zenodo.21720235](https://doi.org/10.5281/zenodo.21720235) |
+| Inflation simulations | Step 11 | [10.5281/zenodo.21720634](https://doi.org/10.5281/zenodo.21720634) |
+| Unloading simulations | Steps 2 to 5 | [10.5281/zenodo.21809471](https://doi.org/10.5281/zenodo.21809471) |
+| Cycle simulations | Steps 6 to 9 | [10.5281/zenodo.21822518](https://doi.org/10.5281/zenodo.21822518) |
+
+The cycle simulations are the ones the paper's results are computed from. With
+that deposit you can rerun the whole post-processing chain, from the raw
+CARPentry output to `Y.txt` and on to every figure, using only this repository.
 
 ### Where the scripts look for data
 
@@ -102,14 +108,33 @@ On a machine without a graphical interface, pyvista needs the OSMesa VTK wheels:
 pip install vtk --extra-index-url https://wheels.vtk.org trame vtk-osmesa
 ```
 
-### The `simulation` extra is not public
+### What the `simulation` extra is, and when you need it
 
-Generating new simulations depends on `SIMULATION_library` and
-`UNLOADING_library` by M. Strocchi, which are private repositories. You need
-access from their author to install that extra. Everything else, including all
-the analysis and every paper figure, runs without them: the handful of
-post-processing functions the analysis needed are included in this repository
-under `simulation_toolbox/common/` (see Vendored code below).
+`SIMULATION_library` and `UNLOADING_library` by M. Strocchi are private
+repositories, so that extra needs access from their author. It is worth being
+precise about what this does and does not prevent, because it is narrower than it
+sounds.
+
+Only four scripts use them, and all four do the same job: writing the Slurm and
+JSON files that are submitted to the cluster. They are
+`write_unloading_scripts.py`, `write_simulation_scripts.py`,
+`write_inflation_scripts.py`, and `generate_json_parameter_files.py`. You need
+them to set up *new* simulations, with different parameters or a different
+anatomy.
+
+Everything else in this repository runs without them, including the whole
+post-processing half: `check_cycle_output_archer2.py`, which turns raw CARPentry
+cycles into `Y.txt` and the mask of working simulations,
+`check_unloading_convergence_archer2.py`, `screenshot_unloading_archer2.py`,
+`check_inflation_output_archer2.py`, `check_cycle_EP.py`,
+`check_cycle_motion_archer2.py`, `plot_crashed_cycles.py`, the emulator training
+and GSA, and every figure script. That is possible because the post-processing
+functions the analysis relied on are now included here under
+`simulation_toolbox/common/` (see Vendored code below).
+
+So reproducing the published results does not need the private code at all:
+download the cycle simulations from Zenodo and run the post-processing and
+analysis from this repository.
 
 ## Reproducing the paper figures
 
@@ -163,14 +188,19 @@ simulation_toolbox/   Command-line scripts
 
 ## Simulation pipeline
 
-These steps generate new simulations and need the `simulation` extra, CARPentry,
-and an HPC allocation. They are included for completeness and as a record of how
-the study data were produced.
+How the study data were produced, and how to produce more. Running the
+simulations themselves needs CARPentry and an HPC allocation. The steps marked
+"private" write the cluster submission files and need the `simulation` extra;
+every other step runs with a plain `poetry install`.
+
+You do not have to start at step 1. The output of each stage is on Zenodo, so to
+reproduce the published results you can download the cycle simulations and go
+straight to step 10.
 
 1. Sample the parameter space with `notebooks/0_sampling.ipynb` (Latin hypercube
    design). `notebooks/reduce_intervals.ipynb` shrinks the ranges to the smallest
    interval containing all working simulations.
-2. Generate the unloading Slurm scripts with
+2. **(private)** Generate the unloading Slurm scripts with
    `notebooks/1_generate_unloading_scripts.ipynb`, which wraps
    `write_unloading_scripts.py`.
 3. On the cluster, run `check_directories_and_files.sh` to confirm no file is
@@ -180,7 +210,7 @@ the study data were produced.
 5. Run `screenshot_unloading_archer2.py` to render the unloaded configurations.
    It also prepares the folder structure for the cycle simulations, and can be
    run for that alone.
-6. Scale the electrophysiology and generate the cycle scripts with
+6. **(private)** Scale the electrophysiology and generate the cycle scripts with
    `notebooks/2_scale_EP_generate_cycle.ipynb`, which uses
    `write_simulation_scripts.py` and `patient_specific_CV.py`.
 7. Run the single-cell simulations to steady state with
@@ -195,9 +225,11 @@ the study data were produced.
 9. Repeat step 3 for the cycle simulations and submit them.
 10. Post-process the finished cycles with `check_cycle_output_archer2.py`, which
     extracts the mechanics outputs into `Y.txt` together with the mask of working
-    simulations. `clean_unloading_cycle.sh` tidies the cluster folders, and
+    simulations. This is the entry point if you start from the cycle simulations
+    downloaded from Zenodo. `clean_unloading_cycle.sh` tidies the cluster folders, and
     `plot_crashed_cycles.py` investigates simulations that failed.
-11. Optional variants: `notebooks/4_generate_inflation_script.ipynb` with
+11. Optional variants, where the script-writing halves are again **private**:
+    `notebooks/4_generate_inflation_script.ipynb` with
     `write_inflation_scripts.py` and `check_inflation_output_archer2.py` for
     inflation experiments; `notebooks/5_EP_simulations.ipynb` with
     `run_EP_simulations.py`, `check_cycle_EP.py`, and
