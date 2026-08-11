@@ -4,7 +4,7 @@ Code for the paper:
 
 > Rodero et al. (2026). Computational models show that functional remodeling,
 > not anatomy, reshapes physiological determinants of cardiac performance in
-> hypertrophic cardiomyopathy. *Journal of Molecular and Cellular Cardiology*.
+> hypertrophic cardiomyopathy. *Journal of Molecular and Cellular Cardiology*. https://doi.org/10.1016/j.yjmcc.2026.08.002
 
 The repository sets up, post-processes, and analyses four-chamber cardiac
 electromechanical simulations of five hypertrophic cardiomyopathy (HCM)
