@@ -1,5 +1,3 @@
-# simulation_toolbox
-
 Code for the paper:
 
 > Rodero et al. (2026). Computational models show that functional remodeling,
@@ -20,8 +18,8 @@ the clusters, checks and post-processes the results, and performs the analysis.
 ## Quick start
 
 ```bash
-git clone https://github.com/crisrogo/simulation_toolbox.git
-cd simulation_toolbox
+git clone https://github.com/CEMRG-publications/Rodero_2026_JMCC.git
+cd Rodero_2026_JMCC
 poetry install
 ./reproduce_figures.sh
 ```
