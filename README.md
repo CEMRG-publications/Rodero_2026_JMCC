@@ -45,8 +45,8 @@ rather than rerunning the ones before it:
 | Meshes | Input anatomies | [10.5281/zenodo.21282274](https://doi.org/10.5281/zenodo.21282274) |
 | Electrophysiology simulations | Step 11 | [10.5281/zenodo.21720235](https://doi.org/10.5281/zenodo.21720235) |
 | Inflation simulations | Step 11 | [10.5281/zenodo.21720634](https://doi.org/10.5281/zenodo.21720634) |
-| Unloading simulations | Steps 2 to 5 | [10.5281/zenodo.21809471](https://doi.org/10.5281/zenodo.21809471) |
-| Cycle simulations | Steps 6 to 9 | [10.5281/zenodo.21822518](https://doi.org/10.5281/zenodo.21822518) |
+| Unloading simulations | Steps 2 to 5 | [10.5281/zenodo.21809470](https://doi.org/10.5281/zenodo.21809470) |
+| Cycle simulations | Steps 6 to 9 | [10.5281/zenodo.21822517](https://doi.org/10.5281/zenodo.21822517) |
 
 The cycle simulations are the ones the paper's results are computed from. With
 that deposit you can rerun the whole post-processing chain, from the raw
