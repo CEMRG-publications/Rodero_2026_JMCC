@@ -42,9 +42,9 @@ rather than rerunning the ones before it:
 
 | Dataset | Pipeline stage | DOI |
 |---|---|---|
-| Meshes | Input anatomies | [10.5281/zenodo.21282274](https://doi.org/10.5281/zenodo.21282274) |
-| Electrophysiology simulations | Step 11 | [10.5281/zenodo.21720235](https://doi.org/10.5281/zenodo.21720235) |
-| Inflation simulations | Step 11 | [10.5281/zenodo.21720634](https://doi.org/10.5281/zenodo.21720634) |
+| Meshes | Input anatomies | [10.5281/zenodo.21282273](https://doi.org/10.5281/zenodo.21282273) |
+| Electrophysiology simulations | Step 11 | [10.5281/zenodo.21720234](https://doi.org/10.5281/zenodo.21720234) |
+| Inflation simulations | Step 11 | [10.5281/zenodo.21720633](https://doi.org/10.5281/zenodo.21720633) |
 | Unloading simulations | Steps 2 to 5 | [10.5281/zenodo.21809470](https://doi.org/10.5281/zenodo.21809470) |
 | Cycle simulations | Steps 6 to 9 | [10.5281/zenodo.21822517](https://doi.org/10.5281/zenodo.21822517) |
 

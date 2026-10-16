@@ -26,31 +26,31 @@ preferred-citation:
 references:
   - type: data
     title: "Hypertrophic cardiomyopathy meshes"
-    doi: 10.5281/zenodo.21282274
+    doi: 10.5281/zenodo.21282273
     authors:
       - family-names: Rodero
         given-names: Cristobal
   - type: data
     title: "Hypertrophic cardiomyopathy electrophysiology simulations"
-    doi: 10.5281/zenodo.21720235
+    doi: 10.5281/zenodo.21720234
     authors:
       - family-names: Rodero
         given-names: Cristobal
   - type: data
     title: "Hypertrophic cardiomyopathy inflation simulations"
-    doi: 10.5281/zenodo.21720634
+    doi: 10.5281/zenodo.21720633
     authors:
       - family-names: Rodero
         given-names: Cristobal
   - type: data
     title: "Hypertrophic cardiomyopathy unloading simulations"
-    doi: 10.5281/zenodo.21809471
+    doi: 10.5281/zenodo.21809470
     authors:
       - family-names: Rodero
         given-names: Cristobal
   - type: data
     title: "Hypertrophic cardiomyopathy cycle simulations"
-    doi: 10.5281/zenodo.21822518
+    doi: 10.5281/zenodo.21822517
     authors:
       - family-names: Rodero
         given-names: Cristobal
